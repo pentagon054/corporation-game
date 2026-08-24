@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Построй корпорацию</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">МОЯ КОРПОРАЦИЯ</div>
+        <h1 id="corpName">Загрузка...</h1>
+      </div>
+      <button class="icon" id="renameBtn">✏️</button>
+    </header>
+
+    <section class="balance">
+      <div class="balance-label">КАПИТАЛ</div>
+      <div class="money" id="money">0 ₽</div>
+      <div class="metrics">
+        <div><span>📈 Доход</span><b id="income">0 ₽/ч</b></div>
+        <div><span>⭐ Репутация</span><b id="reputation">0</b></div>
+      </div>
+      <button class="collect" id="collectBtn">📊 СОБРАТЬ ДОХОД</button>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-page="businesses">🏭 Бизнесы</button>
+      <button class="tab" data-page="techs">🧪 Технологии</button>
+      <button class="tab" data-page="rating">🏆 Рейтинг</button>
+    </nav>
+
+    <section id="content"></section>
+  </main>
+
+  <div class="modal hidden" id="modal">
+    <div class="modal-card">
+      <h2 id="modalTitle">Сообщение</h2>
+      <p id="modalText"></p>
+      <button id="modalClose">Понятно</button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
