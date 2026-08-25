@@ -23,7 +23,10 @@ from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://YOUR-HTTPS-URL")
-DB_PATH = "corporation.db"
+DB_PATH = os.getenv(
+    "DB_PATH",
+    "corporation.db"
+)
 
 COLLECT_COOLDOWN = 30 * 60
 MAX_OFFLINE_HOURS = 8
