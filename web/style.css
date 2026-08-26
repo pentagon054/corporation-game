@@ -6,19 +6,33 @@
   --button: var(--tg-theme-button-color, #2481cc);
   --button-text: var(--tg-theme-button-text-color, #ffffff);
   --line: rgba(255, 255, 255, .08);
+
   --positive: #35c759;
   --negative: #ff453a;
 }
+
+
+/* ============================================================
+   BASE
+============================================================ */
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
+  min-width: 320px;
   background: var(--bg);
   color: var(--text);
   font-family: Inter, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button {
@@ -26,18 +40,39 @@ button {
   color: var(--text);
   font-weight: 700;
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
+button:active {
+  transform: scale(.98);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   APP
+============================================================ */
+
 .app {
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
   padding: 18px 14px 36px;
 }
 
+
+/* ============================================================
+   HEADER
+============================================================ */
+
 .hero {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 8px 4px 18px;
 }
 
@@ -51,7 +86,9 @@ button {
 
 h1 {
   font-size: 26px;
+  line-height: 1.15;
   margin: 5px 0 0;
+  word-break: break-word;
 }
 
 h2 {
@@ -59,6 +96,7 @@ h2 {
 }
 
 .icon {
+  flex-shrink: 0;
   border: 0;
   background: var(--card);
   border-radius: 14px;
@@ -66,22 +104,31 @@ h2 {
   font-size: 18px;
 }
 
+
+/* ============================================================
+   BALANCE
+============================================================ */
+
 .balance {
   background: linear-gradient(
     135deg,
     #163c2a,
     #183b35
   );
+
   border-radius: 24px;
   padding: 20px;
   margin-bottom: 18px;
+
   border: 1px solid rgba(255, 255, 255, .08);
 }
 
 .money {
   font-size: 38px;
+  line-height: 1.05;
   font-weight: 900;
   margin: 8px 0 18px;
+  word-break: break-word;
 }
 
 .metrics {
@@ -121,13 +168,33 @@ h2 {
   font-size: 15px;
 }
 
+.collect:active,
+.buy:active,
+.modal-card button:active {
+  opacity: .85;
+}
+
+.buy:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   TABS
+============================================================ */
+
 .tabs {
   display: flex;
   gap: 8px;
   overflow-x: auto;
+
   margin-bottom: 14px;
   padding-bottom: 2px;
+
   scrollbar-width: none;
+
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabs::-webkit-scrollbar {
@@ -135,17 +202,29 @@ h2 {
 }
 
 .tab {
+  flex-shrink: 0;
+
   white-space: nowrap;
+
   border: 1px solid var(--line);
   background: var(--card);
+
   border-radius: 14px;
   padding: 10px 14px;
+
+  font-size: 14px;
 }
 
 .tab.active {
   background: var(--button);
   border-color: var(--button);
+  color: var(--button-text);
 }
+
+
+/* ============================================================
+   COMMON CARDS
+============================================================ */
 
 .grid {
   display: grid;
@@ -162,6 +241,7 @@ h2 {
 .card h3 {
   margin: 0;
   font-size: 17px;
+  line-height: 1.25;
 }
 
 .card p {
@@ -175,23 +255,29 @@ h2 {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+
   margin: 12px 0;
+
   font-size: 13px;
 }
 
-.buy:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
+
+/* ============================================================
+   MODAL
+============================================================ */
 
 .modal {
   position: fixed;
   inset: 0;
+
   background: rgba(0, 0, 0, .6);
+
   display: flex;
   align-items: flex-end;
   justify-content: center;
+
   padding: 14px;
+
   z-index: 100;
 }
 
@@ -201,9 +287,15 @@ h2 {
 
 .modal-card {
   width: min(720px, 100%);
+
   background: var(--card);
+
   border-radius: 24px;
+
   padding: 22px;
+
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .modal-card h2 {
@@ -216,29 +308,15 @@ h2 {
   white-space: pre-line;
 }
 
-.rank {
-  width: 100%;
-  border: 0;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.rank-button:hover {
-  transform: translateY(-1px);
-}
-
-.rank-num {
-  font-size: 20px;
-  width: 34px;
-  color: var(--hint);
-}
+/* ============================================================
+   EMPTY
+============================================================ */
 
 .empty {
   text-align: center;
   color: var(--hint);
-  padding: 35px;
+  padding: 35px 20px;
 }
 
 
@@ -287,36 +365,51 @@ h2 {
 
 .profit-chart {
   height: 250px;
+
   display: flex;
   align-items: flex-end;
+
   gap: 8px;
+
   padding-top: 45px;
+
   overflow-x: auto;
+  overflow-y: hidden;
+
+  -webkit-overflow-scrolling: touch;
 }
 
 .chart-column {
   min-width: 58px;
   height: 100%;
+
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
+
   position: relative;
 }
 
 .chart-value {
   position: absolute;
   top: -38px;
+
   font-size: 10px;
   color: var(--hint);
+
   white-space: nowrap;
 }
 
 .chart-bar {
   width: 32px;
   min-height: 6px;
+
   border-radius: 10px 10px 3px 3px;
+
   background: var(--button);
+
+  transition: height .25s ease;
 }
 
 .chart-date {
@@ -339,8 +432,12 @@ h2 {
   border: 0;
   background: transparent;
   color: var(--hint);
+
   text-align: left;
+
   padding: 4px 0 10px;
+
+  font-size: 14px;
 }
 
 .profile-header {
@@ -394,8 +491,10 @@ h2 {
   background: var(--card);
   border-radius: 16px;
   padding: 14px;
+
   display: flex;
   justify-content: space-between;
+
   gap: 12px;
 }
 
@@ -424,25 +523,38 @@ h2 {
   gap: 14px;
 }
 
+
+/* -------------------------
+   BROKERAGE SUMMARY
+------------------------- */
+
 .investment-summary {
   background: linear-gradient(
     135deg,
     #163c2a,
     #183b35
   );
+
   border-radius: 22px;
+
   padding: 20px;
+
   border: 1px solid rgba(255, 255, 255, .08);
 }
 
 .investment-summary h2 {
   margin: 7px 0 5px;
+
   font-size: 30px;
+  line-height: 1.1;
+
+  word-break: break-word;
 }
 
 .investment-profit {
   font-size: 15px;
   font-weight: 800;
+
   margin-bottom: 18px;
 }
 
@@ -462,14 +574,19 @@ h2 {
 
 .investment-summary-grid div {
   background: rgba(0, 0, 0, .15);
+
   border-radius: 14px;
+
   padding: 12px;
 }
 
 .investment-summary-grid span {
   display: block;
+
   color: var(--hint);
+
   font-size: 11px;
+
   margin-bottom: 5px;
 }
 
@@ -477,11 +594,18 @@ h2 {
   font-size: 14px;
 }
 
+
+/* -------------------------
+   SECTION HEADER
+------------------------- */
+
 .investment-section-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 10px;
+
   margin-top: 4px;
 }
 
@@ -490,13 +614,30 @@ h2 {
 }
 
 .refresh-market {
+  flex-shrink: 0;
+
   border: 1px solid var(--line);
+
   background: var(--card);
+
   border-radius: 14px;
+
   width: 42px;
   height: 42px;
+
   font-size: 22px;
+
+  transition: transform .15s ease;
 }
+
+.refresh-market:active {
+  transform: rotate(90deg);
+}
+
+
+/* ============================================================
+   STOCK CARD
+============================================================ */
 
 .stock-card {
   overflow: hidden;
@@ -506,20 +647,27 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+
   gap: 14px;
 }
 
 .stock-symbol {
   display: inline-block;
+
   color: var(--hint);
+
   font-size: 11px;
+
   font-weight: 900;
+
   letter-spacing: 1px;
+
   margin-bottom: 4px;
 }
 
 .stock-header h3 {
   font-size: 18px;
+  line-height: 1.2;
 }
 
 .stock-price-block {
@@ -529,14 +677,19 @@ h2 {
 
 .stock-price {
   display: block;
+
   font-size: 17px;
+
   white-space: nowrap;
 }
 
 .stock-change {
   display: block;
+
   margin-top: 5px;
+
   font-size: 11px;
+
   white-space: nowrap;
 }
 
@@ -544,52 +697,93 @@ h2 {
   margin-top: 12px !important;
 }
 
+
+/* ============================================================
+   STOCK GRAPH
+============================================================ */
+
 .stock-chart {
-  height: 100px;
+  width: 100%;
+  height: 110px;
+
   margin: 14px 0;
+
   padding: 8px;
+
   background: rgba(255, 255, 255, .025);
+
   border-radius: 12px;
+
   color: var(--button);
+
   overflow: hidden;
 }
 
 .stock-chart svg {
   width: 100%;
   height: 100%;
+
   display: block;
 }
 
+.stock-chart polyline {
+  vector-effect: non-scaling-stroke;
+}
+
 .stock-chart-empty {
+  width: 100%;
   height: 100px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   background: rgba(255, 255, 255, .025);
+
   border-radius: 12px;
+
   color: var(--hint);
+
   font-size: 12px;
+
   margin: 14px 0;
 }
 
 .stock-history-button {
   width: 100%;
+
   border: 1px solid var(--line);
+
   background: transparent;
+
   color: var(--text);
+
   border-radius: 12px;
+
   padding: 11px;
+
   margin: 8px 0 12px;
+
+  font-size: 13px;
 }
+
+
+/* ============================================================
+   STOCK POSITION
+============================================================ */
 
 .stock-position {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   border-top: 1px solid var(--line);
+
   padding-top: 12px;
   margin-top: 10px;
+
   color: var(--hint);
+
   font-size: 13px;
 }
 
@@ -597,10 +791,18 @@ h2 {
   color: var(--text);
 }
 
+
+/* ============================================================
+   STOCK ACTIONS
+============================================================ */
+
 .stock-actions {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   gap: 8px;
+
   margin-top: 12px;
 }
 
@@ -610,12 +812,22 @@ h2 {
 
 .stock-sell {
   width: 100%;
+
   border: 1px solid var(--line);
+
   border-radius: 16px;
+
   padding: 15px;
+
   background: transparent;
+
   color: var(--text);
+
   font-size: 15px;
+}
+
+.stock-sell:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .04);
 }
 
 .stock-sell:disabled {
@@ -623,19 +835,33 @@ h2 {
   cursor: not-allowed;
 }
 
+
+/* ============================================================
+   BONDS
+============================================================ */
+
 .bond-placeholder {
   margin-top: 2px;
 }
 
 .bond-placeholder b {
   color: var(--hint);
+
   font-size: 10px;
+
   letter-spacing: 1px;
 }
 
+
+/* ============================================================
+   HOLDINGS / PORTFOLIO
+============================================================ */
+
 .holdings-section {
   display: grid;
+
   gap: 10px;
+
   margin-top: 2px;
 }
 
@@ -645,10 +871,15 @@ h2 {
 
 .holding-row {
   display: flex;
+
   justify-content: space-between;
+
   gap: 10px;
+
   padding: 9px 0;
+
   border-bottom: 1px solid var(--line);
+
   font-size: 13px;
 }
 
@@ -662,8 +893,27 @@ h2 {
 
 .holding-profit {
   margin-top: 12px;
+
   font-size: 13px;
+
   font-weight: 800;
+}
+
+
+/* ============================================================
+   TRADE / PROMPT COMPATIBILITY
+============================================================ */
+
+input,
+select {
+  font-family: inherit;
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid var(--button);
+  outline-offset: 2px;
 }
 
 
@@ -676,6 +926,15 @@ h2 {
   .app {
     padding-left: 10px;
     padding-right: 10px;
+  }
+
+  .hero {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  h1 {
+    font-size: 24px;
   }
 
   .money {
@@ -694,8 +953,61 @@ h2 {
     font-size: 16px;
   }
 
+  .investment-summary {
+    padding: 18px;
+  }
+
   .investment-summary h2 {
     font-size: 27px;
   }
 
+  .stock-chart {
+    height: 95px;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+/* ============================================================
+   VERY SMALL PHONES
+============================================================ */
+
+@media (max-width: 360px) {
+
+  .app {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .balance {
+    padding: 16px;
+  }
+
+  .money {
+    font-size: 30px;
+  }
+
+  .investment-summary {
+    padding: 16px;
+  }
+
+  .investment-summary h2 {
+    font-size: 24px;
+  }
+
+  .stock-header {
+    flex-direction: column;
+  }
+
+  .stock-price-block {
+    width: 100%;
+    text-align: left;
+  }
+
+  .stock-actions {
+    grid-template-columns: 1fr 1fr;
+  }
 }

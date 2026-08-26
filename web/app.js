@@ -10,9 +10,18 @@ const DEV_ID = 999001;
 let state = null;
 let page = "businesses";
 
+let stocksCache = [];
+let brokerageCache = null;
+
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
 function fmt(n) {
   return Number(n || 0).toLocaleString("ru-RU") + " ₽";
 }
+
 
 function fmtNumber(n) {
   return Number(n || 0).toLocaleString("ru-RU", {
@@ -20,15 +29,22 @@ function fmtNumber(n) {
   });
 }
 
+
 function fmtPercent(n) {
   const value = Number(n || 0);
-  return (value > 0 ? "+" : "") + value.toFixed(2) + "%";
+
+  return (
+    value > 0 ? "+" : ""
+  ) + value.toFixed(2) + "%";
 }
 
-async function api(
-  url,
-  options = {}
-) {
+
+/* ============================================================
+   API
+============================================================ */
+
+async function api(url, options = {}) {
+
   const headers = {
     ...(options.headers || {})
   };
@@ -39,15 +55,13 @@ async function api(
     headers["X-User-Id"] = String(DEV_ID);
   }
 
-  const res = await fetch(
-    url,
-    {
-      ...options,
-      headers
-    }
-  );
+  const res = await fetch(url, {
+    ...options,
+    headers
+  });
 
   if (!res.ok) {
+
     let data;
 
     try {
@@ -67,65 +81,69 @@ async function api(
 }
 
 
-function modal(
-  title,
-  text
-) {
-  document
-    .querySelector("#modalTitle")
-    .textContent = title;
+/* ============================================================
+   MODAL
+============================================================ */
 
-  document
-    .querySelector("#modalText")
-    .textContent = text;
+function modal(title, text) {
 
-  document
-    .querySelector("#modal")
+  document.querySelector("#modalTitle").textContent =
+    title;
+
+  document.querySelector("#modalText").textContent =
+    text;
+
+  document.querySelector("#modal")
     .classList
     .remove("hidden");
 }
 
 
-document
-  .querySelector("#modalClose")
-  .onclick = () => {
-    document
-      .querySelector("#modal")
-      .classList
-      .add("hidden");
-  };
+document.querySelector("#modalClose").onclick = () => {
 
+  document.querySelector("#modal")
+    .classList
+    .add("hidden");
+};
+
+
+/* ============================================================
+   HEADER
+============================================================ */
 
 function businessCount() {
+
+  if (!state?.businesses) {
+    return 0;
+  }
+
   return state.businesses.reduce(
     (total, business) =>
-      total + business.level,
+      total + Number(business.level || 0),
     0
   );
 }
 
 
 function renderHeader() {
+
+  if (!state || !state.player) {
+    return;
+  }
+
   const player = state.player;
 
-  document
-    .querySelector("#corpName")
-    .textContent = player.corp_name;
+  document.querySelector("#corpName").textContent =
+    player.corp_name;
 
-  document
-    .querySelector("#money")
-    .textContent = fmt(player.money);
+  document.querySelector("#money").textContent =
+    fmt(player.money);
 
-  document
-    .querySelector("#income")
-    .textContent =
-      fmt(state.hourly_income)
-      + "/ч";
+  document.querySelector("#income").textContent =
+    fmt(state.hourly_income) + "/ч";
 
-  document
-    .querySelector("#businessCount")
-    .textContent =
-      businessCount();
+  document.querySelector("#businessCount").textContent =
+    businessCount();
 }
 
 
@@ -134,88 +152,84 @@ function renderHeader() {
 ============================================================ */
 
 function renderBusinesses() {
-  const html =
-    state.businesses
-      .map(business => {
 
-        const canBuy =
-          state.player.money
-          >= business.next_cost;
+  const html = (state.businesses || [])
+    .map(business => {
 
-        return `
-          <article class="card">
+      const canBuy =
+        Number(state.player.money || 0)
+        >= Number(business.next_cost || 0);
 
-            <div class="business-head">
+      return `
+        <article class="card">
 
-              <div>
+          <div class="business-head">
 
-                <h3>
-                  ${business.name}
-                </h3>
+            <div>
 
-                <p>
-                  ${business.desc}
-                </p>
+              <h3>
+                ${business.name}
+              </h3>
 
-              </div>
-
-              <b>
-                ур. ${business.level}
-              </b>
+              <p>
+                ${business.desc}
+              </p>
 
             </div>
 
-            <div class="meta">
+            <b>
+              ур. ${business.level}
+            </b>
 
-              <span>
-                📈 +${fmt(
-                  business.base_income
-                  * business.level
-                )}/ч
-              </span>
+          </div>
 
-              <span>
-                ${business.level
+          <div class="meta">
+
+            <span>
+              📈 +${fmt(
+                Number(business.base_income || 0)
+                * Number(business.level || 0)
+              )}/ч
+            </span>
+
+            <span>
+              ${
+                business.level
                   ? "📈 Улучшается"
-                  : "🆕 Новый бизнес"}
-              </span>
+                  : "🆕 Новый бизнес"
+              }
+            </span>
 
-            </div>
+          </div>
 
-            <button
-              class="buy"
-              ${canBuy
-                ? ""
-                : "disabled"}
-              onclick="
-                buyBusiness(
-                  '${business.id}'
-                )
-              "
-            >
-              ${business.level
+          <button
+            class="buy"
+            ${canBuy ? "" : "disabled"}
+            onclick="buyBusiness('${business.id}')"
+          >
+
+            ${
+              business.level
                 ? "Улучшить"
-                : "Открыть"}
+                : "Открыть"
+            }
 
-              за
+            за
 
-              ${fmt(
-                business.next_cost
-              )}
+            ${fmt(business.next_cost)}
 
-            </button>
+          </button>
 
-          </article>
-        `;
-      })
-      .join("");
+        </article>
+      `;
+    })
+    .join("");
 
-  document
-    .querySelector("#content")
-    .innerHTML =
-      `<div class="grid">
-        ${html}
-      </div>`;
+  document.querySelector("#content").innerHTML = `
+    <div class="grid">
+      ${html}
+    </div>
+  `;
 }
 
 
@@ -224,63 +238,60 @@ function renderBusinesses() {
 ============================================================ */
 
 function renderTechs() {
-  const html =
-    state.techs
-      .map(tech => `
 
-        <article class="card">
+  const html = (state.techs || [])
+    .map(tech => `
 
-          <div class="business-head">
+      <article class="card">
 
-            <div>
+        <div class="business-head">
 
-              <h3>
-                ${tech.name}
-              </h3>
+          <div>
 
-              <p>
-                ${tech.desc}
-              </p>
+            <h3>
+              ${tech.name}
+            </h3>
 
-            </div>
-
-            ${tech.owned
-              ? "✅"
-              : ""}
+            <p>
+              ${tech.desc}
+            </p>
 
           </div>
 
-          <button
-            class="buy"
-            ${tech.owned
-              || state.player.money < tech.cost
+          ${tech.owned ? "✅" : ""}
+
+        </div>
+
+        <button
+          class="buy"
+          ${
+            tech.owned ||
+            Number(state.player.money || 0)
+              < Number(tech.cost || 0)
               ? "disabled"
-              : ""}
-            onclick="
-              buyTech(
-                '${tech.id}'
-              )
-            "
-          >
+              : ""
+          }
+          onclick="buyTech('${tech.id}')"
+        >
 
-            ${tech.owned
+          ${
+            tech.owned
               ? "Исследовано"
-              : "Исследовать за "
-                + fmt(tech.cost)}
+              : "Исследовать за " + fmt(tech.cost)
+          }
 
-          </button>
+        </button>
 
-        </article>
+      </article>
 
-      `)
-      .join("");
+    `)
+    .join("");
 
-  document
-    .querySelector("#content")
-    .innerHTML =
-      `<div class="grid">
-        ${html}
-      </div>`;
+  document.querySelector("#content").innerHTML = `
+    <div class="grid">
+      ${html}
+    </div>
+  `;
 }
 
 
@@ -289,7 +300,9 @@ function renderTechs() {
 ============================================================ */
 
 function renderProfitChart(data) {
-  if (!data.length) {
+
+  if (!data || !data.length) {
+
     return `
       <div class="empty">
         Пока нет собранной прибыли.
@@ -298,8 +311,8 @@ function renderProfitChart(data) {
   }
 
   const max = Math.max(
-    ...data.map(
-      item => item.earned
+    ...data.map(item =>
+      Number(item.earned || 0)
     ),
     1
   );
@@ -309,43 +322,35 @@ function renderProfitChart(data) {
 
       ${data.map(item => {
 
+        const earned =
+          Number(item.earned || 0);
+
         const height = Math.max(
           6,
           Math.round(
-            item.earned
-            / max
-            * 100
+            earned / max * 100
           )
         );
 
         const date =
-          item.day
+          String(item.day || "")
             .split("-")
             .slice(1)
             .join(".");
 
         return `
-          <div
-            class="chart-column"
-          >
+          <div class="chart-column">
 
-            <div
-              class="chart-value"
-            >
-              ${fmt(item.earned)}
+            <div class="chart-value">
+              ${fmt(earned)}
             </div>
 
             <div
               class="chart-bar"
-              style="
-                height:${height}%;
-              "
-            >
-            </div>
+              style="height:${height}%"
+            ></div>
 
-            <div
-              class="chart-date"
-            >
+            <div class="chart-date">
               ${date}
             </div>
 
@@ -360,84 +365,79 @@ function renderProfitChart(data) {
 
 
 async function renderStatistics() {
-  document
-    .querySelector("#content")
-    .innerHTML =
-      `<div class="empty">
-        Загружаем статистику...
-      </div>`;
+
+  document.querySelector("#content").innerHTML = `
+    <div class="empty">
+      Загружаем статистику...
+    </div>
+  `;
 
   try {
-    const stats = await api(
-      "/api/statistics"
-    );
 
-    document
-      .querySelector("#content")
-      .innerHTML = `
+    const stats =
+      await api("/api/statistics");
 
-        <section class="stats-page">
+    document.querySelector("#content").innerHTML = `
 
-          <article class="stats-card">
+      <section class="stats-page">
 
-            <span>
-              💰 Общая прибыль
-            </span>
+        <article class="stats-card">
 
-            <b>
-              ${fmt(
-                stats.total_earned
-              )}
-            </b>
+          <span>
+            💰 Общая прибыль
+          </span>
 
-          </article>
+          <b>
+            ${fmt(stats.total_earned)}
+          </b>
 
-          <article class="stats-card">
+        </article>
 
-            <span>
-              💸 Общие расходы
-            </span>
+        <article class="stats-card">
 
-            <b>
-              ${fmt(
-                stats.total_spent
-              )}
-            </b>
+          <span>
+            💸 Общие расходы
+          </span>
 
-          </article>
+          <b>
+            ${fmt(stats.total_spent)}
+          </b>
 
-          <article class="stats-card">
+        </article>
 
-            <span>
-              🏢 Куплено бизнесов
-            </span>
+        <article class="stats-card">
 
-            <b>
-              ${stats.companies_bought}
-            </b>
+          <span>
+            🏢 Куплено бизнесов
+          </span>
 
-          </article>
+          <b>
+            ${stats.companies_bought}
+          </b>
 
-          <section class="chart-card">
+        </article>
 
-            <h2>
-              📊 Прибыль по дням
-            </h2>
+        <section class="chart-card">
 
-            <p>
-              Один столбец — один день
-            </p>
+          <h2>
+            📊 Прибыль по дням
+          </h2>
 
-            ${renderProfitChart(
-              stats.daily_profit
-            )}
+          <p>
+            Один столбец — один день
+          </p>
 
-          </section>
+          ${renderProfitChart(
+            stats.daily_profit || []
+          )}
 
         </section>
-      `;
+
+      </section>
+    `;
 
   } catch (error) {
+
     modal(
       "Ошибка",
       error.message
@@ -451,63 +451,64 @@ async function renderStatistics() {
 ============================================================ */
 
 async function renderRating() {
-  document
-    .querySelector("#content")
-    .innerHTML =
-      `<div class="empty">
-        Загружаем рейтинг...
-      </div>`;
+
+  document.querySelector("#content").innerHTML = `
+    <div class="empty">
+      Загружаем рейтинг...
+    </div>
+  `;
 
   try {
-    const rows = await api(
-      "/api/rating"
-    );
 
-    document
-      .querySelector("#content")
-      .innerHTML =
-        `<div class="grid">
+    const rows =
+      await api("/api/rating");
 
-          ${rows.map(
-            (player, index) => `
+    if (!rows.length) {
 
-              <button
-                class="card rank rank-button"
-                onclick="
-                  openPlayerProfile(
-                    ${player.user_id}
-                  )
-                "
-              >
+      document.querySelector("#content").innerHTML = `
+        <div class="empty">
+          Рейтинг пока пуст.
+        </div>
+      `;
 
-                <div
-                  class="rank-num"
-                >
-                  #${index + 1}
-                </div>
+      return;
+    }
 
-                <div>
+    document.querySelector("#content").innerHTML = `
+      <div class="grid">
 
-                  <h3>
-                    ${player.corp_name}
-                  </h3>
+        ${rows.map((player, index) => `
 
-                  <p>
-                    💰 ${fmt(
-                      player.money
-                    )}
-                  </p>
+          <button
+            class="card rank rank-button"
+            onclick="openPlayerProfile(${player.user_id})"
+          >
 
-                </div>
+            <div class="rank-num">
+              #${index + 1}
+            </div>
 
-              </button>
+            <div>
 
-            `
-          ).join("")}
+              <h3>
+                ${player.corp_name}
+              </h3>
 
-        </div>`;
+              <p>
+                💰 ${fmt(player.money)}
+              </p>
+
+            </div>
+
+          </button>
+
+        `).join("")}
+
+      </div>
+    `;
 
   } catch (error) {
+
     modal(
       "Ошибка",
       error.message
@@ -520,30 +521,26 @@ async function renderRating() {
    PLAYER PROFILE
 ============================================================ */
 
-async function openPlayerProfile(
-  playerId
-) {
-  document
-    .querySelector("#content")
-    .innerHTML =
-      `<div class="empty">
-        Загружаем профиль...
-      </div>`;
+async function openPlayerProfile(playerId) {
+
+  document.querySelector("#content").innerHTML = `
+    <div class="empty">
+      Загружаем профиль...
+    </div>
+  `;
 
   try {
-    const profile = await api(
-      `/api/player/${playerId}`
-    );
+
+    const profile =
+      await api(`/api/player/${playerId}`);
 
     const businesses =
-      profile.businesses.length
+      profile.businesses?.length
 
         ? profile.businesses
             .map(business => `
 
-              <article
-                class="profile-business"
-              >
+              <article class="profile-business">
 
                 <div>
 
@@ -558,8 +555,7 @@ async function openPlayerProfile(
                 </div>
 
                 <b>
-                  ур.
-                  ${business.level}
+                  ур. ${business.level}
                 </b>
 
               </article>
@@ -573,99 +569,82 @@ async function openPlayerProfile(
           </div>
         `;
 
-    document
-      .querySelector("#content")
-      .innerHTML = `
+    document.querySelector("#content").innerHTML = `
 
-        <section class="profile-page">
+      <section class="profile-page">
 
-          <button
-            class="back-button"
-            onclick="
-              backToRating()
-            "
-          >
-            ← Назад к рейтингу
-          </button>
+        <button
+          class="back-button"
+          onclick="backToRating()"
+        >
+          ← Назад к рейтингу
+        </button>
 
-          <article
-            class="profile-header"
-          >
+        <article class="profile-header">
 
-            <div class="eyebrow">
-              ПРОФИЛЬ ИГРОКА
-            </div>
+          <div class="eyebrow">
+            ПРОФИЛЬ ИГРОКА
+          </div>
 
-            <h2>
-              ${profile.player.corp_name}
-            </h2>
+          <h2>
+            ${profile.player.corp_name}
+          </h2>
 
-            <p>
-              💰 Капитал:
-              ${fmt(
-                profile.player.money
-              )}
-            </p>
+          <p>
+            💰 Капитал:
+            ${fmt(profile.player.money)}
+          </p>
 
-            <p>
-              📈 Доход:
-              ${fmt(
-                profile.hourly_income
-              )}/ч
-            </p>
+          <p>
+            📈 Доход:
+            ${fmt(profile.hourly_income)}/ч
+          </p>
 
-          </article>
+        </article>
 
-          <section
-            class="profile-stats"
-          >
+        <section class="profile-stats">
 
-            <div>
+          <div>
 
-              <span>
-                💰 Общая прибыль
-              </span>
+            <span>
+              💰 Общая прибыль
+            </span>
 
-              <b>
-                ${fmt(
-                  profile.stats.total_earned
-                )}
-              </b>
+            <b>
+              ${fmt(profile.stats.total_earned)}
+            </b>
 
-            </div>
+          </div>
 
-            <div>
+          <div>
 
-              <span>
-                💸 Общие расходы
-              </span>
+            <span>
+              💸 Общие расходы
+            </span>
 
-              <b>
-                ${fmt(
-                  profile.stats.total_spent
-                )}
-              </b>
+            <b>
+              ${fmt(profile.stats.total_spent)}
+            </b>
 
-            </div>
-
-          </section>
-
-          <section
-            class="profile-businesses"
-          >
-
-            <h2>
-              🏢 Бизнесы
-            </h2>
-
-            ${businesses}
-
-          </section>
+          </div>
 
         </section>
-      `;
+
+        <section class="profile-businesses">
+
+          <h2>
+            🏢 Бизнесы
+          </h2>
+
+          ${businesses}
+
+        </section>
+
+      </section>
+    `;
 
   } catch (error) {
+
     modal(
       "Ошибка",
       error.message
@@ -675,7 +654,11 @@ async function openPlayerProfile(
 
 
 function backToRating() {
+
   page = "rating";
+
+  updateActiveTab();
+
   renderRating();
 }
 
@@ -684,35 +667,33 @@ function backToRating() {
    INVESTMENTS
 ============================================================ */
 
-let stocksCache = [];
-let brokerageCache = null;
-let selectedStockId = null;
-
-
 async function loadStocks() {
-  stocksCache = await api(
-    "/api/stocks"
-  );
+
+  stocksCache =
+    await api("/api/stocks");
 
   return stocksCache;
 }
 
 
 async function loadBrokerage() {
-  brokerageCache = await api(
-    "/api/brokerage-account"
-  );
+
+  brokerageCache =
+    await api("/api/brokerage-account");
 
   return brokerageCache;
 }
 
 
 function getHolding(stockId) {
+
   if (!brokerageCache) {
     return null;
   }
 
-  return brokerageCache.holdings.find(
+  return (
+    brokerageCache.holdings || []
+  ).find(
     holding =>
       String(holding.stock_id)
       === String(stockId)
@@ -721,13 +702,10 @@ function getHolding(stockId) {
 
 
 function stockChange(stock) {
-  /*
-    Backend may provide a change field.
-    If it does not, return 0 safely.
-  */
 
   if (
-    stock.change_percent !== undefined
+    stock.change_percent !== undefined &&
+    stock.change_percent !== null
   ) {
     return Number(
       stock.change_percent
@@ -735,7 +713,8 @@ function stockChange(stock) {
   }
 
   if (
-    stock.price_change_percent !== undefined
+    stock.price_change_percent !== undefined &&
+    stock.price_change_percent !== null
   ) {
     return Number(
       stock.price_change_percent
@@ -747,7 +726,9 @@ function stockChange(stock) {
 
 
 function renderStockMiniChart(history) {
+
   if (!history || !history.length) {
+
     return `
       <div class="stock-chart-empty">
         История цены пока формируется
@@ -755,12 +736,16 @@ function renderStockMiniChart(history) {
     `;
   }
 
-  const prices = history.map(
-    item => Number(item.price)
-  );
+  const prices =
+    history.map(
+      item => Number(item.price || 0)
+    );
 
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
+  const min =
+    Math.min(...prices);
+
+  const max =
+    Math.max(...prices);
 
   const range =
     max - min || 1;
@@ -769,8 +754,8 @@ function renderStockMiniChart(history) {
   const height = 100;
 
   const points =
-    prices.map(
-      (price, index) => {
+    prices
+      .map((price, index) => {
 
         const x =
           prices.length === 1
@@ -782,25 +767,22 @@ function renderStockMiniChart(history) {
             );
 
         const y =
-          height
-          - (
+          height -
+          (
             (price - min)
             / range
             * height
           );
 
         return `${x},${y}`;
-      }
-    )
-    .join(" ");
+      })
+      .join(" ");
 
   return `
     <div class="stock-chart">
 
       <svg
-        viewBox="
-          0 0 ${width} ${height}
-        "
+        viewBox="0 0 ${width} ${height}"
         preserveAspectRatio="none"
       >
 
@@ -820,7 +802,12 @@ function renderStockMiniChart(history) {
 }
 
 
+/* ============================================================
+   INVESTMENT PAGE
+============================================================ */
+
 async function renderInvestments() {
+
   const content =
     document.querySelector("#content");
 
@@ -831,23 +818,29 @@ async function renderInvestments() {
   `;
 
   try {
-    const [stocks, brokerage] =
-      await Promise.all([
-        loadStocks(),
-        loadBrokerage()
-      ]);
 
-    stocksCache = stocks;
-    brokerageCache = brokerage;
+    const [
+      stocks,
+      brokerage
+    ] = await Promise.all([
+      loadStocks(),
+      loadBrokerage()
+    ]);
+
+    stocksCache = stocks || [];
+    brokerageCache = brokerage || {};
+
+    const holdings =
+      brokerageCache.holdings || [];
 
     const totalProfit =
       Number(
-        brokerage.total_profit || 0
+        brokerageCache.total_profit || 0
       );
 
     const totalProfitPercent =
       Number(
-        brokerage.total_profit_percent || 0
+        brokerageCache.total_profit_percent || 0
       );
 
     content.innerHTML = `
@@ -862,7 +855,7 @@ async function renderInvestments() {
 
           <h2>
             ${fmt(
-              brokerage.total_current_value
+              brokerageCache.total_current_value || 0
             )}
           </h2>
 
@@ -873,9 +866,7 @@ async function renderInvestments() {
               : "negative"}
           ">
 
-            ${totalProfit >= 0
-              ? "▲"
-              : "▼"}
+            ${totalProfit >= 0 ? "▲" : "▼"}
 
             ${fmt(Math.abs(totalProfit))}
 
@@ -885,9 +876,7 @@ async function renderInvestments() {
 
           </div>
 
-          <div class="
-            investment-summary-grid
-          ">
+          <div class="investment-summary-grid">
 
             <div>
 
@@ -897,7 +886,7 @@ async function renderInvestments() {
 
               <b>
                 ${fmt(
-                  brokerage.total_invested
+                  brokerageCache.total_invested || 0
                 )}
               </b>
 
@@ -910,7 +899,7 @@ async function renderInvestments() {
               </span>
 
               <b>
-                ${brokerage.holdings.length}
+                ${holdings.length}
               </b>
 
             </div>
@@ -923,6 +912,7 @@ async function renderInvestments() {
         <div class="investment-section-title">
 
           <div>
+
             <div class="eyebrow">
               ФОНДОВЫЙ РЫНОК
             </div>
@@ -930,13 +920,12 @@ async function renderInvestments() {
             <h2>
               📈 Акции
             </h2>
+
           </div>
 
           <button
             class="refresh-market"
-            onclick="
-              refreshInvestments()
-            "
+            onclick="refreshInvestments()"
           >
             ↻
           </button>
@@ -946,10 +935,19 @@ async function renderInvestments() {
 
         <div class="grid">
 
-          ${stocks.map(
-            stock =>
-              renderStockCard(stock)
-          ).join("")}
+          ${
+            stocksCache.length
+              ? stocksCache
+                  .map(stock =>
+                    renderStockCard(stock)
+                  )
+                  .join("")
+              : `
+                <div class="empty">
+                  На рынке пока нет акций.
+                </div>
+              `
+          }
 
         </div>
 
@@ -992,12 +990,16 @@ async function renderInvestments() {
       "Инвестиции",
       error.message
     );
-
   }
 }
 
 
+/* ============================================================
+   STOCK CARD
+============================================================ */
+
 function renderStockCard(stock) {
+
   const holding =
     getHolding(stock.id);
 
@@ -1008,7 +1010,9 @@ function renderStockCard(stock) {
     stockChange(stock);
 
   const owned =
-    holding?.quantity || 0;
+    Number(
+      holding?.quantity || 0
+    );
 
   return `
 
@@ -1031,9 +1035,7 @@ function renderStockCard(stock) {
 
         </div>
 
-        <div class="
-          stock-price-block
-        ">
+        <div class="stock-price-block">
 
           <b class="stock-price">
             ${fmt(price)}
@@ -1065,18 +1067,14 @@ function renderStockCard(stock) {
 
 
       ${
-        stock.history
+        stock.history?.length
           ? renderStockMiniChart(
               stock.history
             )
           : `
             <button
               class="stock-history-button"
-              onclick="
-                openStock(
-                  '${stock.id}'
-                )
-              "
+              onclick="openStock('${stock.id}')"
             >
               📊 Открыть график
             </button>
@@ -1101,27 +1099,15 @@ function renderStockCard(stock) {
 
         <button
           class="buy stock-buy"
-          onclick="
-            openTrade(
-              '${stock.id}',
-              'buy'
-            )
-          "
+          onclick="openTrade('${stock.id}', 'buy')"
         >
           Купить
         </button>
 
         <button
           class="stock-sell"
-          ${owned > 0
-            ? ""
-            : "disabled"}
-          onclick="
-            openTrade(
-              '${stock.id}',
-              'sell'
-            )
-          "
+          ${owned > 0 ? "" : "disabled"}
+          onclick="openTrade('${stock.id}', 'sell')"
         >
           Продать
         </button>
@@ -1133,16 +1119,20 @@ function renderStockCard(stock) {
 }
 
 
+/* ============================================================
+   HOLDINGS
+============================================================ */
+
 function renderHoldings() {
+
   if (
-    !brokerageCache
-    || !brokerageCache.holdings.length
+    !brokerageCache ||
+    !brokerageCache.holdings ||
+    !brokerageCache.holdings.length
   ) {
+
     return `
-      <article class="
-        card
-        empty
-      ">
+      <article class="card empty">
         У тебя пока нет акций.
         Выбери компанию выше,
         чтобы начать инвестировать.
@@ -1174,11 +1164,8 @@ function renderHoldings() {
       <div class="grid">
 
         ${brokerageCache.holdings
-          .map(
-            holding =>
-              renderHoldingCard(
-                holding
-              )
+          .map(holding =>
+            renderHoldingCard(holding)
           )
           .join("")}
 
@@ -1190,6 +1177,7 @@ function renderHoldings() {
 
 
 function renderHoldingCard(holding) {
+
   const profit =
     Number(
       holding.profit || 0
@@ -1297,32 +1285,78 @@ function renderHoldingCard(holding) {
 }
 
 
+/* ============================================================
+   STOCK DETAILS
+============================================================ */
+
 async function openStock(stockId) {
+
   try {
 
-    const stock = await api(
-      `/api/stocks/${stockId}`
-    );
-
-    const history =
-      stock.history || [];
-
-    const chart =
-      renderStockMiniChart(
-        history
+    const stock =
+      await api(
+        `/api/stocks/${stockId}`
       );
 
     const holding =
       getHolding(stock.id);
 
-    modal(
-      `${stock.symbol} — ${stock.name}`,
-      `Цена: ${fmt(stock.current_price)}
+    const history =
+      stock.history || [];
 
-У тебя: ${holding?.quantity || 0} шт.
+    const chart =
+      renderStockMiniChart(history);
 
-${stock.description || ""}`
-    );
+    const price =
+      Number(
+        stock.current_price || 0
+      );
+
+    const change =
+      stockChange(stock);
+
+    document.querySelector("#modalTitle").textContent =
+      `${stock.symbol} — ${stock.name}`;
+
+    document.querySelector("#modalText").innerHTML = `
+      <div>
+
+        <div style="
+          font-size: 24px;
+          font-weight: 900;
+          margin-bottom: 8px;
+        ">
+          ${fmt(price)}
+        </div>
+
+        <div class="
+          ${change >= 0
+            ? "positive"
+            : "negative"}
+        ">
+          ${change >= 0 ? "▲" : "▼"}
+          ${Math.abs(change).toFixed(2)}%
+        </div>
+
+        <div style="margin-top: 12px;">
+          ${chart}
+        </div>
+
+        <p>
+          У тебя:
+          ${holding?.quantity || 0} шт.
+        </p>
+
+        <p>
+          ${stock.description || ""}
+        </p>
+
+      </div>
+    `;
+
+    document.querySelector("#modal")
+      .classList
+      .remove("hidden");
 
   } catch (error) {
 
@@ -1330,20 +1364,26 @@ ${stock.description || ""}`
       "Ошибка",
       error.message
     );
-
   }
 }
 
 
+/* ============================================================
+   REFRESH INVESTMENTS
+============================================================ */
+
 async function refreshInvestments() {
+
   await renderInvestments();
 }
 
 
-async function openTrade(
-  stockId,
-  side
-) {
+/* ============================================================
+   TRADING
+============================================================ */
+
+async function openTrade(stockId, side) {
+
   const stock =
     stocksCache.find(
       item =>
@@ -1352,10 +1392,12 @@ async function openTrade(
     );
 
   if (!stock) {
+
     modal(
       "Ошибка",
       "Акция не найдена."
     );
+
     return;
   }
 
@@ -1363,24 +1405,33 @@ async function openTrade(
     getHolding(stockId);
 
   const owned =
-    holding?.quantity || 0;
+    Number(
+      holding?.quantity || 0
+    );
 
   const price =
     Number(
       stock.current_price || 0
     );
 
+  if (price <= 0) {
+
+    modal(
+      "Ошибка",
+      "Цена акции недоступна."
+    );
+
+    return;
+  }
+
   const maxBuy =
-    price > 0
-      ? Math.floor(
-          Number(
-            state.player.money || 0
-          ) / price
-        )
-      : 0;
+    Math.floor(
+      Number(state.player.money || 0)
+      / price
+    );
 
   const maxSell =
-    Number(owned);
+    owned;
 
   const max =
     side === "buy"
@@ -1393,6 +1444,7 @@ async function openTrade(
       side === "buy"
         ? "Недостаточно денег"
         : "Нет акций",
+
       side === "buy"
         ? "У тебя недостаточно денег для покупки этой акции."
         : "У тебя нет этой акции."
@@ -1403,15 +1455,18 @@ async function openTrade(
 
   const quantity =
     prompt(
-      `${side === "buy"
-        ? "Покупка"
-        : "Продажа"} ${stock.name}
+      `${
+        side === "buy"
+          ? "Покупка"
+          : "Продажа"
+      } ${stock.name}
 
 Цена: ${fmt(price)}
 
 Максимум: ${max} шт.
 
 Введите количество:`,
+
       "1"
     );
 
@@ -1426,21 +1481,25 @@ async function openTrade(
     );
 
   if (
-    !Number.isInteger(qty)
-    || qty <= 0
+    !Number.isInteger(qty) ||
+    qty <= 0
   ) {
+
     modal(
       "Ошибка",
       "Количество должно быть целым числом больше нуля."
     );
+
     return;
   }
 
   if (qty > max) {
+
     modal(
       "Ошибка",
       `Максимально доступно: ${max} шт.`
     );
+
     return;
   }
 
@@ -1463,18 +1522,28 @@ async function openTrade(
         }
       );
 
+
     /*
-      После сделки обновляем состояние
-      игрока и брокерский счёт.
+      Получаем самое актуальное
+      состояние игрока.
     */
 
     if (result.state) {
-      state = result.state;
+
+      state =
+        result.state;
+
     } else {
-      state = await api(
-        "/api/state"
-      );
+
+      state =
+        await api("/api/state");
     }
+
+
+    /*
+      Обновляем брокерский счёт
+      и цены.
+    */
 
     brokerageCache =
       await loadBrokerage();
@@ -1482,9 +1551,14 @@ async function openTrade(
     stocksCache =
       await loadStocks();
 
+
     renderHeader();
 
     await renderInvestments();
+
+
+    const total =
+      price * qty;
 
     modal(
       side === "buy"
@@ -1494,17 +1568,14 @@ async function openTrade(
       side === "buy"
 
         ? `Куплено ${qty} шт. ${stock.symbol}
-        
-Сумма сделки: ${fmt(
-  price * qty
-)}`
-        
+
+Сумма сделки: ${fmt(total)}`
+
         : `Продано ${qty} шт. ${stock.symbol}
-        
-Сумма сделки: ${fmt(
-  price * qty
-)}`
+
+Сумма сделки: ${fmt(total)}`
     );
+
 
     tg
       ?.HapticFeedback
@@ -1533,38 +1604,71 @@ async function openTrade(
 ============================================================ */
 
 function render() {
+
   renderHeader();
 
-  if (
-    page === "businesses"
-  ) {
+  if (page === "businesses") {
     renderBusinesses();
+    return;
   }
 
-  if (
-    page === "techs"
-  ) {
+  if (page === "techs") {
     renderTechs();
+    return;
   }
 
-  if (
-    page === "investments"
-  ) {
+  if (page === "investments") {
     renderInvestments();
+    return;
   }
 
-  if (
-    page === "statistics"
-  ) {
+  if (page === "statistics") {
     renderStatistics();
+    return;
   }
 
-  if (
-    page === "rating"
-  ) {
+  if (page === "rating") {
     renderRating();
+    return;
   }
 }
+
+
+/* ============================================================
+   TABS
+============================================================ */
+
+function updateActiveTab() {
+
+  document
+    .querySelectorAll(".tab")
+    .forEach(tab => {
+
+      tab.classList.toggle(
+        "active",
+        tab.dataset.page === page
+      );
+
+    });
+}
+
+
+document
+  .querySelectorAll(".tab")
+  .forEach(button => {
+
+    button.onclick = () => {
+
+      page =
+        button.dataset.page;
+
+      updateActiveTab();
+
+      render();
+
+    };
+
+  });
 
 
 /* ============================================================
@@ -1576,12 +1680,13 @@ window.buyBusiness =
 
     try {
 
-      state = await api(
-        `/api/business/${id}/buy`,
-        {
-          method: "POST"
-        }
-      );
+      state =
+        await api(
+          `/api/business/${id}/buy`,
+          {
+            method: "POST"
+          }
+        );
 
       render();
 
@@ -1591,9 +1696,7 @@ window.buyBusiness =
         "Не удалось",
         error.message
       );
-
     }
-
   };
 
 
@@ -1602,12 +1705,13 @@ window.buyTech =
 
     try {
 
-      state = await api(
-        `/api/tech/${id}/buy`,
-        {
-          method: "POST"
-        }
-      );
+      state =
+        await api(
+          `/api/tech/${id}/buy`,
+          {
+            method: "POST"
+          }
+        );
 
       render();
 
@@ -1617,9 +1721,7 @@ window.buyTech =
         "Не удалось",
         error.message
       );
-
     }
-
   };
 
 
@@ -1633,14 +1735,16 @@ document
 
     try {
 
-      const result = await api(
-        "/api/collect",
-        {
-          method: "POST"
-        }
-      );
+      const result =
+        await api(
+          "/api/collect",
+          {
+            method: "POST"
+          }
+        );
 
-      state = result.state;
+      state =
+        result.state;
 
       render();
 
@@ -1669,9 +1773,7 @@ document
         ?.notificationOccurred(
           "error"
         );
-
     }
-
   };
 
 
@@ -1683,10 +1785,15 @@ document
   .querySelector("#renameBtn")
   .onclick = async () => {
 
-    const name = prompt(
-      "Новое название корпорации:",
-      state.player.corp_name
-    );
+    if (!state?.player) {
+      return;
+    }
+
+    const name =
+      prompt(
+        "Новое название корпорации:",
+        state.player.corp_name
+      );
 
     if (!name) {
       return;
@@ -1694,22 +1801,23 @@ document
 
     try {
 
-      state = await api(
-        "/api/rename",
-        {
-          method: "POST",
+      state =
+        await api(
+          "/api/rename",
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-          body:
-            JSON.stringify({
-              name
-            })
-        }
-      );
+            body:
+              JSON.stringify({
+                name
+              })
+          }
+        );
 
       render();
 
@@ -1719,9 +1827,7 @@ document
         "Ошибка",
         error.message
       );
-
     }
-
   };
 
 
@@ -1746,43 +1852,40 @@ window.refreshInvestments =
 
 
 /* ============================================================
-   TABS
+   START / REFRESH
 ============================================================ */
 
-document
-  .querySelectorAll(".tab")
-  .forEach(button =>
+/*
+  ЭТОЙ ФУНКЦИИ НЕ ХВАТАЛО В ПРЕДЫДУЩЕМ КОДЕ.
+  Именно из-за этого в конце возникала:
+  ReferenceError: refresh is not defined
+*/
 
-    button.onclick = () => {
+async function refresh() {
 
-      page =
-        button.dataset.page;
+  state =
+    await api("/api/state");
 
-      document
-        .querySelectorAll(".tab")
-        .forEach(tab =>
+  updateActiveTab();
 
-          tab.classList.toggle(
-            "active",
-            tab === button
-          )
-
-        );
-
-      render();
-
-    }
-
-  );
+  render();
+}
 
 
 /* ============================================================
-   START
+   START GAME
 ============================================================ */
 
-refresh().catch(error =>
+refresh().catch(error => {
+
+  console.error(
+    "Ошибка запуска:",
+    error
+  );
+
   modal(
     "Ошибка запуска",
     error.message
-  )
-);
+  );
+
+});

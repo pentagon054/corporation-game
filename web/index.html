@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ru">
+
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -12,12 +14,22 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <link rel="stylesheet" href="/static/style.css">
+  <link
+    rel="stylesheet"
+    href="/static/style.css"
+  >
+
 </head>
+
 
 <body>
 
   <main class="app">
+
+
+    <!-- =========================
+         HEADER
+    ========================== -->
 
     <header class="hero">
 
@@ -33,9 +45,11 @@
 
       </div>
 
+
       <button
         class="icon"
         id="renameBtn"
+        type="button"
       >
         ✏️
       </button>
@@ -43,11 +57,17 @@
     </header>
 
 
+
+    <!-- =========================
+         BALANCE
+    ========================== -->
+
     <section class="balance">
 
       <div class="balance-label">
         КАПИТАЛ
       </div>
+
 
       <div
         class="money"
@@ -58,6 +78,7 @@
 
 
       <div class="metrics">
+
 
         <div>
 
@@ -84,12 +105,14 @@
 
         </div>
 
+
       </div>
 
 
       <button
         class="collect"
         id="collectBtn"
+        type="button"
       >
         💰 СОБРАТЬ ДОХОД
       </button>
@@ -97,11 +120,21 @@
     </section>
 
 
-    <nav class="tabs">
+
+    <!-- =========================
+         NAVIGATION
+    ========================== -->
+
+    <nav
+      class="tabs"
+      aria-label="Разделы игры"
+    >
+
 
       <button
         class="tab active"
         data-page="businesses"
+        type="button"
       >
         🏭 Бизнесы
       </button>
@@ -110,6 +143,7 @@
       <button
         class="tab"
         data-page="techs"
+        type="button"
       >
         🧪 Технологии
       </button>
@@ -118,6 +152,7 @@
       <button
         class="tab"
         data-page="investments"
+        type="button"
       >
         💹 Инвестиции
       </button>
@@ -126,6 +161,7 @@
       <button
         class="tab"
         data-page="statistics"
+        type="button"
       >
         📊 Статистика
       </button>
@@ -134,17 +170,30 @@
       <button
         class="tab"
         data-page="rating"
+        type="button"
       >
         🏆 Рейтинг
       </button>
 
+
     </nav>
 
 
+
+    <!-- =========================
+         PAGE CONTENT
+    ========================== -->
+
     <section id="content"></section>
+
 
   </main>
 
+
+
+  <!-- =========================
+       MODAL
+  ========================== -->
 
   <div
     class="modal hidden"
@@ -153,22 +202,36 @@
 
     <div class="modal-card">
 
+
       <h2 id="modalTitle">
         Сообщение
       </h2>
 
+
       <p id="modalText"></p>
 
-      <button id="modalClose">
+
+      <button
+        id="modalClose"
+        type="button"
+      >
         Понятно
       </button>
+
 
     </div>
 
   </div>
 
 
+
+  <!-- =========================
+       APP JAVASCRIPT
+  ========================== -->
+
   <script src="/static/app.js"></script>
 
+
 </body>
+
 </html>
