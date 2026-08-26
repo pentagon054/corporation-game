@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import os
+import random
 import sqlite3
 import time
 from contextlib import closing
@@ -94,6 +95,51 @@ TECHS = {
 }
 
 
+STOCKS = {
+    "bmw": {
+        "symbol": "BMW",
+        "name": "BMW",
+        "description": "Немецкая компания, производящая автомобили премиального сегмента.",
+        "min_price": 200.0,
+        "max_price": 450.0,
+        "initial_price": 325.0,
+        "up_min_change": -0.01,
+        "up_max_change": 0.03,
+        "down_min_change": -0.03,
+        "down_max_change": 0.02,
+    },
+    "kfc": {
+        "symbol": "KFC",
+        "name": "KFC",
+        "description": "Международная сеть ресторанов быстрого питания, специализирующаяся на блюдах из курицы.",
+        "min_price": 90.0,
+        "max_price": 235.0,
+        "initial_price": 162.5,
+        "up_min_change": -0.01,
+        "up_max_change": 0.04,
+        "down_min_change": -0.04,
+        "down_max_change": 0.02,
+    },
+    "spotify": {
+        "symbol": "SPOT",
+        "name": "Spotify",
+        "description": "Стриминговый сервис для прослушивания музыки, подкастов и другого аудиоконтента.",
+        "min_price": 110.0,
+        "max_price": 210.0,
+        "initial_price": 160.0,
+        "up_min_change": -0.01,
+        "up_max_change": 0.02,
+        # В ТЗ верхняя граница для нисходящего тренда Spotify не указана.
+        # Используем согласованный безопасный вариант: -3% ... +2%.
+        "down_min_change": -0.03,
+        "down_max_change": 0.02,
+    },
+}
+
+STOCK_UPDATE_INTERVAL = 60
+MAX_STOCK_HISTORY_POINTS = 720
+
+
 api = FastAPI(title="Build Your Corporation")
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
@@ -162,7 +208,97 @@ def init_db():
             PRIMARY KEY(user_id, day)
         );
 
+        CREATE TABLE IF NOT EXISTS stocks (
+            id TEXT PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            min_price REAL NOT NULL,
+            max_price REAL NOT NULL,
+            current_price REAL NOT NULL,
+            trend TEXT NOT NULL CHECK(trend IN ('up', 'down')),
+            last_update INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS stock_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id TEXT NOT NULL,
+            price REAL NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY(stock_id) REFERENCES stocks(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_stock_history_stock_time
+        ON stock_history(stock_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS stock_holdings (
+            user_id INTEGER NOT NULL,
+            stock_id TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            avg_buy_price REAL NOT NULL DEFAULT 0,
+
+            PRIMARY KEY(user_id, stock_id),
+            FOREIGN KEY(stock_id) REFERENCES stocks(id)
+        );
+
         """)
+
+        now = int(time.time())
+
+        for stock_id, stock in STOCKS.items():
+            existing = conn.execute(
+                """
+                SELECT id
+                FROM stocks
+                WHERE id=?
+                """,
+                (stock_id,)
+            ).fetchone()
+
+            if not existing:
+                conn.execute(
+                    """
+                    INSERT INTO stocks(
+                        id,
+                        symbol,
+                        name,
+                        description,
+                        min_price,
+                        max_price,
+                        current_price,
+                        trend,
+                        last_update
+                    )
+                    VALUES(?,?,?,?,?,?,?,?,?)
+                    """,
+                    (
+                        stock_id,
+                        stock["symbol"],
+                        stock["name"],
+                        stock["description"],
+                        stock["min_price"],
+                        stock["max_price"],
+                        stock["initial_price"],
+                        "up",
+                        now,
+                    )
+                )
+
+                conn.execute(
+                    """
+                    INSERT INTO stock_history(
+                        stock_id,
+                        price,
+                        created_at
+                    )
+                    VALUES(?,?,?)
+                    """,
+                    (
+                        stock_id,
+                        stock["initial_price"],
+                        now
+                    )
+                )
 
         conn.commit()
 
@@ -659,11 +795,248 @@ def public_profile(uid):
 
 
 # ============================================================
+# STOCK MARKET
+# ============================================================
+
+def update_stock_market():
+    now = int(time.time())
+
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        stocks = conn.execute(
+            """
+            SELECT *
+            FROM stocks
+            """
+        ).fetchall()
+
+        for stock in stocks:
+            elapsed = now - stock["last_update"]
+
+            if elapsed < STOCK_UPDATE_INTERVAL:
+                continue
+
+            steps = elapsed // STOCK_UPDATE_INTERVAL
+            config = STOCKS.get(stock["id"])
+
+            if not config:
+                continue
+
+            price = float(stock["current_price"])
+            trend = stock["trend"]
+            last_update = int(stock["last_update"])
+
+            for _ in range(int(steps)):
+                if trend == "up":
+                    change = random.uniform(
+                        config["up_min_change"],
+                        config["up_max_change"]
+                    )
+                else:
+                    change = random.uniform(
+                        config["down_min_change"],
+                        config["down_max_change"]
+                    )
+
+                next_price = price * (1 + change)
+
+                # Чем ближе цена к границам, тем выше вероятность разворота.
+                range_size = config["max_price"] - config["min_price"]
+                position = (
+                    (next_price - config["min_price"]) / range_size
+                    if range_size > 0 else 0.5
+                )
+
+                if next_price <= config["min_price"]:
+                    next_price = config["min_price"]
+                    trend = "up"
+                elif next_price >= config["max_price"]:
+                    next_price = config["max_price"]
+                    trend = "down"
+                else:
+                    if position <= 0.15 and random.random() < 0.65:
+                        trend = "up"
+                    elif position >= 0.85 and random.random() < 0.65:
+                        trend = "down"
+                    else:
+                        # Небольшая вероятность естественной смены тренда.
+                        if random.random() < 0.08:
+                            trend = "down" if trend == "up" else "up"
+
+                price = round(next_price, 2)
+                last_update += STOCK_UPDATE_INTERVAL
+
+                conn.execute(
+                    """
+                    INSERT INTO stock_history(
+                        stock_id,
+                        price,
+                        created_at
+                    )
+                    VALUES(?,?,?)
+                    """,
+                    (
+                        stock["id"],
+                        price,
+                        last_update
+                    )
+                )
+
+            conn.execute(
+                """
+                UPDATE stocks
+                SET
+                    current_price=?,
+                    trend=?,
+                    last_update=?
+                WHERE id=?
+                """,
+                (
+                    price,
+                    trend,
+                    last_update,
+                    stock["id"]
+                )
+            )
+
+        conn.commit()
+
+
+def get_stocks():
+    update_stock_market()
+
+    with closing(db()) as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM stocks
+            ORDER BY name ASC
+            """
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def get_stock(stock_id):
+    update_stock_market()
+
+    with closing(db()) as conn:
+        row = conn.execute(
+            """
+            SELECT *
+            FROM stocks
+            WHERE id=?
+            """,
+            (stock_id,)
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(404, "Акция не найдена")
+
+    return row
+
+
+def get_stock_history(stock_id):
+    update_stock_market()
+
+    with closing(db()) as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                price,
+                created_at
+            FROM stock_history
+            WHERE stock_id=?
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?
+            """,
+            (
+                stock_id,
+                MAX_STOCK_HISTORY_POINTS
+            )
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def get_brokerage_account(uid):
+    update_stock_market()
+
+    with closing(db()) as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                h.stock_id,
+                h.quantity,
+                h.avg_buy_price,
+                s.symbol,
+                s.name,
+                s.description,
+                s.current_price
+            FROM stock_holdings h
+            JOIN stocks s ON s.id=h.stock_id
+            WHERE h.user_id=? AND h.quantity>0
+            ORDER BY s.name ASC
+            """,
+            (uid,)
+        ).fetchall()
+
+    holdings = []
+    total_invested = 0.0
+    total_current_value = 0.0
+
+    for row in rows:
+        invested = row["quantity"] * row["avg_buy_price"]
+        current_value = row["quantity"] * row["current_price"]
+        profit = current_value - invested
+        profit_percent = (
+            (profit / invested) * 100
+            if invested > 0 else 0
+        )
+
+        total_invested += invested
+        total_current_value += current_value
+
+        holdings.append({
+            "stock_id": row["stock_id"],
+            "symbol": row["symbol"],
+            "name": row["name"],
+            "description": row["description"],
+            "quantity": row["quantity"],
+            "avg_buy_price": round(row["avg_buy_price"], 2),
+            "current_price": round(row["current_price"], 2),
+            "invested": round(invested, 2),
+            "current_value": round(current_value, 2),
+            "profit": round(profit, 2),
+            "profit_percent": round(profit_percent, 2),
+        })
+
+    total_profit = total_current_value - total_invested
+    total_profit_percent = (
+        (total_profit / total_invested) * 100
+        if total_invested > 0 else 0
+    )
+
+    return {
+        "holdings": holdings,
+        "total_invested": round(total_invested, 2),
+        "total_current_value": round(total_current_value, 2),
+        "total_profit": round(total_profit, 2),
+        "total_profit_percent": round(total_profit_percent, 2),
+    }
+
+
+# ============================================================
 # REQUEST MODELS
 # ============================================================
 
 class NameBody(BaseModel):
     name: str
+
+
+class QuantityBody(BaseModel):
+    quantity: int
 
 
 # ============================================================
@@ -1334,6 +1707,277 @@ def player_profile(
     return public_profile(
         player_id
     )
+
+
+# ============================================================
+# INVESTMENTS: STOCKS
+# ============================================================
+
+@api.get("/api/stocks")
+def stocks(
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+    return get_stocks()
+
+
+@api.get("/api/stocks/{stock_id}")
+def stock_detail(
+    stock_id: str,
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+
+    stock = dict(get_stock(stock_id))
+    stock["history"] = get_stock_history(stock_id)
+    return stock
+
+
+@api.get("/api/brokerage-account")
+def brokerage_account(
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+    return get_brokerage_account(uid)
+
+
+@api.post("/api/stocks/{stock_id}/buy")
+def buy_stock(
+    stock_id: str,
+    body: QuantityBody,
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    if body.quantity <= 0:
+        raise HTTPException(400, "Количество акций должно быть больше нуля")
+
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+
+    update_stock_market()
+
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        stock = conn.execute(
+            """
+            SELECT *
+            FROM stocks
+            WHERE id=?
+            """,
+            (stock_id,)
+        ).fetchone()
+
+        if not stock:
+            conn.rollback()
+            raise HTTPException(404, "Акция не найдена")
+
+        player = conn.execute(
+            """
+            SELECT money
+            FROM players
+            WHERE user_id=?
+            """,
+            (uid,)
+        ).fetchone()
+
+        price = float(stock["current_price"])
+        total_cost = round(price * body.quantity, 2)
+
+        if player["money"] < total_cost:
+            conn.rollback()
+            raise HTTPException(
+                400,
+                f"Недостаточно денег. Нужно {total_cost:.2f} ₽"
+            )
+
+        holding = conn.execute(
+            """
+            SELECT quantity, avg_buy_price
+            FROM stock_holdings
+            WHERE user_id=? AND stock_id=?
+            """,
+            (uid, stock_id)
+        ).fetchone()
+
+        old_quantity = holding["quantity"] if holding else 0
+        old_avg = holding["avg_buy_price"] if holding else 0.0
+        new_quantity = old_quantity + body.quantity
+
+        new_avg = (
+            (old_quantity * old_avg + body.quantity * price)
+            / new_quantity
+        )
+
+        conn.execute(
+            """
+            UPDATE players
+            SET money=money-?
+            WHERE user_id=?
+            """,
+            (total_cost, uid)
+        )
+
+        conn.execute(
+            """
+            INSERT INTO stock_holdings(
+                user_id,
+                stock_id,
+                quantity,
+                avg_buy_price
+            )
+            VALUES(?,?,?,?)
+            ON CONFLICT(user_id, stock_id)
+            DO UPDATE SET
+                quantity=excluded.quantity,
+                avg_buy_price=excluded.avg_buy_price
+            """,
+            (
+                uid,
+                stock_id,
+                new_quantity,
+                new_avg
+            )
+        )
+
+        conn.execute(
+            """
+            UPDATE stats
+            SET total_spent=total_spent+?
+            WHERE user_id=?
+            """,
+            (total_cost, uid)
+        )
+
+        conn.commit()
+
+    return {
+        "message": f"Куплено акций: {body.quantity}",
+        "stock_id": stock_id,
+        "quantity": body.quantity,
+        "price_per_stock": round(price, 2),
+        "total_cost": total_cost,
+        "state": snapshot(uid),
+        "brokerage_account": get_brokerage_account(uid),
+    }
+
+
+@api.post("/api/stocks/{stock_id}/sell")
+def sell_stock(
+    stock_id: str,
+    body: QuantityBody,
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    if body.quantity <= 0:
+        raise HTTPException(400, "Количество акций должно быть больше нуля")
+
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+
+    update_stock_market()
+
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        stock = conn.execute(
+            """
+            SELECT current_price
+            FROM stocks
+            WHERE id=?
+            """,
+            (stock_id,)
+        ).fetchone()
+
+        if not stock:
+            conn.rollback()
+            raise HTTPException(404, "Акция не найдена")
+
+        holding = conn.execute(
+            """
+            SELECT quantity
+            FROM stock_holdings
+            WHERE user_id=? AND stock_id=?
+            """,
+            (uid, stock_id)
+        ).fetchone()
+
+        if not holding or holding["quantity"] < body.quantity:
+            conn.rollback()
+            raise HTTPException(
+                400,
+                "У вас недостаточно акций для продажи"
+            )
+
+        price = float(stock["current_price"])
+        total_income = round(price * body.quantity, 2)
+        remaining = holding["quantity"] - body.quantity
+
+        if remaining == 0:
+            conn.execute(
+                """
+                DELETE FROM stock_holdings
+                WHERE user_id=? AND stock_id=?
+                """,
+                (uid, stock_id)
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE stock_holdings
+                SET quantity=?
+                WHERE user_id=? AND stock_id=?
+                """,
+                (
+                    remaining,
+                    uid,
+                    stock_id
+                )
+            )
+
+        conn.execute(
+            """
+            UPDATE players
+            SET money=money+?
+            WHERE user_id=?
+            """,
+            (total_income, uid)
+        )
+
+        # Продажа акций не является производственным доходом,
+        # поэтому total_earned не увеличиваем.
+        conn.commit()
+
+    return {
+        "message": f"Продано акций: {body.quantity}",
+        "stock_id": stock_id,
+        "quantity": body.quantity,
+        "price_per_stock": round(price, 2),
+        "total_income": total_income,
+        "state": snapshot(uid),
+        "brokerage_account": get_brokerage_account(uid),
+    }
 
 
 # ============================================================

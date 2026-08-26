@@ -10,35 +10,34 @@ const DEV_ID = 999001;
 let state = null;
 let page = "businesses";
 
-
 function fmt(n) {
   return Number(n || 0).toLocaleString("ru-RU") + " ₽";
 }
 
+function fmtNumber(n) {
+  return Number(n || 0).toLocaleString("ru-RU", {
+    maximumFractionDigits: 2
+  });
+}
+
+function fmtPercent(n) {
+  const value = Number(n || 0);
+  return (value > 0 ? "+" : "") + value.toFixed(2) + "%";
+}
 
 async function api(
   url,
   options = {}
 ) {
-
   const headers = {
     ...(options.headers || {})
   };
 
   if (tg?.initData) {
-
-    headers[
-      "X-Telegram-Init-Data"
-    ] = tg.initData;
-
+    headers["X-Telegram-Init-Data"] = tg.initData;
   } else {
-
-    headers[
-      "X-User-Id"
-    ] = String(DEV_ID);
-
+    headers["X-User-Id"] = String(DEV_ID);
   }
-
 
   const res = await fetch(
     url,
@@ -48,32 +47,23 @@ async function api(
     }
   );
 
-
   if (!res.ok) {
-
     let data;
 
     try {
-
       data = await res.json();
-
     } catch {
-
       data = {
         detail: "Ошибка сервера"
       };
-
     }
 
     throw new Error(
       data.detail || "Ошибка"
     );
-
   }
 
-
   return res.json();
-
 }
 
 
@@ -81,103 +71,78 @@ function modal(
   title,
   text
 ) {
-
   document
     .querySelector("#modalTitle")
     .textContent = title;
-
 
   document
     .querySelector("#modalText")
     .textContent = text;
 
-
   document
     .querySelector("#modal")
     .classList
     .remove("hidden");
-
 }
 
 
 document
   .querySelector("#modalClose")
   .onclick = () => {
-
     document
       .querySelector("#modal")
       .classList
       .add("hidden");
-
   };
 
 
-
 function businessCount() {
-
   return state.businesses.reduce(
-
     (total, business) =>
-
       total + business.level,
-
     0
-
   );
-
 }
 
 
-
 function renderHeader() {
-
   const player = state.player;
-
 
   document
     .querySelector("#corpName")
     .textContent = player.corp_name;
 
-
   document
     .querySelector("#money")
     .textContent = fmt(player.money);
 
-
   document
     .querySelector("#income")
     .textContent =
-
       fmt(state.hourly_income)
       + "/ч";
-
 
   document
     .querySelector("#businessCount")
     .textContent =
-
       businessCount();
-
 }
 
 
+/* ============================================================
+   BUSINESSES
+============================================================ */
 
 function renderBusinesses() {
-
   const html =
-
     state.businesses
       .map(business => {
 
-
         const canBuy =
-
           state.player.money
           >= business.next_cost;
 
-
         return `
-
           <article class="card">
 
             <div class="business-head">
@@ -194,53 +159,40 @@ function renderBusinesses() {
 
               </div>
 
-
               <b>
                 ур. ${business.level}
               </b>
 
             </div>
 
-
             <div class="meta">
 
               <span>
-
                 📈 +${fmt(
                   business.base_income
                   * business.level
                 )}/ч
-
               </span>
 
-
               <span>
-
                 ${business.level
                   ? "📈 Улучшается"
                   : "🆕 Новый бизнес"}
-
               </span>
 
             </div>
 
-
             <button
-
               class="buy"
-
               ${canBuy
                 ? ""
                 : "disabled"}
-
               onclick="
                 buyBusiness(
                   '${business.id}'
                 )
               "
-
             >
-
               ${business.level
                 ? "Улучшить"
                 : "Открыть"}
@@ -254,31 +206,25 @@ function renderBusinesses() {
             </button>
 
           </article>
-
         `;
-
       })
       .join("");
-
 
   document
     .querySelector("#content")
     .innerHTML =
-
       `<div class="grid">
-
         ${html}
-
       </div>`;
-
 }
 
 
+/* ============================================================
+   TECHNOLOGIES
+============================================================ */
 
 function renderTechs() {
-
   const html =
-
     state.techs
       .map(tech => `
 
@@ -298,41 +244,29 @@ function renderTechs() {
 
             </div>
 
-
             ${tech.owned
               ? "✅"
               : ""}
 
           </div>
 
-
           <button
-
             class="buy"
-
             ${tech.owned
               || state.player.money < tech.cost
-
               ? "disabled"
-
               : ""}
-
             onclick="
               buyTech(
                 '${tech.id}'
               )
             "
-
           >
 
             ${tech.owned
-
               ? "Исследовано"
-
               : "Исследовать за "
-                + fmt(tech.cost)
-
-            }
+                + fmt(tech.cost)}
 
           </button>
 
@@ -341,80 +275,56 @@ function renderTechs() {
       `)
       .join("");
 
-
   document
     .querySelector("#content")
     .innerHTML =
-
       `<div class="grid">
-
         ${html}
-
       </div>`;
-
 }
 
 
+/* ============================================================
+   STATISTICS
+============================================================ */
 
-function renderProfitChart(
-  data
-) {
-
+function renderProfitChart(data) {
   if (!data.length) {
-
     return `
-
       <div class="empty">
-
         Пока нет собранной прибыли.
-
       </div>
-
     `;
-
   }
 
-
   const max = Math.max(
-
     ...data.map(
       item => item.earned
     ),
-
     1
-
   );
 
-
   return `
-
     <div class="profit-chart">
 
       ${data.map(item => {
 
         const height = Math.max(
-
           6,
-
           Math.round(
             item.earned
             / max
             * 100
           )
-
         );
 
-
         const date =
-
           item.day
             .split("-")
             .slice(1)
             .join(".");
 
-
         return `
-
           <div
             class="chart-column"
           >
@@ -422,11 +332,8 @@ function renderProfitChart(
             <div
               class="chart-value"
             >
-
               ${fmt(item.earned)}
-
             </div>
-
 
             <div
               class="chart-bar"
@@ -436,55 +343,40 @@ function renderProfitChart(
             >
             </div>
 
-
             <div
               class="chart-date"
             >
-
               ${date}
-
             </div>
 
           </div>
-
         `;
 
       }).join("")}
 
     </div>
-
   `;
-
 }
 
 
-
 async function renderStatistics() {
-
   document
     .querySelector("#content")
     .innerHTML =
-
       `<div class="empty">
-
         Загружаем статистику...
-
       </div>`;
 
-
   try {
-
     const stats = await api(
       "/api/statistics"
     );
-
 
     document
       .querySelector("#content")
       .innerHTML = `
 
         <section class="stats-page">
-
 
           <article class="stats-card">
 
@@ -500,7 +392,6 @@ async function renderStatistics() {
 
           </article>
 
-
           <article class="stats-card">
 
             <span>
@@ -515,7 +406,6 @@ async function renderStatistics() {
 
           </article>
 
-
           <article class="stats-card">
 
             <span>
@@ -527,7 +417,6 @@ async function renderStatistics() {
             </b>
 
           </article>
-
 
           <section class="chart-card">
 
@@ -545,73 +434,57 @@ async function renderStatistics() {
 
           </section>
 
-
         </section>
-
       `;
 
   } catch (error) {
-
     modal(
       "Ошибка",
       error.message
     );
-
   }
-
 }
 
 
+/* ============================================================
+   RATING
+============================================================ */
 
 async function renderRating() {
-
   document
     .querySelector("#content")
     .innerHTML =
-
       `<div class="empty">
-
         Загружаем рейтинг...
-
       </div>`;
 
-
   try {
-
     const rows = await api(
       "/api/rating"
     );
 
-
     document
       .querySelector("#content")
       .innerHTML =
-
         `<div class="grid">
 
           ${rows.map(
             (player, index) => `
 
               <button
-
                 class="card rank rank-button"
-
                 onclick="
                   openPlayerProfile(
                     ${player.user_id}
                   )
                 "
-
               >
 
                 <div
                   class="rank-num"
                 >
-
                   #${index + 1}
-
                 </div>
-
 
                 <div>
 
@@ -619,13 +492,10 @@ async function renderRating() {
                     ${player.corp_name}
                   </h3>
 
-
                   <p>
-
                     💰 ${fmt(
                       player.money
                     )}
-
                   </p>
 
                 </div>
@@ -638,44 +508,34 @@ async function renderRating() {
         </div>`;
 
   } catch (error) {
-
     modal(
       "Ошибка",
       error.message
     );
-
   }
-
 }
 
 
+/* ============================================================
+   PLAYER PROFILE
+============================================================ */
 
 async function openPlayerProfile(
   playerId
 ) {
-
   document
     .querySelector("#content")
     .innerHTML =
-
       `<div class="empty">
-
         Загружаем профиль...
-
       </div>`;
 
-
   try {
-
     const profile = await api(
-
       `/api/player/${playerId}`
-
     );
 
-
     const businesses =
-
       profile.businesses.length
 
         ? profile.businesses
@@ -697,12 +557,9 @@ async function openPlayerProfile(
 
                 </div>
 
-
                 <b>
-
                   ур.
                   ${business.level}
-
                 </b>
 
               </article>
@@ -711,15 +568,10 @@ async function openPlayerProfile(
             .join("")
 
         : `
-
           <div class="empty">
-
             Бизнесов пока нет.
-
           </div>
-
         `;
-
 
     document
       .querySelector("#content")
@@ -727,61 +579,42 @@ async function openPlayerProfile(
 
         <section class="profile-page">
 
-
           <button
-
             class="back-button"
-
             onclick="
               backToRating()
             "
-
           >
-
             ← Назад к рейтингу
-
           </button>
-
 
           <article
             class="profile-header"
           >
 
             <div class="eyebrow">
-
               ПРОФИЛЬ ИГРОКА
-
             </div>
 
-
             <h2>
-
               ${profile.player.corp_name}
-
             </h2>
 
-
             <p>
-
               💰 Капитал:
               ${fmt(
                 profile.player.money
               )}
-
             </p>
 
-
             <p>
-
               📈 Доход:
               ${fmt(
                 profile.hourly_income
               )}/ч
-
             </p>
 
           </article>
-
 
           <section
             class="profile-stats"
@@ -794,15 +627,12 @@ async function openPlayerProfile(
               </span>
 
               <b>
-
                 ${fmt(
                   profile.stats.total_earned
                 )}
-
               </b>
 
             </div>
-
 
             <div>
 
@@ -811,38 +641,688 @@ async function openPlayerProfile(
               </span>
 
               <b>
-
                 ${fmt(
                   profile.stats.total_spent
                 )}
-
               </b>
 
             </div>
 
           </section>
 
-
           <section
             class="profile-businesses"
           >
 
             <h2>
-
               🏢 Бизнесы
-
             </h2>
-
 
             ${businesses}
 
           </section>
 
-
         </section>
-
       `;
 
+  } catch (error) {
+    modal(
+      "Ошибка",
+      error.message
+    );
+  }
+}
+
+
+function backToRating() {
+  page = "rating";
+  renderRating();
+}
+
+
+/* ============================================================
+   INVESTMENTS
+============================================================ */
+
+let stocksCache = [];
+let brokerageCache = null;
+let selectedStockId = null;
+
+
+async function loadStocks() {
+  stocksCache = await api(
+    "/api/stocks"
+  );
+
+  return stocksCache;
+}
+
+
+async function loadBrokerage() {
+  brokerageCache = await api(
+    "/api/brokerage-account"
+  );
+
+  return brokerageCache;
+}
+
+
+function getHolding(stockId) {
+  if (!brokerageCache) {
+    return null;
+  }
+
+  return brokerageCache.holdings.find(
+    holding =>
+      String(holding.stock_id)
+      === String(stockId)
+  ) || null;
+}
+
+
+function stockChange(stock) {
+  /*
+    Backend may provide a change field.
+    If it does not, return 0 safely.
+  */
+
+  if (
+    stock.change_percent !== undefined
+  ) {
+    return Number(
+      stock.change_percent
+    );
+  }
+
+  if (
+    stock.price_change_percent !== undefined
+  ) {
+    return Number(
+      stock.price_change_percent
+    );
+  }
+
+  return 0;
+}
+
+
+function renderStockMiniChart(history) {
+  if (!history || !history.length) {
+    return `
+      <div class="stock-chart-empty">
+        История цены пока формируется
+      </div>
+    `;
+  }
+
+  const prices = history.map(
+    item => Number(item.price)
+  );
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+
+  const range =
+    max - min || 1;
+
+  const width = 320;
+  const height = 100;
+
+  const points =
+    prices.map(
+      (price, index) => {
+
+        const x =
+          prices.length === 1
+            ? width / 2
+            : (
+              index
+              / (prices.length - 1)
+              * width
+            );
+
+        const y =
+          height
+          - (
+            (price - min)
+            / range
+            * height
+          );
+
+        return `${x},${y}`;
+      }
+    )
+    .join(" ");
+
+  return `
+    <div class="stock-chart">
+
+      <svg
+        viewBox="
+          0 0 ${width} ${height}
+        "
+        preserveAspectRatio="none"
+      >
+
+        <polyline
+          points="${points}"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+
+      </svg>
+
+    </div>
+  `;
+}
+
+
+async function renderInvestments() {
+  const content =
+    document.querySelector("#content");
+
+  content.innerHTML = `
+    <div class="empty">
+      Загружаем фондовый рынок...
+    </div>
+  `;
+
+  try {
+    const [stocks, brokerage] =
+      await Promise.all([
+        loadStocks(),
+        loadBrokerage()
+      ]);
+
+    stocksCache = stocks;
+    brokerageCache = brokerage;
+
+    const totalProfit =
+      Number(
+        brokerage.total_profit || 0
+      );
+
+    const totalProfitPercent =
+      Number(
+        brokerage.total_profit_percent || 0
+      );
+
+    content.innerHTML = `
+
+      <section class="investment-page">
+
+        <article class="investment-summary">
+
+          <div class="eyebrow">
+            МОЙ БРОКЕРСКИЙ СЧЁТ
+          </div>
+
+          <h2>
+            ${fmt(
+              brokerage.total_current_value
+            )}
+          </h2>
+
+          <div class="
+            investment-profit
+            ${totalProfit >= 0
+              ? "positive"
+              : "negative"}
+          ">
+
+            ${totalProfit >= 0
+              ? "▲"
+              : "▼"}
+
+            ${fmt(Math.abs(totalProfit))}
+
+            (${fmtPercent(
+              totalProfitPercent
+            )})
+
+          </div>
+
+          <div class="
+            investment-summary-grid
+          ">
+
+            <div>
+
+              <span>
+                Вложено
+              </span>
+
+              <b>
+                ${fmt(
+                  brokerage.total_invested
+                )}
+              </b>
+
+            </div>
+
+            <div>
+
+              <span>
+                Позиций
+              </span>
+
+              <b>
+                ${brokerage.holdings.length}
+              </b>
+
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <div class="investment-section-title">
+
+          <div>
+            <div class="eyebrow">
+              ФОНДОВЫЙ РЫНОК
+            </div>
+
+            <h2>
+              📈 Акции
+            </h2>
+          </div>
+
+          <button
+            class="refresh-market"
+            onclick="
+              refreshInvestments()
+            "
+          >
+            ↻
+          </button>
+
+        </div>
+
+
+        <div class="grid">
+
+          ${stocks.map(
+            stock =>
+              renderStockCard(stock)
+          ).join("")}
+
+        </div>
+
+
+        <article class="card bond-placeholder">
+
+          <div class="business-head">
+
+            <div>
+
+              <h3>
+                🏦 Облигации
+              </h3>
+
+              <p>
+                Инструмент с фиксированной
+                доходностью появится в одном
+                из следующих обновлений.
+              </p>
+
+            </div>
+
+            <b>
+              СКОРО
+            </b>
+
+          </div>
+
+        </article>
+
+
+        ${renderHoldings()}
+
+      </section>
+    `;
+
+  } catch (error) {
+
+    modal(
+      "Инвестиции",
+      error.message
+    );
+
+  }
+}
+
+
+function renderStockCard(stock) {
+  const holding =
+    getHolding(stock.id);
+
+  const price =
+    Number(stock.current_price || 0);
+
+  const change =
+    stockChange(stock);
+
+  const owned =
+    holding?.quantity || 0;
+
+  return `
+
+    <article class="
+      card
+      stock-card
+    ">
+
+      <div class="stock-header">
+
+        <div>
+
+          <div class="stock-symbol">
+            ${stock.symbol}
+          </div>
+
+          <h3>
+            ${stock.name}
+          </h3>
+
+        </div>
+
+        <div class="
+          stock-price-block
+        ">
+
+          <b class="stock-price">
+            ${fmt(price)}
+          </b>
+
+          <span class="
+            stock-change
+            ${change >= 0
+              ? "positive"
+              : "negative"}
+          ">
+
+            ${change >= 0
+              ? "▲"
+              : "▼"}
+
+            ${Math.abs(change).toFixed(2)}%
+
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <p class="stock-description">
+        ${stock.description || ""}
+      </p>
+
+
+      ${
+        stock.history
+          ? renderStockMiniChart(
+              stock.history
+            )
+          : `
+            <button
+              class="stock-history-button"
+              onclick="
+                openStock(
+                  '${stock.id}'
+                )
+              "
+            >
+              📊 Открыть график
+            </button>
+          `
+      }
+
+
+      <div class="stock-position">
+
+        <span>
+          У тебя:
+        </span>
+
+        <b>
+          ${owned} шт.
+        </b>
+
+      </div>
+
+
+      <div class="stock-actions">
+
+        <button
+          class="buy stock-buy"
+          onclick="
+            openTrade(
+              '${stock.id}',
+              'buy'
+            )
+          "
+        >
+          Купить
+        </button>
+
+        <button
+          class="stock-sell"
+          ${owned > 0
+            ? ""
+            : "disabled"}
+          onclick="
+            openTrade(
+              '${stock.id}',
+              'sell'
+            )
+          "
+        >
+          Продать
+        </button>
+
+      </div>
+
+    </article>
+  `;
+}
+
+
+function renderHoldings() {
+  if (
+    !brokerageCache
+    || !brokerageCache.holdings.length
+  ) {
+    return `
+      <article class="
+        card
+        empty
+      ">
+        У тебя пока нет акций.
+        Выбери компанию выше,
+        чтобы начать инвестировать.
+      </article>
+    `;
+  }
+
+  return `
+
+    <section class="holdings-section">
+
+      <div class="investment-section-title">
+
+        <div>
+
+          <div class="eyebrow">
+            ТВОИ АКТИВЫ
+          </div>
+
+          <h2>
+            💼 Портфель
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <div class="grid">
+
+        ${brokerageCache.holdings
+          .map(
+            holding =>
+              renderHoldingCard(
+                holding
+              )
+          )
+          .join("")}
+
+      </div>
+
+    </section>
+  `;
+}
+
+
+function renderHoldingCard(holding) {
+  const profit =
+    Number(
+      holding.profit || 0
+    );
+
+  const profitPercent =
+    Number(
+      holding.profit_percent || 0
+    );
+
+  return `
+
+    <article class="
+      card
+      holding-card
+    ">
+
+      <div class="business-head">
+
+        <div>
+
+          <div class="stock-symbol">
+            ${holding.symbol}
+          </div>
+
+          <h3>
+            ${holding.name}
+          </h3>
+
+        </div>
+
+        <b>
+          ${holding.quantity} шт.
+        </b>
+
+      </div>
+
+
+      <div class="holding-row">
+
+        <span>
+          Средняя цена
+        </span>
+
+        <b>
+          ${fmt(
+            holding.avg_buy_price
+          )}
+        </b>
+
+      </div>
+
+
+      <div class="holding-row">
+
+        <span>
+          Текущая цена
+        </span>
+
+        <b>
+          ${fmt(
+            holding.current_price
+          )}
+        </b>
+
+      </div>
+
+
+      <div class="holding-row">
+
+        <span>
+          Стоимость
+        </span>
+
+        <b>
+          ${fmt(
+            holding.current_value
+          )}
+        </b>
+
+      </div>
+
+
+      <div class="
+        holding-profit
+        ${profit >= 0
+          ? "positive"
+          : "negative"}
+      ">
+
+        ${profit >= 0
+          ? "▲ Прибыль"
+          : "▼ Убыток"}
+
+        ${fmt(Math.abs(profit))}
+
+        (${fmtPercent(
+          profitPercent
+        )})
+
+      </div>
+
+    </article>
+  `;
+}
+
+
+async function openStock(stockId) {
+  try {
+
+    const stock = await api(
+      `/api/stocks/${stockId}`
+    );
+
+    const history =
+      stock.history || [];
+
+    const chart =
+      renderStockMiniChart(
+        history
+      );
+
+    const holding =
+      getHolding(stock.id);
+
+    modal(
+      `${stock.symbol} — ${stock.name}`,
+      `Цена: ${fmt(stock.current_price)}
+
+У тебя: ${holding?.quantity || 0} шт.
+
+${stock.description || ""}`
+    );
 
   } catch (error) {
 
@@ -852,154 +1332,300 @@ async function openPlayerProfile(
     );
 
   }
-
 }
 
 
-
-function backToRating() {
-
-  page = "rating";
-
-  renderRating();
-
+async function refreshInvestments() {
+  await renderInvestments();
 }
 
 
+async function openTrade(
+  stockId,
+  side
+) {
+  const stock =
+    stocksCache.find(
+      item =>
+        String(item.id)
+        === String(stockId)
+    );
+
+  if (!stock) {
+    modal(
+      "Ошибка",
+      "Акция не найдена."
+    );
+    return;
+  }
+
+  const holding =
+    getHolding(stockId);
+
+  const owned =
+    holding?.quantity || 0;
+
+  const price =
+    Number(
+      stock.current_price || 0
+    );
+
+  const maxBuy =
+    price > 0
+      ? Math.floor(
+          Number(
+            state.player.money || 0
+          ) / price
+        )
+      : 0;
+
+  const maxSell =
+    Number(owned);
+
+  const max =
+    side === "buy"
+      ? maxBuy
+      : maxSell;
+
+  if (max <= 0) {
+
+    modal(
+      side === "buy"
+        ? "Недостаточно денег"
+        : "Нет акций",
+      side === "buy"
+        ? "У тебя недостаточно денег для покупки этой акции."
+        : "У тебя нет этой акции."
+    );
+
+    return;
+  }
+
+  const quantity =
+    prompt(
+      `${side === "buy"
+        ? "Покупка"
+        : "Продажа"} ${stock.name}
+
+Цена: ${fmt(price)}
+
+Максимум: ${max} шт.
+
+Введите количество:`,
+      "1"
+    );
+
+  if (quantity === null) {
+    return;
+  }
+
+  const qty =
+    Number.parseInt(
+      quantity,
+      10
+    );
+
+  if (
+    !Number.isInteger(qty)
+    || qty <= 0
+  ) {
+    modal(
+      "Ошибка",
+      "Количество должно быть целым числом больше нуля."
+    );
+    return;
+  }
+
+  if (qty > max) {
+    modal(
+      "Ошибка",
+      `Максимально доступно: ${max} шт.`
+    );
+    return;
+  }
+
+  try {
+
+    const result =
+      await api(
+        `/api/stocks/${stockId}/${side}`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            quantity: qty
+          })
+        }
+      );
+
+    /*
+      После сделки обновляем состояние
+      игрока и брокерский счёт.
+    */
+
+    if (result.state) {
+      state = result.state;
+    } else {
+      state = await api(
+        "/api/state"
+      );
+    }
+
+    brokerageCache =
+      await loadBrokerage();
+
+    stocksCache =
+      await loadStocks();
+
+    renderHeader();
+
+    await renderInvestments();
+
+    modal(
+      side === "buy"
+        ? "Акции куплены"
+        : "Акции проданы",
+
+      side === "buy"
+
+        ? `Куплено ${qty} шт. ${stock.symbol}
+        
+Сумма сделки: ${fmt(
+  price * qty
+)}`
+        
+        : `Продано ${qty} шт. ${stock.symbol}
+        
+Сумма сделки: ${fmt(
+  price * qty
+)}`
+    );
+
+    tg
+      ?.HapticFeedback
+      ?.notificationOccurred(
+        "success"
+      );
+
+  } catch (error) {
+
+    modal(
+      "Сделка не выполнена",
+      error.message
+    );
+
+    tg
+      ?.HapticFeedback
+      ?.notificationOccurred(
+        "error"
+      );
+  }
+}
+
+
+/* ============================================================
+   MAIN RENDER
+============================================================ */
 
 function render() {
-
   renderHeader();
 
-
   if (
-
     page === "businesses"
-
   ) {
-
     renderBusinesses();
-
   }
 
-
   if (
-
     page === "techs"
-
   ) {
-
     renderTechs();
-
   }
 
+  if (
+    page === "investments"
+  ) {
+    renderInvestments();
+  }
 
   if (
-
     page === "statistics"
-
   ) {
-
     renderStatistics();
-
   }
-
 
   if (
-
     page === "rating"
-
   ) {
-
     renderRating();
-
   }
-
 }
 
 
+/* ============================================================
+   BUSINESS ACTIONS
+============================================================ */
 
-async function refresh() {
+window.buyBusiness =
+  async function(id) {
 
-  state = await api(
-    "/api/state"
-  );
+    try {
 
-  render();
+      state = await api(
+        `/api/business/${id}/buy`,
+        {
+          method: "POST"
+        }
+      );
 
-}
+      render();
 
+    } catch (error) {
 
+      modal(
+        "Не удалось",
+        error.message
+      );
 
-window.buyBusiness = async function(
-  id
-) {
+    }
 
-  try {
-
-    state = await api(
-
-      `/api/business/${id}/buy`,
-
-      {
-        method: "POST"
-      }
-
-    );
-
-
-    render();
-
-  } catch (error) {
-
-    modal(
-
-      "Не удалось",
-
-      error.message
-
-    );
-
-  }
-
-};
+  };
 
 
+window.buyTech =
+  async function(id) {
 
-window.buyTech = async function(
-  id
-) {
+    try {
 
-  try {
+      state = await api(
+        `/api/tech/${id}/buy`,
+        {
+          method: "POST"
+        }
+      );
 
-    state = await api(
+      render();
 
-      `/api/tech/${id}/buy`,
+    } catch (error) {
 
-      {
-        method: "POST"
-      }
+      modal(
+        "Не удалось",
+        error.message
+      );
 
-    );
+    }
 
-
-    render();
-
-  } catch (error) {
-
-    modal(
-
-      "Не удалось",
-
-      error.message
-
-    );
-
-  }
-
-};
+  };
 
 
+/* ============================================================
+   COLLECT INCOME
+============================================================ */
 
 document
   .querySelector("#collectBtn")
@@ -1008,32 +1634,22 @@ document
     try {
 
       const result = await api(
-
         "/api/collect",
-
         {
           method: "POST"
         }
-
       );
-
 
       state = result.state;
 
-
       render();
 
-
       modal(
-
         "Доход получен",
-
         `Ты получил ${fmt(
           result.earned
         )}.`
-
       );
-
 
       tg
         ?.HapticFeedback
@@ -1044,13 +1660,9 @@ document
     } catch (error) {
 
       modal(
-
         "Доход",
-
         error.message
-
       );
-
 
       tg
         ?.HapticFeedback
@@ -1063,68 +1675,49 @@ document
   };
 
 
+/* ============================================================
+   RENAME
+============================================================ */
 
 document
   .querySelector("#renameBtn")
   .onclick = async () => {
 
     const name = prompt(
-
       "Новое название корпорации:",
-
       state.player.corp_name
-
     );
 
-
     if (!name) {
-
       return;
-
     }
-
 
     try {
 
       state = await api(
-
         "/api/rename",
-
         {
-
           method: "POST",
 
           headers: {
-
             "Content-Type":
-
               "application/json"
-
           },
 
           body:
-
             JSON.stringify({
-
               name
-
             })
-
         }
-
       );
-
 
       render();
 
     } catch (error) {
 
       modal(
-
         "Ошибка",
-
         error.message
-
       );
 
     }
@@ -1132,15 +1725,29 @@ document
   };
 
 
+/* ============================================================
+   GLOBAL FUNCTIONS
+============================================================ */
 
 window.openPlayerProfile =
   openPlayerProfile;
 
-
 window.backToRating =
   backToRating;
 
+window.openStock =
+  openStock;
 
+window.openTrade =
+  openTrade;
+
+window.refreshInvestments =
+  refreshInvestments;
+
+
+/* ============================================================
+   TABS
+============================================================ */
 
 document
   .querySelectorAll(".tab")
@@ -1149,24 +1756,18 @@ document
     button.onclick = () => {
 
       page =
-
         button.dataset.page;
-
 
       document
         .querySelectorAll(".tab")
         .forEach(tab =>
 
           tab.classList.toggle(
-
             "active",
-
             tab === button
-
           )
 
         );
-
 
       render();
 
@@ -1175,15 +1776,13 @@ document
   );
 
 
+/* ============================================================
+   START
+============================================================ */
 
 refresh().catch(error =>
-
   modal(
-
     "Ошибка запуска",
-
     error.message
-
   )
-
 );
