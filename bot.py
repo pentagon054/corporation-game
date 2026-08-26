@@ -12,35 +12,47 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
 
+# Версия WebApp для принудительного обновления Telegram
+WEBAPP_VERSION = "4"
+
 
 async def main():
     bot = Bot(
         BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        default=DefaultBotProperties(
+            parse_mode=ParseMode.HTML
+        )
     )
 
     dp = Dispatcher()
 
     @dp.message(CommandStart())
     async def start(message: Message):
+
         kb = InlineKeyboardBuilder()
 
-        # Версия WebApp изменена, чтобы Telegram не использовал
-        # закэшированную мобильную версию игры.
-        webapp_url = f"{WEBAPP_URL}?v=2"
+        webapp_url = (
+            f"{WEBAPP_URL.rstrip('/')}/?v={WEBAPP_VERSION}"
+        )
 
         kb.button(
             text="🎮 Играть",
-            web_app=WebAppInfo(url=webapp_url)
+            web_app=WebAppInfo(
+                url=webapp_url
+            )
         )
 
         await message.answer(
             "🏢 <b>Построй свою корпорацию</b>\n\n"
-            "Создавай бизнесы, зарабатывай деньги и стань №1.",
+            "Создавай бизнесы, зарабатывай деньги "
+            "и стань №1.",
             reply_markup=kb.as_markup()
         )
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.delete_webhook(
+        drop_pending_updates=True
+    )
+
     await dp.start_polling(bot)
 
 
