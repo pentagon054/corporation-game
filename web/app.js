@@ -3,6 +3,13 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
+
+  try {
+    tg.setHeaderColor("bg_color");
+    tg.setBackgroundColor("bg_color");
+  } catch (e) {
+    console.warn("Telegram UI settings unavailable:", e);
+  }
 }
 
 const DEV_ID = 999001;
@@ -22,13 +29,11 @@ function fmt(n) {
   return Number(n || 0).toLocaleString("ru-RU") + " ₽";
 }
 
-
 function fmtNumber(n) {
   return Number(n || 0).toLocaleString("ru-RU", {
     maximumFractionDigits: 2
   });
 }
-
 
 function fmtPercent(n) {
   const value = Number(n || 0);
@@ -57,7 +62,8 @@ async function api(url, options = {}) {
 
   const res = await fetch(url, {
     ...options,
-    headers
+    headers,
+    cache: "no-store"
   });
 
   if (!res.ok) {
@@ -87,11 +93,12 @@ async function api(url, options = {}) {
 
 function modal(title, text) {
 
-  document.querySelector("#modalTitle").textContent =
-    title;
+  document.querySelector("#modalTitle").textContent = title;
 
-  document.querySelector("#modalText").textContent =
-    text;
+  document.querySelector("#modalText").innerHTML =
+    typeof text === "string"
+      ? text.replace(/\n/g, "<br>")
+      : text;
 
   document.querySelector("#modal")
     .classList
@@ -1522,12 +1529,6 @@ async function openTrade(stockId, side) {
         }
       );
 
-
-    /*
-      Получаем самое актуальное
-      состояние игрока.
-    */
-
     if (result.state) {
 
       state =
@@ -1539,23 +1540,15 @@ async function openTrade(stockId, side) {
         await api("/api/state");
     }
 
-
-    /*
-      Обновляем брокерский счёт
-      и цены.
-    */
-
     brokerageCache =
       await loadBrokerage();
 
     stocksCache =
       await loadStocks();
 
-
     renderHeader();
 
     await renderInvestments();
-
 
     const total =
       price * qty;
@@ -1575,7 +1568,6 @@ async function openTrade(stockId, side) {
 
 Сумма сделки: ${fmt(total)}`
     );
-
 
     tg
       ?.HapticFeedback
@@ -1855,20 +1847,29 @@ window.refreshInvestments =
    START / REFRESH
 ============================================================ */
 
-/*
-  ЭТОЙ ФУНКЦИИ НЕ ХВАТАЛО В ПРЕДЫДУЩЕМ КОДЕ.
-  Именно из-за этого в конце возникала:
-  ReferenceError: refresh is not defined
-*/
-
 async function refresh() {
 
-  state =
-    await api("/api/state");
+  try {
 
-  updateActiveTab();
+    state =
+      await api("/api/state");
 
-  render();
+    updateActiveTab();
+
+    render();
+
+  } catch (error) {
+
+    console.error(
+      "Ошибка запуска:",
+      error
+    );
+
+    modal(
+      "Ошибка запуска",
+      error.message
+    );
+  }
 }
 
 
@@ -1876,16 +1877,4 @@ async function refresh() {
    START GAME
 ============================================================ */
 
-refresh().catch(error => {
-
-  console.error(
-    "Ошибка запуска:",
-    error
-  );
-
-  modal(
-    "Ошибка запуска",
-    error.message
-  );
-
-});
+refresh();
