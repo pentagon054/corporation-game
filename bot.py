@@ -24,9 +24,14 @@ async def main():
     @dp.message(CommandStart())
     async def start(message: Message):
         kb = InlineKeyboardBuilder()
+
+        # Версия WebApp изменена, чтобы Telegram не использовал
+        # закэшированную мобильную версию игры.
+        webapp_url = f"{WEBAPP_URL}?v=2"
+
         kb.button(
             text="🎮 Играть",
-            web_app=WebAppInfo(url=WEBAPP_URL)
+            web_app=WebAppInfo(url=webapp_url)
         )
 
         await message.answer(
