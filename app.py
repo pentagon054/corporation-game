@@ -114,7 +114,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 5000, "base_rent_hour": 36,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_apartment_business": {
@@ -130,7 +130,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 60000, "base_rent_hour": 570,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_economy": {
@@ -138,7 +138,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 8500, "base_rent_hour": 60,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_business": {
@@ -146,7 +146,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 38000, "base_rent_hour": 312,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_vip": {
@@ -154,7 +154,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 132000, "base_rent_hour": 1254,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_economy": {
@@ -162,7 +162,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 450000, "base_rent_hour": 3195,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_business": {
@@ -170,7 +170,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 1800000, "base_rent_hour": 14760,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_vip": {
@@ -178,7 +178,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 5400000, "base_rent_hour": 51300,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_house_economy": {
@@ -194,7 +194,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 3420000, "base_rent_hour": 28044,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_house_vip": {
@@ -202,7 +202,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 11880000, "base_rent_hour": 112860,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1605146769289-440113cc3d00?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_apartment_economy": {
@@ -210,7 +210,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 620000, "base_rent_hour": 4402,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_apartment_business": {
@@ -226,7 +226,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 7440000, "base_rent_hour": 70680,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_economy": {
@@ -234,7 +234,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1054000, "base_rent_hour": 7483,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_business": {
@@ -242,7 +242,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 4712000, "base_rent_hour": 38638,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_vip": {
@@ -250,7 +250,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 16368000, "base_rent_hour": 155496,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_economy": {
@@ -258,7 +258,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 780000, "base_rent_hour": 5538,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_business": {
@@ -266,7 +266,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 3120000, "base_rent_hour": 25584,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_vip": {
@@ -274,7 +274,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 9360000, "base_rent_hour": 88920,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_house_economy": {
@@ -290,7 +290,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 5928000, "base_rent_hour": 48610,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_house_vip": {
@@ -298,7 +298,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 20592000, "base_rent_hour": 195624,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1605146769289-440113cc3d00?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_apartment_economy": {
@@ -306,7 +306,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 950000, "base_rent_hour": 6745,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_apartment_business": {
@@ -322,7 +322,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 11400000, "base_rent_hour": 108300,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_economy": {
@@ -330,7 +330,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1615000, "base_rent_hour": 11466,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_business": {
@@ -338,7 +338,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 7220000, "base_rent_hour": 59204,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_vip": {
@@ -346,7 +346,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 25080000, "base_rent_hour": 238260,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_economy": {
@@ -354,7 +354,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 1150000, "base_rent_hour": 8165,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира эконом-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_business": {
@@ -362,7 +362,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 4600000, "base_rent_hour": 37720,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_vip": {
@@ -370,7 +370,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 13800000, "base_rent_hour": 131100,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Квартира VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_house_economy": {
@@ -386,7 +386,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 8740000, "base_rent_hour": 71668,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_house_vip": {
@@ -394,7 +394,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 30360000, "base_rent_hour": 288420,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1605146769289-440113cc3d00?auto=format&fit=crop&w=1200&h=700&q=82",
+        "photo": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&h=700&q=82",
         "description": "Дом VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
 }
