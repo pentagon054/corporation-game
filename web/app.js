@@ -48,9 +48,64 @@ function renderTaxes(){const t=state?.taxes||{},u=Number(t.unpaid||0),b=Boolean(
 async function payTaxes(){try{const r=await api("/api/taxes/pay",{method:"POST"});state=r.state;renderHeader();renderTaxes();modal("Налог оплачен",`Оплачено ${fmt(r.paid)}.`)}catch(e){modal("Не удалось оплатить",e.message)}}
 
 async function renderRealEstate(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем карту...</div>`;try{const d=await api("/api/real-estate");realEstateCache=d.properties||[];c.innerHTML=`<section class="realestate-page"><div><div class="eyebrow">МИРОВАЯ НЕДВИЖИМОСТЬ</div><h2>🌍 Карта мира</h2><p class="section-note">Приближай карту и нажимай на маркеры городов.</p></div><div id="worldMap" class="world-map"></div><div class="realestate-summary"><span>🏠 Куплено объектов</span><b>${state.real_estate_count||0}</b><span>📈 Рост цены</span><b>+0,5% в сутки</b></div></section>`;setTimeout(initWorldMap,0)}catch(e){modal("Недвижимость",e.message)}}
-function initWorldMap(){if(worldMap){worldMap.remove();worldMap=null}if(!window.L)return modal("Карта","Не удалось загрузить карту.");worldMap=L.map("worldMap",{worldCopyJump:true,minZoom:2}).setView([30,10],2);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(worldMap);const seen=new Set();realEstateCache.forEach(p=>{if(seen.has(p.city_id))return;seen.add(p.city_id);L.marker([p.lat,p.lng]).addTo(worldMap).bindTooltip(p.city,{permanent:false,direction:"top"}).on("click",()=>openCity(p.city_id))});setTimeout(()=>worldMap.invalidateSize(),150)}
+function initWorldMap(){
+  if(worldMap){worldMap.remove();worldMap=null}
+  if(!window.L)return modal("Карта","Не удалось загрузить карту.");
+
+  worldMap=L.map("worldMap",{
+    worldCopyJump:true,
+    minZoom:2,
+    maxZoom:18,
+    zoomControl:false,
+    attributionControl:false
+  }).setView([30,15],2);
+
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+    {
+      subdomains:"abcd",
+      maxZoom:20
+    }
+  ).addTo(worldMap);
+
+  const controls=L.control({position:"topright"});
+  controls.onAdd=()=>{
+    const box=L.DomUtil.create("div","game-map-controls");
+    box.innerHTML=`<button type="button" data-map-zoom="in">＋</button><button type="button" data-map-zoom="out">−</button>`;
+    L.DomEvent.disableClickPropagation(box);
+    box.querySelector('[data-map-zoom="in"]').onclick=()=>worldMap.zoomIn();
+    box.querySelector('[data-map-zoom="out"]').onclick=()=>worldMap.zoomOut();
+    return box;
+  };
+  controls.addTo(worldMap);
+
+  const credits=L.control({position:"bottomright"});
+  credits.onAdd=()=>{
+    const el=L.DomUtil.create("div","game-map-credits");
+    el.innerHTML='© OpenStreetMap · © CARTO';
+    return el;
+  };
+  credits.addTo(worldMap);
+
+  const seen=new Set();
+  realEstateCache.forEach(p=>{
+    if(seen.has(p.city_id))return;
+    seen.add(p.city_id);
+    const icon=L.divIcon({
+      className:"game-city-marker-wrap",
+      html:`<div class="game-city-marker"><span></span></div><div class="game-city-name">${p.city}</div>`,
+      iconSize:[120,48],
+      iconAnchor:[60,22]
+    });
+    L.marker([p.lat,p.lng],{icon})
+      .addTo(worldMap)
+      .on("click",()=>openCity(p.city_id));
+  });
+
+  setTimeout(()=>worldMap.invalidateSize(),150);
+}
 function openCity(cityId){const props=realEstateCache.filter(p=>p.city_id===cityId);if(!props.length)return;const city=props[0].city;document.querySelector("#content").innerHTML=`<section class="realestate-page"><button class="back-button" onclick="renderRealEstate()">← Назад к карте</button><div class="eyebrow">${props[0].country}</div><h2>🏙 ${city}</h2><div class="grid">${props.map(renderPropertyCard).join("")}</div></section>`}
-function renderPropertyCard(p){return `<article class="card property-card"><img src="${p.photo}" alt="${p.name}" loading="lazy"><div class="property-body"><div class="business-head"><div><h3>${p.name}</h3><p>${p.description}</p></div>${p.owned?"<b>✅ Куплено</b>":""}</div><div class="property-metrics"><div><span>${p.owned?"Текущая стоимость":"Цена"}</span><b>${fmt(p.current_value)}</b></div><div><span>Аренда</span><b>${fmt(p.rent_hour)}/ч</b></div></div>${p.owned?`<div class="property-growth">📈 Стоимость растёт на 0,5% в сутки от цены покупки</div><div class="upgrade-grid">${p.upgrades.map(u=>`<button class="upgrade-btn ${u.owned?"owned":""}" ${u.owned?"disabled":""} onclick="upgradeProperty('${p.id}','${u.id}')"><b>${u.name}</b><span>${u.owned?"Установлено":`+${u.income_bonus_percent}% к аренде · ${fmt(u.cost)}`}</span></button>`).join("")}</div>`:`<button class="buy" onclick="buyProperty('${p.id}')">Купить за ${fmt(p.purchase_price)}</button>`}</div></article>`}
+function renderPropertyCard(p){const fallback="https://commons.wikimedia.org/wiki/Special:Redirect/file/Interior.png";return `<article class="card property-card"><img src="${p.photo}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${fallback}'"><div class="property-body"><div class="business-head"><div><h3>${p.name}</h3><p>${p.description}</p></div>${p.owned?"<b>✅ Куплено</b>":""}</div><div class="property-metrics"><div><span>${p.owned?"Текущая стоимость":"Цена"}</span><b>${fmt(p.current_value)}</b></div><div><span>Аренда</span><b>${fmt(p.rent_hour)}/ч</b></div></div>${p.owned?`<div class="property-growth">📈 Стоимость растёт на 0,5% в сутки от цены покупки</div><div class="upgrade-grid">${p.upgrades.map(u=>`<button class="upgrade-btn ${u.owned?"owned":""}" ${u.owned?"disabled":""} onclick="upgradeProperty('${p.id}','${u.id}')"><b>${u.name}</b><span>${u.owned?"Установлено":`+${u.income_bonus_percent}% к аренде · ${fmt(u.cost)}`}</span></button>`).join("")}</div>`:`<button class="buy" onclick="buyProperty('${p.id}')">Купить за ${fmt(p.purchase_price)}</button>`}</div></article>`}
 async function buyProperty(id){if(!confirm("Купить эту недвижимость?"))return;try{const r=await api(`/api/real-estate/${id}/buy`,{method:"POST"});state=r.state;realEstateCache=r.properties;renderHeader();const p=realEstateCache.find(x=>x.id===id);openCity(p.city_id);modal("Недвижимость куплена",`Теперь она приносит ${fmt(p.rent_hour)}/ч автоматически.`)}catch(e){modal("Покупка не выполнена",e.message)}}
 async function upgradeProperty(pid,uid){try{const r=await api(`/api/real-estate/${pid}/upgrade/${uid}`,{method:"POST"});state=r.state;realEstateCache=r.properties;renderHeader();const p=realEstateCache.find(x=>x.id===pid);openCity(p.city_id);modal("Улучшение установлено",`Новая аренда: ${fmt(p.rent_hour)}/ч.`)}catch(e){modal("Улучшение не выполнено",e.message)}}
 

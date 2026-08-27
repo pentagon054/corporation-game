@@ -67,11 +67,18 @@ UPGRADES = {
 }
 
 REAL_ESTATE = {
+    "egorlyk_economy": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Бюджетная квартира", "price": 5000, "base_rent_hour": 45,
+        "lat": 45.5853, "lng": 41.8650,
+        "photo": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Inside-apartment-design-home%20%2824244145021%29.jpg",
+        "description": "Очень дешёвое жильё для первого шага в недвижимости. Скромная квартира с невысокой арендой и доступными улучшениями.",
+    },
     "moscow_economy": {
         "city_id": "moscow", "city": "Москва", "country": "Россия",
         "name": "Квартира эконом-класса", "price": 450000, "base_rent_hour": 3200,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267d?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Interior.png",
         "description": "Компактная квартира недалеко от метро. Базовая отделка и стабильный спрос на аренду.",
     },
     "barcelona_economy": {
