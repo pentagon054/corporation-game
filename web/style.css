@@ -107,3 +107,10 @@
 .property-badges .segment-business{color:#8dc8ff}
 .property-badges .segment-vip{color:#f2cf68;border-color:rgba(242,207,104,.35)}
 @media(max-width:360px){.stock-range{grid-template-columns:1fr}}
+
+
+/* UPDATE V10: BONDS */
+.bond-section-title{margin-top:10px}
+.bond-card{border:1px solid rgba(126,203,255,.10)}
+.bond-yield{margin:12px 0;padding:11px 12px;border-radius:12px;background:rgba(126,203,255,.07);color:#9bd8ff;font-size:12px}
+.bond-yield b{color:#d9f1ff}

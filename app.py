@@ -77,6 +77,23 @@ STOCKS = {
     },
 }
 
+BONDS = {
+    "ofz_ru": {
+        "symbol": "ОФЗ РФ",
+        "name": "ОФЗ Российской Федерации",
+        "description": "Игровая государственная облигация РФ с фиксированной стоимостью и автоматической доходностью.",
+        "price": 1000.0,
+        "yield_rate": 0.025,
+    },
+    "ofz_us": {
+        "symbol": "ОФЗ США",
+        "name": "Государственная облигация США",
+        "description": "Игровая государственная облигация США с фиксированной стоимостью и автоматической доходностью.",
+        "price": 2000.0,
+        "yield_rate": 0.015,
+    },
+}
+
 REAL_ESTATE_UPGRADES = {
     "furniture": {"name": "🛋 Мебель", "cost_rate": 0.06, "income_bonus": 0.12},
     "interior": {"name": "🎨 Интерьер", "cost_rate": 0.08, "income_bonus": 0.16},
@@ -97,7 +114,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 5000, "base_rent_hour": 36,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=101",
         "description": "Квартира эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_apartment_business": {
@@ -105,7 +122,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 20000, "base_rent_hour": 164,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=102",
         "description": "Квартира бизнес-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_apartment_vip": {
@@ -113,7 +130,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 60000, "base_rent_hour": 570,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=103",
         "description": "Квартира VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_economy": {
@@ -121,7 +138,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 8500, "base_rent_hour": 60,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=104",
         "description": "Дом эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_business": {
@@ -129,7 +146,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 38000, "base_rent_hour": 312,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=105",
         "description": "Дом бизнес-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "egorlyk_house_vip": {
@@ -137,7 +154,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 132000, "base_rent_hour": 1254,
         "lat": 45.5853, "lng": 41.865,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=106",
         "description": "Дом VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_economy": {
@@ -145,7 +162,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 450000, "base_rent_hour": 3195,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=107",
         "description": "Квартира эконом-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_business": {
@@ -153,7 +170,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 1800000, "base_rent_hour": 14760,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=108",
         "description": "Квартира бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_apartment_vip": {
@@ -161,7 +178,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 5400000, "base_rent_hour": 51300,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=109",
         "description": "Квартира VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_house_economy": {
@@ -169,7 +186,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 765000, "base_rent_hour": 5432,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=110",
         "description": "Дом эконом-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_house_business": {
@@ -177,7 +194,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 3420000, "base_rent_hour": 28044,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=111",
         "description": "Дом бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "moscow_house_vip": {
@@ -185,7 +202,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 11880000, "base_rent_hour": 112860,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=112",
         "description": "Дом VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_apartment_economy": {
@@ -193,7 +210,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 620000, "base_rent_hour": 4402,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=113",
         "description": "Квартира эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_apartment_business": {
@@ -201,7 +218,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 2480000, "base_rent_hour": 20336,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=114",
         "description": "Квартира бизнес-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_apartment_vip": {
@@ -209,7 +226,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 7440000, "base_rent_hour": 70680,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=115",
         "description": "Квартира VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_economy": {
@@ -217,7 +234,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1054000, "base_rent_hour": 7483,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=116",
         "description": "Дом эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_business": {
@@ -225,7 +242,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 4712000, "base_rent_hour": 38638,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=117",
         "description": "Дом бизнес-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "barcelona_house_vip": {
@@ -233,7 +250,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 16368000, "base_rent_hour": 155496,
         "lat": 41.3874, "lng": 2.1686,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=118",
         "description": "Дом VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_economy": {
@@ -241,7 +258,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 780000, "base_rent_hour": 5538,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=119",
         "description": "Квартира эконом-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_business": {
@@ -249,7 +266,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 3120000, "base_rent_hour": 25584,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=120",
         "description": "Квартира бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_apartment_vip": {
@@ -257,7 +274,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 9360000, "base_rent_hour": 88920,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=121",
         "description": "Квартира VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_house_economy": {
@@ -265,7 +282,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1326000, "base_rent_hour": 9415,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=122",
         "description": "Дом эконом-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_house_business": {
@@ -273,7 +290,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 5928000, "base_rent_hour": 48610,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=123",
         "description": "Дом бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "paris_house_vip": {
@@ -281,7 +298,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 20592000, "base_rent_hour": 195624,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=124",
         "description": "Дом VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_apartment_economy": {
@@ -289,7 +306,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 950000, "base_rent_hour": 6745,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=125",
         "description": "Квартира эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_apartment_business": {
@@ -297,7 +314,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 3800000, "base_rent_hour": 31160,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=126",
         "description": "Квартира бизнес-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_apartment_vip": {
@@ -305,7 +322,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 11400000, "base_rent_hour": 108300,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=127",
         "description": "Квартира VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_economy": {
@@ -313,7 +330,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1615000, "base_rent_hour": 11466,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=128",
         "description": "Дом эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_business": {
@@ -321,7 +338,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 7220000, "base_rent_hour": 59204,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=129",
         "description": "Дом бизнес-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "london_house_vip": {
@@ -329,7 +346,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 25080000, "base_rent_hour": 238260,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=130",
         "description": "Дом VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_economy": {
@@ -337,7 +354,7 @@ REAL_ESTATE = {
         "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
         "price": 1150000, "base_rent_hour": 8165,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=131",
         "description": "Квартира эконом-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_business": {
@@ -345,7 +362,7 @@ REAL_ESTATE = {
         "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
         "price": 4600000, "base_rent_hour": 37720,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=132",
         "description": "Квартира бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_apartment_vip": {
@@ -353,7 +370,7 @@ REAL_ESTATE = {
         "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
         "price": 13800000, "base_rent_hour": 131100,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/apartment,interior?lock=133",
         "description": "Квартира VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_house_economy": {
@@ -361,7 +378,7 @@ REAL_ESTATE = {
         "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
         "price": 1955000, "base_rent_hour": 13880,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=134",
         "description": "Дом эконом-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_house_business": {
@@ -369,7 +386,7 @@ REAL_ESTATE = {
         "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
         "price": 8740000, "base_rent_hour": 71668,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=135",
         "description": "Дом бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
     "new_york_house_vip": {
@@ -377,7 +394,7 @@ REAL_ESTATE = {
         "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
         "price": 30360000, "base_rent_hour": 288420,
         "lat": 40.7128, "lng": -74.006,
-        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "photo": "https://loremflickr.com/1200/700/house,exterior?lock=136",
         "description": "Дом VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
 }
@@ -456,6 +473,12 @@ def init_db():
             quantity INTEGER NOT NULL DEFAULT 0,
             avg_buy_price REAL NOT NULL DEFAULT 0,
             PRIMARY KEY(user_id, stock_id)
+        );
+        CREATE TABLE IF NOT EXISTS bond_holdings (
+            user_id INTEGER NOT NULL,
+            bond_id TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY(user_id, bond_id)
         );
         CREATE TABLE IF NOT EXISTS taxes (
             user_id INTEGER PRIMARY KEY,
@@ -699,6 +722,24 @@ def dividend_hourly_income(uid, conn=None):
             conn.close()
 
 
+def bond_hourly_income(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        rows = conn.execute(
+            "SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0",
+            (uid,),
+        ).fetchall()
+        return sum(
+            float(BONDS[r["bond_id"]]["price"]) * int(r["quantity"]) * float(BONDS[r["bond_id"]]["yield_rate"])
+            for r in rows if r["bond_id"] in BONDS
+        )
+    finally:
+        if own:
+            conn.close()
+
+
 def property_upgrade_multiplier(row):
     return 1 + sum(REAL_ESTATE_UPGRADES[key]["income_bonus"] for key in REAL_ESTATE_UPGRADES if int(row[key] or 0) > 0)
 
@@ -755,11 +796,11 @@ def sync_passive_income(uid):
         player = conn.execute("SELECT last_income_sync FROM players WHERE user_id=?", (uid,)).fetchone()
         if not player:
             conn.rollback()
-            return {"earned": 0, "business": 0, "dividends": 0, "rent": 0}
+            return {"earned": 0, "business": 0, "dividends": 0, "bonds": 0, "rent": 0}
         last_sync = int(player["last_income_sync"] or now)
         if last_sync >= now:
             conn.commit()
-            return {"earned": 0, "business": 0, "dividends": 0, "rent": 0}
+            return {"earned": 0, "business": 0, "dividends": 0, "bonds": 0, "rent": 0}
 
         tax = conn.execute("SELECT unpaid,due_since FROM taxes WHERE user_id=?", (uid,)).fetchone()
         unpaid = float(tax["unpaid"] if tax else 0)
@@ -767,8 +808,9 @@ def sync_passive_income(uid):
 
         business_rate = float(business_hourly_income(uid))
         dividend_rate = float(dividend_hourly_income(uid, conn))
+        bond_rate = float(bond_hourly_income(uid, conn))
         rent_rate = float(real_estate_hourly_income(uid, conn))
-        total_rate = business_rate + dividend_rate + rent_rate
+        total_rate = business_rate + dividend_rate + bond_rate + rent_rate
 
         if unpaid > 0 and due_since > 0:
             earn_until = min(now, due_since + TAX_GRACE_SECONDS)
@@ -781,8 +823,9 @@ def sync_passive_income(uid):
         hours = seconds / 3600
         business_earned = business_rate * hours
         dividends_earned = dividend_rate * hours
+        bonds_earned = bond_rate * hours
         rent_earned = rent_rate * hours
-        earned = business_earned + dividends_earned + rent_earned
+        earned = business_earned + dividends_earned + bonds_earned + rent_earned
 
         if earned > 0:
             conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (earned, uid))
@@ -796,6 +839,7 @@ def sync_passive_income(uid):
             "earned": round(earned, 2),
             "business": round(business_earned, 2),
             "dividends": round(dividends_earned, 2),
+            "bonds": round(bonds_earned, 2),
             "rent": round(rent_earned, 2),
         }
 
@@ -852,8 +896,9 @@ def snapshot(uid):
     update_stock_market()
     business_rate = business_hourly_income(uid)
     dividend_rate = dividend_hourly_income(uid)
+    bond_rate = bond_hourly_income(uid)
     rent_rate = real_estate_hourly_income(uid)
-    total_rate = business_rate + dividend_rate + rent_rate
+    total_rate = business_rate + dividend_rate + bond_rate + rent_rate
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
     businesses = []
@@ -888,7 +933,7 @@ def snapshot(uid):
         "player": dict(p),
         "hourly_income": 0 if tax_status["blocked"] else round(total_rate, 2),
         "gross_hourly_income": round(total_rate, 2),
-        "income_breakdown": {"business": round(business_rate, 2), "dividends": round(dividend_rate, 2), "rent": round(rent_rate, 2)},
+        "income_breakdown": {"business": round(business_rate, 2), "dividends": round(dividend_rate, 2), "bonds": round(bond_rate, 2), "rent": round(rent_rate, 2)},
         "income_blocked": tax_status["blocked"],
         "businesses": businesses,
         "stats": dict(stats),
@@ -935,7 +980,14 @@ def get_stocks():
         rows = conn.execute("SELECT * FROM stocks ORDER BY name ASC").fetchall()
         result = []
         for row in rows:
-            item = dict(row)
+            item = {
+                "id": row["id"],
+                "symbol": row["symbol"],
+                "name": row["name"],
+                "description": row["description"],
+                "current_price": round(float(row["current_price"]), 2),
+                "last_update": row["last_update"],
+            }
             cfg = STOCKS.get(row["id"], {})
             item["change_percent"] = stock_change_percent(conn, row["id"])
             item["dividend_rate_percent"] = round(cfg.get("dividend_rate", 0) * 100, 2)
@@ -1155,7 +1207,11 @@ def stock_detail(stock_id: str, x_telegram_init_data: str | None = Header(None),
     with closing(db()) as conn:
         row = conn.execute("SELECT * FROM stocks WHERE id=?", (stock_id,)).fetchone()
         if not row: raise HTTPException(404, "Акция не найдена")
-        item = dict(row); item["change_percent"] = stock_change_percent(conn, stock_id)
+        item = {
+            "id": row["id"], "symbol": row["symbol"], "name": row["name"],
+            "description": row["description"], "current_price": round(float(row["current_price"]), 2),
+            "last_update": row["last_update"], "change_percent": stock_change_percent(conn, stock_id),
+        }
     item["history"] = get_stock_history(stock_id); item["dividend_rate_percent"] = round(STOCKS.get(stock_id, {}).get("dividend_rate", 0) * 100, 2)
     return item
 
@@ -1206,6 +1262,73 @@ def sell_stock(stock_id: str, body: QuantityBody, x_telegram_init_data: str | No
             accrue_tax_conn(conn, uid, realized_profit, now)
         conn.commit()
     return {"quantity": body.quantity, "price_per_stock": round(price,2), "total_income": round(total,2), "realized_profit": round(realized_profit,2), "profit_tax": round(realized_profit*TAX_RATE,2), "state": snapshot(uid), "brokerage_account": get_brokerage_account(uid)}
+
+
+def get_bonds(uid):
+    with closing(db()) as conn:
+        rows = {r["bond_id"]: int(r["quantity"]) for r in conn.execute(
+            "SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0", (uid,)
+        ).fetchall()}
+    result = []
+    for bond_id, bond in BONDS.items():
+        qty = rows.get(bond_id, 0)
+        value = bond["price"] * qty
+        result.append({
+            "id": bond_id, "symbol": bond["symbol"], "name": bond["name"],
+            "description": bond["description"], "price": bond["price"],
+            "yield_rate_percent": round(bond["yield_rate"] * 100, 2),
+            "quantity": qty, "current_value": round(value, 2),
+            "income_hour": round(value * bond["yield_rate"], 2),
+        })
+    return result
+
+
+@api.get("/api/bonds")
+def bonds(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid); return {"bonds": get_bonds(uid)}
+
+
+@api.post("/api/bonds/{bond_id}/buy")
+def buy_bond(bond_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    if body.quantity <= 0: raise HTTPException(400, "Количество должно быть больше нуля")
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
+    bond = BONDS.get(bond_id)
+    if not bond: raise HTTPException(404, "Облигация не найдена")
+    total = float(bond["price"]) * body.quantity
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
+        if float(player["money"]) < total:
+            conn.rollback(); raise HTTPException(400, f"Недостаточно денег. Нужно {total:.2f} ₽")
+        conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (total, uid))
+        conn.execute(
+            "INSERT INTO bond_holdings(user_id,bond_id,quantity) VALUES(?,?,?) ON CONFLICT(user_id,bond_id) DO UPDATE SET quantity=quantity+excluded.quantity",
+            (uid, bond_id, body.quantity),
+        )
+        conn.commit()
+    return {"quantity": body.quantity, "total_cost": round(total, 2), "state": snapshot(uid), "bonds": get_bonds(uid)}
+
+
+@api.post("/api/bonds/{bond_id}/sell")
+def sell_bond(bond_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    if body.quantity <= 0: raise HTTPException(400, "Количество должно быть больше нуля")
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
+    bond = BONDS.get(bond_id)
+    if not bond: raise HTTPException(404, "Облигация не найдена")
+    total = float(bond["price"]) * body.quantity
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT quantity FROM bond_holdings WHERE user_id=? AND bond_id=?", (uid, bond_id)).fetchone()
+        if not row or int(row["quantity"]) < body.quantity:
+            conn.rollback(); raise HTTPException(400, "Недостаточно облигаций для продажи")
+        remaining = int(row["quantity"]) - body.quantity
+        if remaining == 0:
+            conn.execute("DELETE FROM bond_holdings WHERE user_id=? AND bond_id=?", (uid, bond_id))
+        else:
+            conn.execute("UPDATE bond_holdings SET quantity=? WHERE user_id=? AND bond_id=?", (remaining, uid, bond_id))
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (total, uid))
+        conn.commit()
+    return {"quantity": body.quantity, "total_income": round(total, 2), "state": snapshot(uid), "bonds": get_bonds(uid)}
 
 
 @api.get("/api/real-estate")
