@@ -31,6 +31,8 @@ DB_PATH = os.getenv(
 
 COLLECT_COOLDOWN = 30 * 60
 MAX_OFFLINE_HOURS = 8
+TAX_RATE = 0.05
+TAX_GRACE_SECONDS = 12 * 60 * 60
 
 
 BUSINESSES = {
@@ -241,6 +243,18 @@ def init_db():
             FOREIGN KEY(stock_id) REFERENCES stocks(id)
         );
 
+        CREATE TABLE IF NOT EXISTS taxes (
+            user_id INTEGER PRIMARY KEY,
+            unpaid REAL NOT NULL DEFAULT 0,
+            due_since INTEGER NOT NULL DEFAULT 0,
+            last_paid INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS schema_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
         """)
 
         now = int(time.time())
@@ -299,6 +313,67 @@ def init_db():
                         now
                     )
                 )
+
+        # Одноразовая миграция статистики:
+        # уровень бизнеса больше не считается отдельным бизнесом,
+        # а покупки акций больше не входят в общие расходы.
+        migration_done = conn.execute(
+            "SELECT value FROM schema_meta WHERE key='stats_v2'"
+        ).fetchone()
+
+        if not migration_done:
+            user_rows = conn.execute(
+                "SELECT user_id FROM players"
+            ).fetchall()
+
+            for user_row in user_rows:
+                uid = user_row["user_id"]
+
+                business_rows = conn.execute(
+                    """
+                    SELECT business_id, level
+                    FROM businesses
+                    WHERE user_id=? AND level>0
+                    """,
+                    (uid,)
+                ).fetchall()
+
+                current_business_count = len(business_rows)
+                recalculated_spent = 0
+
+                for row in business_rows:
+                    bid = row["business_id"]
+                    level = int(row["level"])
+
+                    if bid in BUSINESSES:
+                        recalculated_spent += sum(
+                            int(BUSINESSES[bid]["base_cost"] * (1.45 ** lvl))
+                            for lvl in range(level)
+                        )
+
+                tech_rows = conn.execute(
+                    "SELECT tech_id FROM tech WHERE user_id=?",
+                    (uid,)
+                ).fetchall()
+
+                recalculated_spent += sum(
+                    TECHS[row["tech_id"]]["cost"]
+                    for row in tech_rows
+                    if row["tech_id"] in TECHS
+                )
+
+                conn.execute(
+                    """
+                    UPDATE stats
+                    SET companies_bought=?, total_spent=?
+                    WHERE user_id=?
+                    """,
+                    (current_business_count, recalculated_spent, uid)
+                )
+
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_meta(key, value) VALUES('stats_v2', '1')"
+            )
 
         conn.commit()
 
@@ -462,6 +537,14 @@ def ensure_player(uid, username=""):
             )
         )
 
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO taxes(user_id)
+            VALUES(?)
+            """,
+            (uid,)
+        )
+
         conn.commit()
 
 
@@ -558,6 +641,56 @@ def next_business_cost(
     )
 
 
+def business_capitalization(bid, level):
+    if bid not in BUSINESSES or level <= 0:
+        return 0
+
+    return sum(
+        next_business_cost(bid, lvl)
+        for lvl in range(level)
+    )
+
+
+def get_tax_status(uid):
+    now = int(time.time())
+
+    with closing(db()) as conn:
+        row = conn.execute(
+            """
+            SELECT unpaid, due_since, last_paid
+            FROM taxes
+            WHERE user_id=?
+            """,
+            (uid,)
+        ).fetchone()
+
+    unpaid = float(row["unpaid"] if row else 0)
+    due_since = int(row["due_since"] if row else 0)
+    last_paid = int(row["last_paid"] if row else 0)
+
+    blocked = bool(
+        unpaid > 0
+        and due_since > 0
+        and now - due_since >= TAX_GRACE_SECONDS
+    )
+
+    seconds_left = (
+        max(0, TAX_GRACE_SECONDS - (now - due_since))
+        if unpaid > 0 and due_since > 0
+        else TAX_GRACE_SECONDS
+    )
+
+    return {
+        "rate": TAX_RATE,
+        "rate_percent": int(TAX_RATE * 100),
+        "unpaid": round(unpaid, 2),
+        "due_since": due_since,
+        "last_paid": last_paid,
+        "blocked": blocked,
+        "seconds_left": seconds_left,
+    }
+
+
 # ============================================================
 # DAILY PROFIT
 # ============================================================
@@ -639,13 +772,13 @@ def get_daily_profit(
 def snapshot(uid):
 
     p = get_player(uid)
-
     levels = get_levels(uid)
-
     techs = get_techs(uid)
+    tax_status = get_tax_status(uid)
+    gross_hourly_income = hourly_income(uid)
+    income_multiplier = multiplier(uid)
 
     with closing(db()) as conn:
-
         stats = conn.execute(
             """
             SELECT *
@@ -655,54 +788,44 @@ def snapshot(uid):
             (uid,)
         ).fetchone()
 
+    businesses = []
+
+    for bid, business in BUSINESSES.items():
+        level = levels.get(bid, 0)
+        capitalization = business_capitalization(bid, level)
+
+        businesses.append({
+            "id": bid,
+            **business,
+            "level": level,
+            "next_cost": next_business_cost(bid, level),
+            "current_income": int(
+                business["base_income"] * level * income_multiplier
+            ),
+            "income_after_purchase": int(
+                business["base_income"] * (level + 1) * income_multiplier
+            ),
+            "capitalization": capitalization,
+            "sell_price": int(capitalization * 0.30),
+        })
+
     return {
-
         "player": dict(p),
-
-        "hourly_income": hourly_income(uid),
-
-        "multiplier": multiplier(uid),
-
-        "businesses": [
-
-            {
-                "id": bid,
-
-                **business,
-
-                "level": levels.get(
-                    bid,
-                    0
-                ),
-
-                "next_cost": next_business_cost(
-                    bid,
-                    levels.get(
-                        bid,
-                        0
-                    )
-                )
-
-            }
-
-            for bid, business in BUSINESSES.items()
-        ],
-
+        "hourly_income": 0 if tax_status["blocked"] else gross_hourly_income,
+        "gross_hourly_income": gross_hourly_income,
+        "income_blocked": tax_status["blocked"],
+        "multiplier": income_multiplier,
+        "businesses": businesses,
         "techs": [
-
             {
                 "id": tid,
-
                 **tech,
-
                 "owned": tid in techs
             }
-
             for tid, tech in TECHS.items()
         ],
-
-        "stats": dict(stats)
-
+        "stats": dict(stats),
+        "taxes": tax_status,
     }
 
 
@@ -903,6 +1026,30 @@ def update_stock_market():
         conn.commit()
 
 
+def stock_change_percent(conn, stock_id):
+    rows = conn.execute(
+        """
+        SELECT price
+        FROM stock_history
+        WHERE stock_id=?
+        ORDER BY created_at DESC, id DESC
+        LIMIT 2
+        """,
+        (stock_id,)
+    ).fetchall()
+
+    if len(rows) < 2:
+        return 0.0
+
+    current = float(rows[0]["price"])
+    previous = float(rows[1]["price"])
+
+    if previous == 0:
+        return 0.0
+
+    return round(((current - previous) / previous) * 100, 4)
+
+
 def get_stocks():
     update_stock_market()
 
@@ -915,7 +1062,13 @@ def get_stocks():
             """
         ).fetchall()
 
-    return [dict(row) for row in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["change_percent"] = stock_change_percent(conn, row["id"])
+            result.append(item)
+
+    return result
 
 
 def get_stock(stock_id):
@@ -943,13 +1096,15 @@ def get_stock_history(stock_id):
     with closing(db()) as conn:
         rows = conn.execute(
             """
-            SELECT
-                price,
-                created_at
-            FROM stock_history
-            WHERE stock_id=?
+            SELECT price, created_at
+            FROM (
+                SELECT id, price, created_at
+                FROM stock_history
+                WHERE stock_id=?
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+            )
             ORDER BY created_at ASC, id ASC
-            LIMIT ?
             """,
             (
                 stock_id,
@@ -1050,7 +1205,12 @@ def index():
         os.path.join(
             WEB_DIR,
             "index.html"
-        )
+        ),
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
     )
 
 
@@ -1205,6 +1365,8 @@ def buy_business(
 
         )
 
+    is_new_business = level == 0
+
     with closing(db()) as conn:
 
         conn.execute(
@@ -1257,13 +1419,14 @@ def buy_business(
 
             SET
                 total_spent=total_spent+?,
-                companies_bought=companies_bought+1
+                companies_bought=companies_bought+?
 
             WHERE user_id=?
             """,
 
             (
                 cost,
+                1 if is_new_business else 0,
                 uid
             )
         )
@@ -1271,6 +1434,63 @@ def buy_business(
         conn.commit()
 
     return snapshot(uid)
+
+
+# ============================================================
+# SELL BUSINESS
+# ============================================================
+
+@api.post("/api/business/{bid}/sell")
+def sell_business(
+    bid: str,
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(
+        x_telegram_init_data,
+        x_user_id
+    )
+    ensure_player(uid, username)
+
+    if bid not in BUSINESSES:
+        raise HTTPException(404, "Бизнес не найден")
+
+    level = int(get_levels(uid).get(bid, 0))
+
+    if level <= 0:
+        raise HTTPException(400, "У тебя нет этого бизнеса")
+
+    capitalization = business_capitalization(bid, level)
+    sell_price = int(capitalization * 0.30)
+
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        conn.execute(
+            """
+            DELETE FROM businesses
+            WHERE user_id=? AND business_id=?
+            """,
+            (uid, bid)
+        )
+
+        conn.execute(
+            """
+            UPDATE players
+            SET money=money+?
+            WHERE user_id=?
+            """,
+            (sell_price, uid)
+        )
+
+        conn.commit()
+
+    return {
+        "message": "Бизнес продан",
+        "capitalization": capitalization,
+        "sell_price": sell_price,
+        "state": snapshot(uid),
+    }
 
 
 # ============================================================
@@ -1388,146 +1608,158 @@ def buy_tech(
 
 @api.post("/api/collect")
 def collect(
-
     x_telegram_init_data: str | None = Header(None),
-
     x_user_id: str | None = Header(None)
-
 ):
-
     uid, username, _ = user_from_request(
-
         x_telegram_init_data,
-
         x_user_id
-
     )
-
-    ensure_player(
-        uid,
-        username
-    )
+    ensure_player(uid, username)
 
     player = get_player(uid)
+    now = int(time.time())
+    tax_status = get_tax_status(uid)
 
-    now = int(
-        time.time()
-    )
+    if tax_status["blocked"]:
+        raise HTTPException(
+            400,
+            "Доход остановлен из-за неоплаченных налогов. Оплати налог во вкладке «Налоги»."
+        )
 
-    income_per_hour = hourly_income(
-        uid
-    )
+    income_per_hour = hourly_income(uid)
 
     if income_per_hour <= 0:
-
-        raise HTTPException(
-
-            400,
-
-            "Сначала купи хотя бы один бизнес"
-
-        )
+        raise HTTPException(400, "Сначала купи хотя бы один бизнес")
 
     if player["last_collect"]:
-
-        passed = (
-            now
-            - player["last_collect"]
-        )
+        passed = now - player["last_collect"]
 
         if passed < COLLECT_COOLDOWN:
-
             raise HTTPException(
-
                 400,
-
                 f"Подожди ещё {(COLLECT_COOLDOWN-passed)//60+1} мин."
-
             )
 
-        hours = min(
-
-            passed / 3600,
-
-            MAX_OFFLINE_HOURS
-
-        )
-
+        hours = min(passed / 3600, MAX_OFFLINE_HOURS)
     else:
-
         hours = 1
 
-
-    # Доход теперь полностью предсказуемый.
-    # Случайные события и множители удалены.
-
     earned = max(
-
-        int(
-            income_per_hour
-            * hours
-        ),
-
-        max(
-            1,
-            income_per_hour // 2
-        )
-
+        int(income_per_hour * hours),
+        max(1, income_per_hour // 2)
     )
 
+    tax_amount = round(earned * TAX_RATE, 2)
 
     with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
 
         conn.execute(
-
-            """
-            UPDATE players
-
-            SET
-                money=money+?,
-                last_collect=?
-
-            WHERE user_id=?
-            """,
-
-            (
-                earned,
-                now,
-                uid
-            )
+            "UPDATE players SET money=money+?, last_collect=? WHERE user_id=?",
+            (earned, now, uid)
         )
 
         conn.execute(
+            "UPDATE stats SET total_earned=total_earned+? WHERE user_id=?",
+            (earned, uid)
+        )
 
+        conn.execute(
             """
-            UPDATE stats
-
-            SET total_earned=total_earned+?
-
-            WHERE user_id=?
+            INSERT INTO taxes(user_id, unpaid, due_since, last_paid)
+            VALUES(?,?,?,0)
+            ON CONFLICT(user_id)
+            DO UPDATE SET
+                unpaid=taxes.unpaid + excluded.unpaid,
+                due_since=CASE
+                    WHEN taxes.unpaid > 0 AND taxes.due_since > 0
+                    THEN taxes.due_since
+                    ELSE excluded.due_since
+                END
             """,
-
-            (
-                earned,
-                uid
-            )
+            (uid, tax_amount, now)
         )
 
         conn.commit()
 
-
-    add_daily_profit(
-        uid,
-        earned
-    )
-
+    add_daily_profit(uid, earned)
 
     return {
-
         "earned": earned,
-
+        "tax_accrued": tax_amount,
         "state": snapshot(uid)
+    }
 
+
+# ============================================================
+# TAXES
+# ============================================================
+
+@api.get("/api/taxes")
+def taxes_status(
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(x_telegram_init_data, x_user_id)
+    ensure_player(uid, username)
+    return get_tax_status(uid)
+
+
+@api.post("/api/taxes/pay")
+def pay_taxes(
+    x_telegram_init_data: str | None = Header(None),
+    x_user_id: str | None = Header(None)
+):
+    uid, username, _ = user_from_request(x_telegram_init_data, x_user_id)
+    ensure_player(uid, username)
+
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        tax = conn.execute(
+            "SELECT unpaid, due_since FROM taxes WHERE user_id=?",
+            (uid,)
+        ).fetchone()
+        unpaid = float(tax["unpaid"] if tax else 0)
+        due_since = int(tax["due_since"] if tax else 0)
+
+        if unpaid <= 0:
+            conn.rollback()
+            raise HTTPException(400, "Неоплаченных налогов нет")
+
+        player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
+
+        if float(player["money"]) < unpaid:
+            conn.rollback()
+            raise HTTPException(400, f"Недостаточно денег. Для оплаты нужно {unpaid:.2f} ₽")
+
+        now = int(time.time())
+        was_blocked = bool(
+            unpaid > 0
+            and due_since > 0
+            and now - due_since >= TAX_GRACE_SECONDS
+        )
+
+        if was_blocked:
+            conn.execute(
+                "UPDATE players SET money=money-?, last_collect=? WHERE user_id=?",
+                (unpaid, now, uid)
+            )
+        else:
+            conn.execute(
+                "UPDATE players SET money=money-? WHERE user_id=?",
+                (unpaid, uid)
+            )
+
+        conn.execute(
+            "UPDATE taxes SET unpaid=0, due_since=0, last_paid=? WHERE user_id=?",
+            (now, uid)
+        )
+        conn.commit()
+
+    return {
+        "paid": round(unpaid, 2),
+        "state": snapshot(uid)
     }
 
 
@@ -1740,6 +1972,10 @@ def stock_detail(
 
     stock = dict(get_stock(stock_id))
     stock["history"] = get_stock_history(stock_id)
+
+    with closing(db()) as conn:
+        stock["change_percent"] = stock_change_percent(conn, stock_id)
+
     return stock
 
 
@@ -1856,15 +2092,6 @@ def buy_stock(
                 new_quantity,
                 new_avg
             )
-        )
-
-        conn.execute(
-            """
-            UPDATE stats
-            SET total_spent=total_spent+?
-            WHERE user_id=?
-            """,
-            (total_cost, uid)
         )
 
         conn.commit()

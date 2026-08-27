@@ -1011,3 +1011,111 @@ button:focus-visible {
     grid-template-columns: 1fr 1fr;
   }
 }
+/* ============================================================
+   UPDATE V6: BUSINESS SALE / TAXES / STOCK PRICE LABEL
+============================================================ */
+
+.business-income-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid var(--line);
+}
+
+.business-income-box span,
+.business-income-next,
+.business-capitalization {
+  color: var(--hint);
+  font-size: 12px;
+}
+
+.business-income-box b,
+.business-income-next b {
+  color: var(--text);
+}
+
+.business-income-next {
+  margin: 0 0 12px;
+}
+
+.sell-business {
+  width: 100%;
+  border: 1px solid rgba(255, 69, 58, .35);
+  border-radius: 14px;
+  padding: 13px;
+  margin-top: 9px;
+  background: transparent;
+  color: #ff7b72;
+  font-size: 14px;
+}
+
+.sell-business:hover {
+  background: rgba(255, 69, 58, .06);
+}
+
+.business-capitalization {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.stock-current-line {
+  stroke: rgba(255, 255, 255, .42);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.stock-current-dot {
+  fill: currentColor;
+}
+
+.stock-current-label-bg {
+  fill: var(--button);
+}
+
+.stock-current-label {
+  fill: var(--button-text);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.tax-page {
+  display: grid;
+  gap: 12px;
+}
+
+.tax-hero {
+  padding: 20px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #20354c, #1f2c3d);
+  border: 1px solid var(--line);
+}
+
+.tax-hero.tax-blocked {
+  background: linear-gradient(135deg, #47231f, #33211f);
+}
+
+.tax-hero h2 {
+  margin: 8px 0 10px;
+}
+
+.tax-hero p {
+  margin: 0;
+  color: var(--hint);
+  line-height: 1.45;
+}
+
+.tax-info {
+  line-height: 1.5;
+  color: var(--hint);
+}
+
+.tax-info b {
+  color: var(--text);
+}

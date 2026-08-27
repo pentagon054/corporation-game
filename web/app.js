@@ -124,12 +124,11 @@ function businessCount() {
     return 0;
   }
 
-  return state.businesses.reduce(
-    (total, business) =>
-      total + Number(business.level || 0),
-    0
-  );
+  return state.businesses.filter(
+    business => Number(business.level || 0) > 0
+  ).length;
 }
+
 
 
 function renderHeader() {
@@ -167,65 +166,54 @@ function renderBusinesses() {
         Number(state.player.money || 0)
         >= Number(business.next_cost || 0);
 
+      const owned = Number(business.level || 0) > 0;
+
       return `
         <article class="card">
 
           <div class="business-head">
-
             <div>
-
-              <h3>
-                ${business.name}
-              </h3>
-
-              <p>
-                ${business.desc}
-              </p>
-
+              <h3>${business.name}</h3>
+              <p>${business.desc}</p>
             </div>
+            <b>ур. ${business.level}</b>
+          </div>
 
+          <div class="business-income-box">
+            <span>${owned ? "Текущий доход" : "После покупки"}</span>
             <b>
-              ур. ${business.level}
+              ${owned
+                ? fmt(business.current_income) + "/ч"
+                : fmt(business.income_after_purchase) + "/ч"}
             </b>
-
           </div>
 
-          <div class="meta">
-
-            <span>
-              📈 +${fmt(
-                Number(business.base_income || 0)
-                * Number(business.level || 0)
-              )}/ч
-            </span>
-
-            <span>
-              ${
-                business.level
-                  ? "📈 Улучшается"
-                  : "🆕 Новый бизнес"
-              }
-            </span>
-
-          </div>
+          ${owned ? `
+            <div class="business-income-next">
+              После улучшения: <b>${fmt(business.income_after_purchase)}/ч</b>
+            </div>
+          ` : ""}
 
           <button
             class="buy"
             ${canBuy ? "" : "disabled"}
             onclick="buyBusiness('${business.id}')"
           >
-
-            ${
-              business.level
-                ? "Улучшить"
-                : "Открыть"
-            }
-
-            за
-
-            ${fmt(business.next_cost)}
-
+            ${owned ? "Улучшить" : "Открыть"}
+            за ${fmt(business.next_cost)}
           </button>
+
+          ${owned ? `
+            <button
+              class="sell-business"
+              onclick="sellBusiness('${business.id}')"
+            >
+              Продать бизнес за ${fmt(business.sell_price)}
+            </button>
+            <div class="business-capitalization">
+              Капитализация: ${fmt(business.capitalization)} · продажа 30%
+            </div>
+          ` : ""}
 
         </article>
       `;
@@ -735,7 +723,6 @@ function stockChange(stock) {
 function renderStockMiniChart(history) {
 
   if (!history || !history.length) {
-
     return `
       <div class="stock-chart-empty">
         История цены пока формируется
@@ -743,56 +730,41 @@ function renderStockMiniChart(history) {
     `;
   }
 
-  const prices =
-    history.map(
-      item => Number(item.price || 0)
-    );
+  const prices = history.map(item => Number(item.price || 0));
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
 
-  const min =
-    Math.min(...prices);
+  const width = 360;
+  const height = 120;
+  const labelWidth = 78;
+  const plotWidth = width - labelWidth - 8;
+  const topPad = 8;
+  const bottomPad = 8;
+  const plotHeight = height - topPad - bottomPad;
 
-  const max =
-    Math.max(...prices);
+  const yFor = price =>
+    topPad + plotHeight - ((price - min) / range * plotHeight);
 
-  const range =
-    max - min || 1;
+  const points = prices.map((price, index) => {
+    const x = prices.length === 1
+      ? plotWidth / 2
+      : index / (prices.length - 1) * plotWidth;
+    return `${x},${yFor(price)}`;
+  }).join(" ");
 
-  const width = 320;
-  const height = 100;
-
-  const points =
-    prices
-      .map((price, index) => {
-
-        const x =
-          prices.length === 1
-            ? width / 2
-            : (
-              index
-              / (prices.length - 1)
-              * width
-            );
-
-        const y =
-          height -
-          (
-            (price - min)
-            / range
-            * height
-          );
-
-        return `${x},${y}`;
-      })
-      .join(" ");
+  const currentPrice = prices[prices.length - 1];
+  const currentY = yFor(currentPrice);
+  const labelY = Math.min(height - 25, Math.max(3, currentY - 12));
 
   return `
     <div class="stock-chart">
-
-      <svg
-        viewBox="0 0 ${width} ${height}"
-        preserveAspectRatio="none"
-      >
-
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <line
+          x1="0" y1="${currentY}"
+          x2="${plotWidth}" y2="${currentY}"
+          class="stock-current-line"
+        />
         <polyline
           points="${points}"
           fill="none"
@@ -801,9 +773,20 @@ function renderStockMiniChart(history) {
           stroke-linecap="round"
           stroke-linejoin="round"
         />
-
+        <circle
+          cx="${plotWidth}" cy="${currentY}" r="4"
+          class="stock-current-dot"
+        />
+        <rect
+          x="${plotWidth + 5}" y="${labelY}"
+          width="${labelWidth}" height="24" rx="4"
+          class="stock-current-label-bg"
+        />
+        <text
+          x="${plotWidth + 11}" y="${labelY + 16}"
+          class="stock-current-label"
+        >${fmtNumber(currentPrice)} ₽</text>
       </svg>
-
     </div>
   `;
 }
@@ -1592,6 +1575,70 @@ async function openTrade(stockId, side) {
 
 
 /* ============================================================
+   TAXES
+============================================================ */
+
+function formatTaxTime(seconds) {
+  const total = Math.max(0, Number(seconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  return `${hours} ч ${minutes} мин`;
+}
+
+function renderTaxes() {
+  const taxes = state?.taxes || {};
+  const unpaid = Number(taxes.unpaid || 0);
+  const blocked = Boolean(taxes.blocked);
+
+  document.querySelector("#content").innerHTML = `
+    <section class="tax-page">
+      <article class="tax-hero ${blocked ? "tax-blocked" : ""}">
+        <div class="eyebrow">НАЛОГОВАЯ СИСТЕМА</div>
+        <h2>${blocked ? "⛔ Доход остановлен" : "🧾 Налоги"}</h2>
+        <p>Налог составляет <b>${taxes.rate_percent || 5}%</b> от полученного дохода.</p>
+      </article>
+
+      <article class="stats-card">
+        <span>Неоплаченный налог</span>
+        <b>${fmt(unpaid)}</b>
+      </article>
+
+      <article class="card tax-info">
+        ${unpaid > 0
+          ? blocked
+            ? `Срок оплаты истёк. Генерация прибыли остановлена до полной оплаты налога.`
+            : `До остановки прибыли осталось: <b>${formatTaxTime(taxes.seconds_left)}</b>.`
+          : `Задолженности нет. После получения дохода начисляется налог 5%, который нужно оплатить в течение 12 часов.`
+        }
+      </article>
+
+      <button
+        class="buy"
+        ${unpaid > 0 ? "" : "disabled"}
+        onclick="payTaxes()"
+      >
+        ${unpaid > 0 ? `Оплатить ${fmt(unpaid)}` : "Налогов к оплате нет"}
+      </button>
+    </section>
+  `;
+}
+
+async function payTaxes() {
+  try {
+    const result = await api("/api/taxes/pay", { method: "POST" });
+    state = result.state;
+    renderHeader();
+    renderTaxes();
+    modal("Налог оплачен", `Оплачено ${fmt(result.paid)}. Прибыль снова начисляется.`);
+    tg?.HapticFeedback?.notificationOccurred("success");
+  } catch (error) {
+    modal("Не удалось оплатить", error.message);
+    tg?.HapticFeedback?.notificationOccurred("error");
+  }
+}
+
+
+/* ============================================================
    MAIN RENDER
 ============================================================ */
 
@@ -1611,6 +1658,11 @@ function render() {
 
   if (page === "investments") {
     renderInvestments();
+    return;
+  }
+
+  if (page === "taxes") {
+    renderTaxes();
     return;
   }
 
@@ -1692,6 +1744,35 @@ window.buyBusiness =
   };
 
 
+window.sellBusiness =
+  async function(id) {
+    const business = (state.businesses || []).find(item => item.id === id);
+
+    if (!business || Number(business.level || 0) <= 0) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Продать ${business.name}?\n\nКапитализация: ${fmt(business.capitalization)}\nТы получишь 30%: ${fmt(business.sell_price)}\n\nОтменить продажу будет нельзя.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const result = await api(`/api/business/${id}/sell`, { method: "POST" });
+      state = result.state;
+      render();
+      modal("Бизнес продан", `Ты получил ${fmt(result.sell_price)}.`);
+      tg?.HapticFeedback?.notificationOccurred("success");
+    } catch (error) {
+      modal("Продажа не выполнена", error.message);
+      tg?.HapticFeedback?.notificationOccurred("error");
+    }
+  };
+
+
 window.buyTech =
   async function(id) {
 
@@ -1742,9 +1823,7 @@ document
 
       modal(
         "Доход получен",
-        `Ты получил ${fmt(
-          result.earned
-        )}.`
+        `Ты получил ${fmt(result.earned)}.\nНачислен налог 5%: ${fmt(result.tax_accrued)}.\nОплатить его нужно в течение 12 часов.`
       );
 
       tg
@@ -1841,6 +1920,9 @@ window.openTrade =
 
 window.refreshInvestments =
   refreshInvestments;
+
+window.payTaxes =
+  payTaxes;
 
 
 /* ============================================================

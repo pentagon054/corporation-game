@@ -17,8 +17,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
 
 # Меняй это число после каждого обновления WebApp.
-# Сейчас используем новую версию.
-WEBAPP_VERSION = "5"
+WEBAPP_VERSION = "6"
 
 
 # ============================================================
@@ -47,39 +46,17 @@ async def main():
 
     dp = Dispatcher()
 
-
-    # ========================================================
-    # /START
-    # ========================================================
-
     @dp.message(CommandStart())
     async def start(message: Message):
-
         kb = InlineKeyboardBuilder()
 
-
-        # Формируем уникальный URL WebApp.
-        #
-        # Например:
-        # https://corporation-game-production-862a.up.railway.app/?v=5
-        #
-        # Это помогает Telegram отличать новую версию
-        # WebApp от старой закэшированной версии.
-
         base_url = WEBAPP_URL.rstrip("/")
-
-        webapp_url = (
-            f"{base_url}/?v={WEBAPP_VERSION}"
-        )
-
+        webapp_url = f"{base_url}/?v={WEBAPP_VERSION}"
 
         kb.button(
             text="🎮 Играть",
-            web_app=WebAppInfo(
-                url=webapp_url
-            )
+            web_app=WebAppInfo(url=webapp_url)
         )
-
 
         await message.answer(
             "🏢 <b>Построй свою корпорацию</b>\n\n"
@@ -88,21 +65,9 @@ async def main():
             reply_markup=kb.as_markup()
         )
 
-
-    # ========================================================
-    # START POLLING
-    # ========================================================
-
-    await bot.delete_webhook(
-        drop_pending_updates=True
-    )
-
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
-
-# ============================================================
-# ENTRY POINT
-# ============================================================
 
 if __name__ == "__main__":
     asyncio.run(main())
