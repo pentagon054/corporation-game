@@ -210,13 +210,19 @@ function initWorldMap(){
   setTimeout(()=>worldMap.invalidateSize(),150);
 }
 function openCity(cityId){const props=realEstateCache.filter(p=>p.city_id===cityId);if(!props.length)return;const city=props[0].city;document.querySelector("#content").innerHTML=`<section class="realestate-page"><button class="back-button" onclick="renderRealEstate()">← Назад к карте</button><div class="eyebrow">${props[0].country}</div><h2>🏙 ${city}</h2><div class="grid">${props.map(renderPropertyCard).join("")}</div></section>`}
+function propertyFallbackImage(p){
+  const city=String(p.city||"Corporation").replace(/[<>&"']/g,"");
+  const title=String(p.name||"Недвижимость").replace(/[<>&"']/g,"");
+  const isHouse=p.property_type==="house";
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10251d"/><stop offset="1" stop-color="#244f3c"/></linearGradient></defs><rect width="1200" height="700" fill="url(#g)"/><circle cx="960" cy="120" r="210" fill="#4ecb8120"/><rect x="145" y="185" width="910" height="360" rx="28" fill="#0b1512" stroke="#66d694" stroke-opacity=".35" stroke-width="4"/><text x="600" y="340" text-anchor="middle" font-family="Arial,sans-serif" font-size="118">${isHouse?"🏡":"🏙️"}</text><text x="600" y="430" text-anchor="middle" fill="#eef8f1" font-family="Arial,sans-serif" font-size="46" font-weight="700">${city}</text><text x="600" y="485" text-anchor="middle" fill="#9ac8aa" font-family="Arial,sans-serif" font-size="30">${title}</text><text x="600" y="620" text-anchor="middle" fill="#78b78f" font-family="Arial,sans-serif" font-size="22">Corporation · изображение временно недоступно</text></svg>`;
+  return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
+}
 function renderPropertyCard(p){
-  const fallback="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80";
   const segmentNames={economy:"Эконом",business:"Бизнес",vip:"VIP"};
   const typeNames={apartment:"Квартира",house:"Дом"};
   return `<article class="card property-card">
     <div class="property-image-wrap">
-      <img src="${p.photo}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${fallback}'">
+      <img src="${p.photo}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=propertyFallbackImage(p)">
       <div class="property-badges"><span class="segment-${p.segment||"economy"}">${segmentNames[p.segment]||"Эконом"}</span><span>${typeNames[p.property_type]||""}</span></div>
     </div>
     <div class="property-body">
