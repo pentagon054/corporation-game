@@ -37,77 +37,348 @@ STOCKS = {
         "symbol": "BMW", "name": "BMW",
         "description": "Немецкая компания, производящая автомобили премиального сегмента.",
         "min_price": 200.0, "max_price": 450.0, "initial_price": 325.0,
-        "up_min_change": -0.01, "up_max_change": 0.03,
-        "down_min_change": -0.03, "down_max_change": 0.02,
-        "dividend_rate": 0.03,
+        "volatility": 0.012, "drift": 0.0015, "dividend_rate": 0.03,
     },
     "kfc": {
         "symbol": "KFC", "name": "KFC",
         "description": "Международная сеть ресторанов быстрого питания.",
         "min_price": 90.0, "max_price": 235.0, "initial_price": 162.5,
-        "up_min_change": -0.01, "up_max_change": 0.04,
-        "down_min_change": -0.04, "down_max_change": 0.02,
-        "dividend_rate": 0.011,
+        "volatility": 0.015, "drift": 0.0012, "dividend_rate": 0.011,
     },
     "spotify": {
         "symbol": "SPOT", "name": "Spotify",
         "description": "Стриминговый сервис для музыки, подкастов и другого аудиоконтента.",
         "min_price": 110.0, "max_price": 210.0, "initial_price": 160.0,
-        "up_min_change": -0.01, "up_max_change": 0.02,
-        "down_min_change": -0.03, "down_max_change": 0.02,
-        "dividend_rate": 0.005,
+        "volatility": 0.013, "drift": 0.0010, "dividend_rate": 0.005,
+    },
+    "nvidia": {
+        "symbol": "NVDA", "name": "NVIDIA",
+        "description": "Разработчик графических процессоров, ускорителей вычислений и ИИ-платформ.",
+        "min_price": 350.0, "max_price": 1200.0, "initial_price": 720.0,
+        "volatility": 0.022, "drift": 0.0022, "dividend_rate": 0.004,
+    },
+    "tesla": {
+        "symbol": "TSLA", "name": "Tesla",
+        "description": "Производитель электромобилей, энергетических систем и технологий хранения энергии.",
+        "min_price": 150.0, "max_price": 600.0, "initial_price": 315.0,
+        "volatility": 0.026, "drift": 0.0017, "dividend_rate": 0.003,
+    },
+    "mcdonalds": {
+        "symbol": "MCD", "name": "McDonald's",
+        "description": "Глобальная сеть ресторанов быстрого обслуживания.",
+        "min_price": 150.0, "max_price": 400.0, "initial_price": 275.0,
+        "volatility": 0.010, "drift": 0.0010, "dividend_rate": 0.008,
+    },
+    "toyota": {
+        "symbol": "TM", "name": "Toyota",
+        "description": "Один из крупнейших мировых производителей автомобилей и транспортных технологий.",
+        "min_price": 120.0, "max_price": 320.0, "initial_price": 205.0,
+        "volatility": 0.011, "drift": 0.0011, "dividend_rate": 0.012,
     },
 }
 
-UPGRADES = {
+REAL_ESTATE_UPGRADES = {
     "furniture": {"name": "🛋 Мебель", "cost_rate": 0.06, "income_bonus": 0.12},
     "interior": {"name": "🎨 Интерьер", "cost_rate": 0.08, "income_bonus": 0.16},
     "wifi": {"name": "📶 Wi‑Fi", "cost_rate": 0.03, "income_bonus": 0.08},
     "appliances": {"name": "🔌 Бытовые приборы", "cost_rate": 0.07, "income_bonus": 0.14},
 }
+BUSINESS_UPGRADES = {
+    "marketing": {"name": "📣 Маркетинг", "column": "marketing", "cost_rate": 0.20, "income_bonus": 0.18},
+    "equipment": {"name": "⚙️ Оборудование", "column": "equipment", "cost_rate": 0.30, "income_bonus": 0.25},
+    "staff": {"name": "👥 Персонал", "column": "staff", "cost_rate": 0.25, "income_bonus": 0.22},
+    "automation": {"name": "🤖 Автоматизация", "column": "automation", "cost_rate": 0.40, "income_bonus": 0.35},
+}
+
 
 REAL_ESTATE = {
-    "egorlyk_economy": {
+    "egorlyk_apartment_economy": {
         "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
-        "name": "Бюджетная квартира", "price": 5000, "base_rent_hour": 45,
-        "lat": 45.5853, "lng": 41.8650,
-        "photo": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Inside-apartment-design-home%20%2824244145021%29.jpg",
-        "description": "Очень дешёвое жильё для первого шага в недвижимости. Скромная квартира с невысокой арендой и доступными улучшениями.",
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 5000, "base_rent_hour": 36,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
     },
-    "moscow_economy": {
+    "egorlyk_apartment_business": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 20000, "base_rent_hour": 164,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "egorlyk_apartment_vip": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 60000, "base_rent_hour": 570,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "egorlyk_house_economy": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 8500, "base_rent_hour": 60,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "egorlyk_house_business": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 38000, "base_rent_hour": 312,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "egorlyk_house_vip": {
+        "city_id": "egorlyk", "city": "Егорлык", "country": "Россия",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 132000, "base_rent_hour": 1254,
+        "lat": 45.5853, "lng": 41.865,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Егорлык. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "moscow_apartment_economy": {
         "city_id": "moscow", "city": "Москва", "country": "Россия",
-        "name": "Квартира эконом-класса", "price": 450000, "base_rent_hour": 3200,
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 450000, "base_rent_hour": 3195,
         "lat": 55.7558, "lng": 37.6173,
-        "photo": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Interior.png",
-        "description": "Компактная квартира недалеко от метро. Базовая отделка и стабильный спрос на аренду.",
+        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира эконом-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
     },
-    "barcelona_economy": {
+    "moscow_apartment_business": {
+        "city_id": "moscow", "city": "Москва", "country": "Россия",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 1800000, "base_rent_hour": 14760,
+        "lat": 55.7558, "lng": 37.6173,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "moscow_apartment_vip": {
+        "city_id": "moscow", "city": "Москва", "country": "Россия",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 5400000, "base_rent_hour": 51300,
+        "lat": 55.7558, "lng": 37.6173,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "moscow_house_economy": {
+        "city_id": "moscow", "city": "Москва", "country": "Россия",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 765000, "base_rent_hour": 5432,
+        "lat": 55.7558, "lng": 37.6173,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "moscow_house_business": {
+        "city_id": "moscow", "city": "Москва", "country": "Россия",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 3420000, "base_rent_hour": 28044,
+        "lat": 55.7558, "lng": 37.6173,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "moscow_house_vip": {
+        "city_id": "moscow", "city": "Москва", "country": "Россия",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 11880000, "base_rent_hour": 112860,
+        "lat": 55.7558, "lng": 37.6173,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Москва. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "barcelona_apartment_economy": {
         "city_id": "barcelona", "city": "Барселона", "country": "Испания",
-        "name": "Квартира эконом-класса", "price": 620000, "base_rent_hour": 4300,
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 620000, "base_rent_hour": 4402,
         "lat": 41.3874, "lng": 2.1686,
         "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
-        "description": "Небольшая городская квартира для долгосрочной аренды в жилом районе.",
+        "description": "Квартира эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
     },
-    "paris_economy": {
+    "barcelona_apartment_business": {
+        "city_id": "barcelona", "city": "Барселона", "country": "Испания",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 2480000, "base_rent_hour": 20336,
+        "lat": 41.3874, "lng": 2.1686,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "barcelona_apartment_vip": {
+        "city_id": "barcelona", "city": "Барселона", "country": "Испания",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 7440000, "base_rent_hour": 70680,
+        "lat": 41.3874, "lng": 2.1686,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "barcelona_house_economy": {
+        "city_id": "barcelona", "city": "Барселона", "country": "Испания",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 1054000, "base_rent_hour": 7483,
+        "lat": 41.3874, "lng": 2.1686,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "barcelona_house_business": {
+        "city_id": "barcelona", "city": "Барселона", "country": "Испания",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 4712000, "base_rent_hour": 38638,
+        "lat": 41.3874, "lng": 2.1686,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "barcelona_house_vip": {
+        "city_id": "barcelona", "city": "Барселона", "country": "Испания",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 16368000, "base_rent_hour": 155496,
+        "lat": 41.3874, "lng": 2.1686,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Барселона. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "paris_apartment_economy": {
         "city_id": "paris", "city": "Париж", "country": "Франция",
-        "name": "Квартира эконом-класса", "price": 780000, "base_rent_hour": 5400,
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 780000, "base_rent_hour": 5538,
         "lat": 48.8566, "lng": 2.3522,
-        "photo": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1200&q=80",
-        "description": "Практичная квартира с простой отделкой и высоким спросом на аренду.",
+        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира эконом-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
     },
-    "london_economy": {
+    "paris_apartment_business": {
+        "city_id": "paris", "city": "Париж", "country": "Франция",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 3120000, "base_rent_hour": 25584,
+        "lat": 48.8566, "lng": 2.3522,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "paris_apartment_vip": {
+        "city_id": "paris", "city": "Париж", "country": "Франция",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 9360000, "base_rent_hour": 88920,
+        "lat": 48.8566, "lng": 2.3522,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "paris_house_economy": {
+        "city_id": "paris", "city": "Париж", "country": "Франция",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 1326000, "base_rent_hour": 9415,
+        "lat": 48.8566, "lng": 2.3522,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "paris_house_business": {
+        "city_id": "paris", "city": "Париж", "country": "Франция",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 5928000, "base_rent_hour": 48610,
+        "lat": 48.8566, "lng": 2.3522,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "paris_house_vip": {
+        "city_id": "paris", "city": "Париж", "country": "Франция",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 20592000, "base_rent_hour": 195624,
+        "lat": 48.8566, "lng": 2.3522,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Париж. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "london_apartment_economy": {
         "city_id": "london", "city": "Лондон", "country": "Великобритания",
-        "name": "Квартира эконом-класса", "price": 950000, "base_rent_hour": 6700,
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 950000, "base_rent_hour": 6745,
         "lat": 51.5072, "lng": -0.1276,
-        "photo": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
-        "description": "Небольшая квартира в жилой части Лондона с устойчивым арендным потоком.",
+        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
     },
-    "new_york_economy": {
+    "london_apartment_business": {
+        "city_id": "london", "city": "Лондон", "country": "Великобритания",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 3800000, "base_rent_hour": 31160,
+        "lat": 51.5072, "lng": -0.1276,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "london_apartment_vip": {
+        "city_id": "london", "city": "Лондон", "country": "Великобритания",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 11400000, "base_rent_hour": 108300,
+        "lat": 51.5072, "lng": -0.1276,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "london_house_economy": {
+        "city_id": "london", "city": "Лондон", "country": "Великобритания",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 1615000, "base_rent_hour": 11466,
+        "lat": 51.5072, "lng": -0.1276,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "london_house_business": {
+        "city_id": "london", "city": "Лондон", "country": "Великобритания",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 7220000, "base_rent_hour": 59204,
+        "lat": 51.5072, "lng": -0.1276,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "london_house_vip": {
+        "city_id": "london", "city": "Лондон", "country": "Великобритания",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 25080000, "base_rent_hour": 238260,
+        "lat": 51.5072, "lng": -0.1276,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Лондон. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_apartment_economy": {
         "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
-        "name": "Квартира эконом-класса", "price": 1150000, "base_rent_hour": 8200,
-        "lat": 40.7128, "lng": -74.0060,
-        "photo": "https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1200&q=80",
-        "description": "Функциональная квартира для арендаторов, которым важнее локация, чем роскошная отделка.",
+        "name": "Квартира эконом-класса", "segment": "economy", "property_type": "apartment",
+        "price": 1150000, "base_rent_hour": 8165,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира эконом-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_apartment_business": {
+        "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
+        "name": "Квартира бизнес-класса", "segment": "business", "property_type": "apartment",
+        "price": 4600000, "base_rent_hour": 37720,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_apartment_vip": {
+        "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
+        "name": "Квартира VIP-класса", "segment": "vip", "property_type": "apartment",
+        "price": 13800000, "base_rent_hour": 131100,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "description": "Квартира VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_house_economy": {
+        "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
+        "name": "Дом эконом-класса", "segment": "economy", "property_type": "house",
+        "price": 1955000, "base_rent_hour": 13880,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом эконом-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_house_business": {
+        "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
+        "name": "Дом бизнес-класса", "segment": "business", "property_type": "house",
+        "price": 8740000, "base_rent_hour": 71668,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом бизнес-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
+    },
+    "new_york_house_vip": {
+        "city_id": "new_york", "city": "Нью-Йорк", "country": "США",
+        "name": "Дом VIP-класса", "segment": "vip", "property_type": "house",
+        "price": 30360000, "base_rent_hour": 288420,
+        "lat": 40.7128, "lng": -74.006,
+        "photo": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80",
+        "description": "Дом VIP-класса в городе Нью-Йорк. Автоматически приносит арендный доход и может быть улучшена.",
     },
 }
 
@@ -206,6 +477,10 @@ def init_db():
         """)
         ensure_column(conn, "players", "last_income_sync", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "stats", "properties_bought", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "businesses", "marketing", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "businesses", "equipment", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "businesses", "staff", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "businesses", "automation", "INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
 
         for stock_id, stock in STOCKS.items():
@@ -216,6 +491,14 @@ def init_db():
                     (stock_id, stock["symbol"], stock["name"], stock["description"], stock["min_price"], stock["max_price"], stock["initial_price"], "up", now),
                 )
                 conn.execute("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", (stock_id, stock["initial_price"], now))
+            else:
+                # Обновляем параметры уже существующих акций без удаления истории и портфелей.
+                current = conn.execute("SELECT current_price FROM stocks WHERE id=?", (stock_id,)).fetchone()
+                safe_price = min(stock["max_price"], max(stock["min_price"], float(current["current_price"])))
+                conn.execute(
+                    "UPDATE stocks SET symbol=?,name=?,description=?,min_price=?,max_price=?,current_price=? WHERE id=?",
+                    (stock["symbol"], stock["name"], stock["description"], stock["min_price"], stock["max_price"], safe_price, stock_id),
+                )
         conn.commit()
 
 
@@ -275,59 +558,131 @@ def get_levels(uid):
     return {r["business_id"]: int(r["level"]) for r in rows}
 
 
+def get_business_rows(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        rows = conn.execute("SELECT * FROM businesses WHERE user_id=?", (uid,)).fetchall()
+        return {r["business_id"]: r for r in rows}
+    finally:
+        if own:
+            conn.close()
+
+
+def business_upgrade_multiplier(row):
+    if not row:
+        return 1.0
+    bonus = 0.0
+    for cfg in BUSINESS_UPGRADES.values():
+        if int(row[cfg["column"]] or 0) > 0:
+            bonus += cfg["income_bonus"]
+    return 1.0 + bonus
+
+
 def business_hourly_income(uid):
-    levels = get_levels(uid)
-    return sum(BUSINESSES[bid]["base_income"] * level for bid, level in levels.items() if bid in BUSINESSES)
+    rows = get_business_rows(uid)
+    total = 0.0
+    for bid, row in rows.items():
+        if bid in BUSINESSES and int(row["level"] or 0) > 0:
+            total += BUSINESSES[bid]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row)
+    return total
 
 
 def next_business_cost(bid, level):
-    return int(BUSINESSES[bid]["base_cost"] * (1.45 ** level))
+    # Покупка бизнеса происходит один раз. Формула оставлена для совместимости
+    # со старыми уровнями существующих игроков.
+    return int(BUSINESSES[bid]["base_cost"] * (1.45 ** max(0, level)))
 
 
-def business_capitalization(bid, level):
-    return sum(next_business_cost(bid, lvl) for lvl in range(max(0, level))) if bid in BUSINESSES else 0
+def business_upgrade_cost(bid, upgrade_id):
+    return round(BUSINESSES[bid]["base_cost"] * BUSINESS_UPGRADES[upgrade_id]["cost_rate"], 2)
 
+
+def business_capitalization(bid, level, row=None):
+    if bid not in BUSINESSES or level <= 0:
+        return 0
+    legacy_cost = sum(next_business_cost(bid, lvl) for lvl in range(max(0, level)))
+    upgrade_costs = 0
+    if row:
+        for upgrade_id, cfg in BUSINESS_UPGRADES.items():
+            if int(row[cfg["column"]] or 0) > 0:
+                upgrade_costs += business_upgrade_cost(bid, upgrade_id)
+    return round(legacy_cost + upgrade_costs, 2)
 
 def update_stock_market():
+    """Минутная игровая модель: тренд + шум + редкие импульсы + возврат к середине диапазона."""
     now = int(time.time())
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         rows = conn.execute("SELECT * FROM stocks").fetchall()
         for stock in rows:
-            elapsed = now - int(stock["last_update"])
-            if elapsed < STOCK_UPDATE_INTERVAL:
-                continue
             config = STOCKS.get(stock["id"])
             if not config:
                 continue
-            steps = elapsed // STOCK_UPDATE_INTERVAL
-            price = float(stock["current_price"])
-            trend = stock["trend"]
-            last_update = int(stock["last_update"])
-            for _ in range(int(steps)):
-                change = random.uniform(
-                    config["up_min_change"] if trend == "up" else config["down_min_change"],
-                    config["up_max_change"] if trend == "up" else config["down_max_change"],
-                )
-                next_price = price * (1 + change)
-                range_size = config["max_price"] - config["min_price"]
-                position = (next_price - config["min_price"]) / range_size if range_size else 0.5
-                if next_price <= config["min_price"]:
-                    next_price, trend = config["min_price"], "up"
-                elif next_price >= config["max_price"]:
-                    next_price, trend = config["max_price"], "down"
-                elif position <= 0.15 and random.random() < 0.65:
-                    trend = "up"
-                elif position >= 0.85 and random.random() < 0.65:
-                    trend = "down"
-                elif random.random() < 0.08:
-                    trend = "down" if trend == "up" else "up"
-                price = round(next_price, 2)
-                last_update += STOCK_UPDATE_INTERVAL
-                conn.execute("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", (stock["id"], price, last_update))
-            conn.execute("UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?", (price, trend, last_update, stock["id"]))
-        conn.commit()
 
+            elapsed = now - int(stock["last_update"])
+            if elapsed < STOCK_UPDATE_INTERVAL:
+                # Даже старые записи гарантированно держим внутри жёстких границ.
+                safe = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
+                if safe != float(stock["current_price"]):
+                    conn.execute("UPDATE stocks SET current_price=? WHERE id=?", (safe, stock["id"]))
+                continue
+
+            steps = min(int(elapsed // STOCK_UPDATE_INTERVAL), MAX_STOCK_HISTORY_POINTS)
+            price = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
+            trend = stock["trend"] if stock["trend"] in ("up", "down") else "up"
+            last_update = int(stock["last_update"])
+            floor = float(config["min_price"])
+            ceiling = float(config["max_price"])
+            midpoint = (floor + ceiling) / 2
+            span = max(ceiling - floor, 1.0)
+
+            for _ in range(steps):
+                position = (price - floor) / span
+                direction = 1 if trend == "up" else -1
+
+                # Базовый минутный шум и тренд.
+                move = random.gauss(direction * config["drift"], config["volatility"])
+
+                # Мягкое притяжение к центру не даёт графику постоянно залипать у границ.
+                mean_reversion = ((midpoint - price) / span) * 0.006
+                move += mean_reversion
+
+                # Редкий рыночный импульс создаёт заметные свечи/скачки.
+                if random.random() < 0.035:
+                    move += random.uniform(-config["volatility"] * 2.2, config["volatility"] * 2.2)
+
+                next_price = price * (1 + move)
+
+                # ЖЁСТКИЙ пол и потолок: цена физически не может выйти за диапазон.
+                if next_price <= floor:
+                    next_price = floor
+                    trend = "up"
+                elif next_price >= ceiling:
+                    next_price = ceiling
+                    trend = "down"
+                else:
+                    # Чем ближе к границе, тем вероятнее разворот.
+                    if position < 0.12 and random.random() < 0.42:
+                        trend = "up"
+                    elif position > 0.88 and random.random() < 0.42:
+                        trend = "down"
+                    elif random.random() < 0.055:
+                        trend = "down" if trend == "up" else "up"
+
+                price = round(min(ceiling, max(floor, next_price)), 2)
+                last_update += STOCK_UPDATE_INTERVAL
+                conn.execute(
+                    "INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)",
+                    (stock["id"], price, last_update),
+                )
+
+            conn.execute(
+                "UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?",
+                (price, trend, last_update, stock["id"]),
+            )
+        conn.commit()
 
 def dividend_hourly_income(uid, conn=None):
     own = conn is None
@@ -345,7 +700,7 @@ def dividend_hourly_income(uid, conn=None):
 
 
 def property_upgrade_multiplier(row):
-    return 1 + sum(UPGRADES[key]["income_bonus"] for key in UPGRADES if int(row[key] or 0) > 0)
+    return 1 + sum(REAL_ESTATE_UPGRADES[key]["income_bonus"] for key in REAL_ESTATE_UPGRADES if int(row[key] or 0) > 0)
 
 
 def real_estate_hourly_income(uid, conn=None):
@@ -469,15 +824,15 @@ def property_payload(uid):
             days = max(0, (now - int(row["purchased_at"])) / 86400)
             current_value = float(row["purchase_price"]) * (1 + REAL_ESTATE_DAILY_GROWTH * days)
             rent = prop["base_rent_hour"] * property_upgrade_multiplier(row)
-            upgrades = {key: bool(int(row[key] or 0)) for key in UPGRADES}
+            upgrades = {key: bool(int(row[key] or 0)) for key in REAL_ESTATE_UPGRADES}
             purchase_price = float(row["purchase_price"])
         else:
             current_value = prop["price"]
             rent = prop["base_rent_hour"]
-            upgrades = {key: False for key in UPGRADES}
+            upgrades = {key: False for key in REAL_ESTATE_UPGRADES}
             purchase_price = prop["price"]
         upgrade_info = []
-        for key, cfg in UPGRADES.items():
+        for key, cfg in REAL_ESTATE_UPGRADES.items():
             upgrade_info.append({
                 "id": key,
                 "name": cfg["name"],
@@ -502,15 +857,32 @@ def snapshot(uid):
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
     businesses = []
+    business_rows = get_business_rows(uid)
     for bid, business in BUSINESSES.items():
-        level = levels.get(bid, 0)
-        cap = business_capitalization(bid, level)
+        row = business_rows.get(bid)
+        level = int(row["level"] if row else 0)
+        owned = level > 0
+        multiplier = business_upgrade_multiplier(row)
+        cap = business_capitalization(bid, level, row)
+        upgrades = []
+        for upgrade_id, cfg in BUSINESS_UPGRADES.items():
+            installed = bool(row and int(row[cfg["column"]] or 0) > 0)
+            upgrades.append({
+                "id": upgrade_id,
+                "name": cfg["name"],
+                "owned": installed,
+                "cost": business_upgrade_cost(bid, upgrade_id),
+                "income_bonus_percent": round(cfg["income_bonus"] * 100),
+            })
         businesses.append({
-            "id": bid, **business, "level": level,
-            "next_cost": next_business_cost(bid, level),
-            "current_income": business["base_income"] * level,
-            "income_after_purchase": business["base_income"] * (level + 1),
-            "capitalization": cap, "sell_price": int(cap * 0.30),
+            "id": bid, **business, "level": level, "owned": owned,
+            "purchase_cost": business["base_cost"],
+            "next_cost": business["base_cost"],
+            "current_income": round(business["base_income"] * level * multiplier, 2),
+            "income_after_purchase": business["base_income"],
+            "capitalization": cap,
+            "sell_price": round(cap * 0.30, 2),
+            "upgrades": upgrades,
         })
     return {
         "player": dict(p),
@@ -651,16 +1023,57 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
     if bid not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     sync_passive_income(uid)
-    level = get_levels(uid).get(bid, 0)
-    cost = next_business_cost(bid, level)
+    cost = BUSINESSES[bid]["base_cost"]
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute("SELECT level FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+        if existing and int(existing["level"] or 0) > 0:
+            conn.rollback()
+            raise HTTPException(400, "Бизнес уже куплен. Развивай его через прокачку.")
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
         if float(player["money"]) < cost:
-            conn.rollback(); raise HTTPException(400, f"Не хватает {round(cost-float(player['money']),2)} ₽")
+            conn.rollback()
+            raise HTTPException(400, f"Не хватает {round(cost-float(player['money']),2)} ₽")
         conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
-        conn.execute("INSERT INTO businesses(user_id,business_id,level) VALUES(?,?,1) ON CONFLICT(user_id,business_id) DO UPDATE SET level=level+1", (uid, bid))
-        conn.execute("UPDATE stats SET total_spent=total_spent+?,companies_bought=companies_bought+? WHERE user_id=?", (cost, 1 if level == 0 else 0, uid))
+        conn.execute(
+            "INSERT INTO businesses(user_id,business_id,level) VALUES(?,?,1) "
+            "ON CONFLICT(user_id,business_id) DO UPDATE SET level=1",
+            (uid, bid),
+        )
+        conn.execute(
+            "UPDATE stats SET total_spent=total_spent+?,companies_bought=companies_bought+1 WHERE user_id=?",
+            (cost, uid),
+        )
+        conn.commit()
+    return snapshot(uid)
+
+
+@api.post("/api/business/{bid}/upgrade/{upgrade_id}")
+def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    if bid not in BUSINESSES:
+        raise HTTPException(404, "Бизнес не найден")
+    if upgrade_id not in BUSINESS_UPGRADES:
+        raise HTTPException(404, "Прокачка не найдена")
+    sync_passive_income(uid)
+    cfg = BUSINESS_UPGRADES[upgrade_id]
+    cost = business_upgrade_cost(bid, upgrade_id)
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+        if not row or int(row["level"] or 0) <= 0:
+            conn.rollback()
+            raise HTTPException(400, "Сначала купи этот бизнес")
+        if int(row[cfg["column"]] or 0) > 0:
+            conn.rollback()
+            raise HTTPException(400, "Эта прокачка уже установлена")
+        player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
+        if float(player["money"]) < cost:
+            conn.rollback()
+            raise HTTPException(400, f"Недостаточно денег. Нужно {cost:.2f} ₽")
+        conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
+        conn.execute(f"UPDATE businesses SET {cfg['column']}=1 WHERE user_id=? AND business_id=?", (uid, bid))
+        conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (cost, uid))
         conn.commit()
     return snapshot(uid)
 
@@ -671,10 +1084,13 @@ def sell_business(bid: str, x_telegram_init_data: str | None = Header(None), x_u
     if bid not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     sync_passive_income(uid)
-    level = get_levels(uid).get(bid, 0)
+    with closing(db()) as read_conn:
+        row = read_conn.execute("SELECT * FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+    level = int(row["level"] if row else 0)
     if level <= 0:
         raise HTTPException(400, "У тебя нет этого бизнеса")
-    cap = business_capitalization(bid, level); price = int(cap * 0.30)
+    cap = business_capitalization(bid, level, row)
+    price = round(cap * 0.30, 2)
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         conn.execute("DELETE FROM businesses WHERE user_id=? AND business_id=?", (uid, bid))
@@ -820,13 +1236,13 @@ def buy_property(property_id: str, x_telegram_init_data: str | None = Header(Non
 def upgrade_property(property_id: str, upgrade_id: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
     if property_id not in REAL_ESTATE: raise HTTPException(404, "Объект не найден")
-    if upgrade_id not in UPGRADES: raise HTTPException(404, "Улучшение не найдено")
+    if upgrade_id not in REAL_ESTATE_UPGRADES: raise HTTPException(404, "Улучшение не найдено")
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute("SELECT * FROM real_estate_holdings WHERE user_id=? AND property_id=?", (uid, property_id)).fetchone()
         if not row: conn.rollback(); raise HTTPException(400, "Сначала купи эту недвижимость")
         if int(row[upgrade_id] or 0) > 0: conn.rollback(); raise HTTPException(400, "Это улучшение уже установлено")
-        cost = float(row["purchase_price"]) * UPGRADES[upgrade_id]["cost_rate"]
+        cost = float(row["purchase_price"]) * REAL_ESTATE_UPGRADES[upgrade_id]["cost_rate"]
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
         if float(player["money"]) < cost: conn.rollback(); raise HTTPException(400, f"Недостаточно денег. Нужно {cost:.2f} ₽")
         conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))

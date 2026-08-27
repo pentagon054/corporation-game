@@ -90,3 +90,20 @@
 .world-map .leaflet-marker-icon:hover .game-city-name{
   color:#8ff2b3;
 }
+
+
+/* ============================================================
+   UPDATE V9: REAL ESTATE TIERS / BUSINESS PROGRESSION / STOCK RANGE
+============================================================ */
+.business-card .owned-badge{font-size:11px;color:var(--positive);white-space:nowrap}
+.business-upgrade-title{margin:14px 0 8px;color:var(--hint);font-size:10px;font-weight:900;letter-spacing:1px}
+.stock-range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.stock-range span{padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.025);color:var(--hint);font-size:11px}
+.stock-range b{display:block;color:var(--text);margin-top:3px;font-size:12px}
+.property-image-wrap{position:relative}
+.property-badges{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.property-badges span{padding:5px 8px;border-radius:999px;background:rgba(8,16,14,.84);border:1px solid rgba(255,255,255,.13);color:#fff;font-size:10px;font-weight:900;backdrop-filter:blur(6px)}
+.property-badges .segment-economy{color:#a8edc2}
+.property-badges .segment-business{color:#8dc8ff}
+.property-badges .segment-vip{color:#f2cf68;border-color:rgba(242,207,104,.35)}
+@media(max-width:360px){.stock-range{grid-template-columns:1fr}}
