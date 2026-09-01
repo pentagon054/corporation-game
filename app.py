@@ -15,7 +15,37 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
-DB_PATH = os.getenv("DB_PATH", "corporation.db")
+# === CORPORATION_PERSISTENT_DB_V12 ============================================
+def _resolve_database_path():
+    configured = (os.getenv("DB_PATH") or "").strip()
+    volume_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
+    is_railway = bool(
+        os.getenv("RAILWAY_DEPLOYMENT_ID")
+        or os.getenv("RAILWAY_PROJECT_ID")
+        or os.getenv("RAILWAY_ENVIRONMENT_NAME")
+        or os.getenv("RAILWAY_SERVICE_ID")
+    )
+    if volume_mount:
+        volume_mount = os.path.abspath(volume_mount)
+        os.makedirs(volume_mount, exist_ok=True)
+        db_name = os.path.basename(configured.rstrip("/\\")) if configured else "corporation.db"
+        if not db_name or db_name in (".", ".."):
+            db_name = "corporation.db"
+        persistent_path = os.path.join(volume_mount, db_name)
+        os.environ["DB_PATH"] = persistent_path
+        return persistent_path
+    if is_railway:
+        raise RuntimeError(
+            "Railway Volume is not attached to the backend service. "
+            "Attach a Volume to Railway #1. The game refuses to start without "
+            "persistent storage to protect player progress."
+        )
+    return configured or "corporation.db"
+
+DB_PATH = _resolve_database_path()
+os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)) or ".", exist_ok=True)
+print(f"[Corporation] Persistent SQLite database: {DB_PATH}")
+# ============================================================================
 
 TAX_RATE = 0.05
 TAX_GRACE_SECONDS = 12 * 60 * 60
