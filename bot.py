@@ -9,7 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "14"
+WEBAPP_VERSION = "142"
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан в переменных окружения.")
