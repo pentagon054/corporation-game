@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
-# === CORPORATION_PERSISTENT_DB_V14 ============================================
+# === CORPORATION_PERSISTENT_DB_V14_1 ==========================================
 def _is_railway_runtime():
     return bool(
         os.getenv("RAILWAY_DEPLOYMENT_ID")
@@ -26,7 +26,6 @@ def _is_railway_runtime():
 
 
 def _resolve_database_path():
-    # На Railway база ДОЛЖНА находиться только внутри подключённого Volume.
     configured = (os.getenv("DB_PATH") or "").strip()
     volume_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
 
@@ -34,7 +33,7 @@ def _resolve_database_path():
         if not volume_mount:
             raise RuntimeError(
                 "Railway Volume не подключён к backend-сервису. "
-                "Corporation остановлена, чтобы не создать временную базу и не потерять прогресс."
+                "Corporation остановлена, чтобы не создать временную базу."
             )
 
         volume_mount = os.path.abspath(volume_mount)
@@ -51,17 +50,12 @@ def _resolve_database_path():
                 f"Railway Volume недоступен для записи: {volume_mount}: {exc}"
             ) from exc
 
-        db_name = os.path.basename(configured.rstrip("/\")) if configured else "corporation.db"
+        db_name = os.path.basename(configured) if configured else "corporation.db"
         if not db_name or db_name in (".", ".."):
             db_name = "corporation.db"
 
         persistent_path = os.path.abspath(os.path.join(volume_mount, db_name))
-
-        try:
-            common = os.path.commonpath([persistent_path, volume_mount])
-        except ValueError:
-            common = ""
-        if common != volume_mount:
+        if os.path.commonpath([persistent_path, volume_mount]) != volume_mount:
             raise RuntimeError("DB_PATH пытается выйти за пределы Railway Volume.")
 
         os.environ["DB_PATH"] = persistent_path
