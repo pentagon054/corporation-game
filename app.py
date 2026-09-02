@@ -169,6 +169,18 @@ BUSINESS_UPGRADES = {
     "automation": {"name": "🤖 Автоматизация", "column": "automation", "cost_rate": 0.40, "income_bonus": 0.35},
 }
 
+BUSINESS_UPGRADE_PROFILES = {
+    "coffee": {"marketing": {"name": "🎟 Программа лояльности", "cost_rate": .16, "income_bonus": .14}, "equipment": {"name": "☕ Профессиональная кофемашина", "cost_rate": .28, "income_bonus": .24}, "staff": {"name": "👨‍🍳 Бариста-чемпионы", "cost_rate": .22, "income_bonus": .20}, "automation": {"name": "📱 Мобильный предзаказ", "cost_rate": .34, "income_bonus": .30}},
+    "delivery": {"marketing": {"name": "📍 Геореклама", "cost_rate": .18, "income_bonus": .16}, "equipment": {"name": "🛵 Парк электроскутеров", "cost_rate": .32, "income_bonus": .27}, "staff": {"name": "🚴 Усиленный штат курьеров", "cost_rate": .25, "income_bonus": .22}, "automation": {"name": "🗺 Умная маршрутизация", "cost_rate": .38, "income_bonus": .34}},
+    "factory": {"marketing": {"name": "🤝 Контракты с торговыми сетями", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "🏗 Новая производственная линия", "cost_rate": .35, "income_bonus": .30}, "staff": {"name": "👷 Инженерная смена", "cost_rate": .27, "income_bonus": .24}, "automation": {"name": "🦾 Роботизация цеха", "cost_rate": .44, "income_bonus": .39}},
+    "it": {"marketing": {"name": "🚀 Продвижение цифровых продуктов", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "🖥 Серверная инфраструктура", "cost_rate": .30, "income_bonus": .26}, "staff": {"name": "🧑‍💻 Senior-команда", "cost_rate": .32, "income_bonus": .29}, "automation": {"name": "⚙️ CI/CD и автотесты", "cost_rate": .38, "income_bonus": .35}},
+    "finance": {"marketing": {"name": "💼 Премиум-клиенты", "cost_rate": .22, "income_bonus": .20}, "equipment": {"name": "🔐 Финтех-инфраструктура", "cost_rate": .31, "income_bonus": .27}, "staff": {"name": "📊 Команда аналитиков", "cost_rate": .30, "income_bonus": .28}, "automation": {"name": "🤖 Алгоритмический дилинг", "cost_rate": .46, "income_bonus": .42}},
+    "conglomerate": {"marketing": {"name": "🌍 Глобальный бренд", "cost_rate": .24, "income_bonus": .22}, "equipment": {"name": "🏙 Корпоративные активы", "cost_rate": .34, "income_bonus": .30}, "staff": {"name": "🧠 Топ-менеджмент", "cost_rate": .33, "income_bonus": .31}, "automation": {"name": "🛰 Единый центр управления", "cost_rate": .50, "income_bonus": .46}},
+}
+
+def get_business_upgrade_cfg(bid, upgrade_id):
+    return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
+
 
 REAL_ESTATE = {
     "egorlyk_apartment_economy": {
@@ -655,12 +667,13 @@ def get_business_rows(uid, conn=None):
             conn.close()
 
 
-def business_upgrade_multiplier(row):
+def business_upgrade_multiplier(row, bid=None):
     if not row:
         return 1.0
     bonus = 0.0
-    for cfg in BUSINESS_UPGRADES.values():
-        if int(row[cfg["column"]] or 0) > 0:
+    for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
+        cfg = get_business_upgrade_cfg(bid, upgrade_id) if bid else base_cfg
+        if int(row[base_cfg["column"]] or 0) > 0:
             bonus += cfg["income_bonus"]
     return 1.0 + bonus
 
@@ -670,7 +683,7 @@ def business_hourly_income(uid):
     total = 0.0
     for bid, row in rows.items():
         if bid in BUSINESSES and int(row["level"] or 0) > 0:
-            total += BUSINESSES[bid]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row)
+            total += BUSINESSES[bid]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row, bid)
     return total
 
 
@@ -681,7 +694,8 @@ def next_business_cost(bid, level):
 
 
 def business_upgrade_cost(bid, upgrade_id):
-    return round(BUSINESSES[bid]["base_cost"] * BUSINESS_UPGRADES[upgrade_id]["cost_rate"], 2)
+    cfg = get_business_upgrade_cfg(bid, upgrade_id)
+    return round(BUSINESSES[bid]["base_cost"] * cfg["cost_rate"], 2)
 
 
 def business_capitalization(bid, level, row=None):
@@ -690,8 +704,8 @@ def business_capitalization(bid, level, row=None):
     legacy_cost = sum(next_business_cost(bid, lvl) for lvl in range(max(0, level)))
     upgrade_costs = 0
     if row:
-        for upgrade_id, cfg in BUSINESS_UPGRADES.items():
-            if int(row[cfg["column"]] or 0) > 0:
+        for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
+            if int(row[base_cfg["column"]] or 0) > 0:
                 upgrade_costs += business_upgrade_cost(bid, upgrade_id)
     return round(legacy_cost + upgrade_costs, 2)
 
@@ -969,11 +983,12 @@ def snapshot(uid):
         row = business_rows.get(bid)
         level = int(row["level"] if row else 0)
         owned = level > 0
-        multiplier = business_upgrade_multiplier(row)
+        multiplier = business_upgrade_multiplier(row, bid)
         cap = business_capitalization(bid, level, row)
         upgrades = []
-        for upgrade_id, cfg in BUSINESS_UPGRADES.items():
-            installed = bool(row and int(row[cfg["column"]] or 0) > 0)
+        for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
+            cfg = get_business_upgrade_cfg(bid, upgrade_id)
+            installed = bool(row and int(row[base_cfg["column"]] or 0) > 0)
             upgrades.append({
                 "id": upgrade_id,
                 "name": cfg["name"],
@@ -1170,7 +1185,8 @@ def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None
     if upgrade_id not in BUSINESS_UPGRADES:
         raise HTTPException(404, "Прокачка не найдена")
     sync_passive_income(uid)
-    cfg = BUSINESS_UPGRADES[upgrade_id]
+    base_cfg = BUSINESS_UPGRADES[upgrade_id]
+    cfg = get_business_upgrade_cfg(bid, upgrade_id)
     cost = business_upgrade_cost(bid, upgrade_id)
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -1178,7 +1194,7 @@ def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None
         if not row or int(row["level"] or 0) <= 0:
             conn.rollback()
             raise HTTPException(400, "Сначала купи этот бизнес")
-        if int(row[cfg["column"]] or 0) > 0:
+        if int(row[base_cfg["column"]] or 0) > 0:
             conn.rollback()
             raise HTTPException(400, "Эта прокачка уже установлена")
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
@@ -1186,7 +1202,7 @@ def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None
             conn.rollback()
             raise HTTPException(400, f"Недостаточно денег. Нужно {cost:.2f} ₽")
         conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
-        conn.execute(f"UPDATE businesses SET {cfg['column']}=1 WHERE user_id=? AND business_id=?", (uid, bid))
+        conn.execute(f"UPDATE businesses SET {base_cfg['column']}=1 WHERE user_id=? AND business_id=?", (uid, bid))
         conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (cost, uid))
         conn.commit()
     return snapshot(uid)
