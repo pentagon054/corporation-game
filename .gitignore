@@ -8,3 +8,8 @@ corporation.db
 __pycache__/
 *.pyc
 *.backup_*
+
+# Corporation runtime / update helper files
+_update_files/
+apply_update_v*.py
+README_UPDATE_V*.txt

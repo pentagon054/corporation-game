@@ -15,36 +15,74 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
-# === CORPORATION_PERSISTENT_DB_V12 ============================================
-def _resolve_database_path():
-    configured = (os.getenv("DB_PATH") or "").strip()
-    volume_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
-    is_railway = bool(
+# === CORPORATION_PERSISTENT_DB_V14 ============================================
+def _is_railway_runtime():
+    return bool(
         os.getenv("RAILWAY_DEPLOYMENT_ID")
         or os.getenv("RAILWAY_PROJECT_ID")
         or os.getenv("RAILWAY_ENVIRONMENT_NAME")
         or os.getenv("RAILWAY_SERVICE_ID")
     )
-    if volume_mount:
+
+
+def _resolve_database_path():
+    # На Railway база ДОЛЖНА находиться только внутри подключённого Volume.
+    configured = (os.getenv("DB_PATH") or "").strip()
+    volume_mount = (os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
+
+    if _is_railway_runtime():
+        if not volume_mount:
+            raise RuntimeError(
+                "Railway Volume не подключён к backend-сервису. "
+                "Corporation остановлена, чтобы не создать временную базу и не потерять прогресс."
+            )
+
         volume_mount = os.path.abspath(volume_mount)
         os.makedirs(volume_mount, exist_ok=True)
-        db_name = os.path.basename(configured.rstrip("/\\")) if configured else "corporation.db"
+
+        probe = os.path.join(volume_mount, ".corporation_write_test")
+        try:
+            with open(probe, "a", encoding="utf-8"):
+                pass
+            if os.path.exists(probe):
+                os.remove(probe)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Railway Volume недоступен для записи: {volume_mount}: {exc}"
+            ) from exc
+
+        db_name = os.path.basename(configured.rstrip("/\")) if configured else "corporation.db"
         if not db_name or db_name in (".", ".."):
             db_name = "corporation.db"
-        persistent_path = os.path.join(volume_mount, db_name)
+
+        persistent_path = os.path.abspath(os.path.join(volume_mount, db_name))
+
+        try:
+            common = os.path.commonpath([persistent_path, volume_mount])
+        except ValueError:
+            common = ""
+        if common != volume_mount:
+            raise RuntimeError("DB_PATH пытается выйти за пределы Railway Volume.")
+
         os.environ["DB_PATH"] = persistent_path
         return persistent_path
-    if is_railway:
-        raise RuntimeError(
-            "Railway Volume is not attached to the backend service. "
-            "Attach a Volume to Railway #1. The game refuses to start without "
-            "persistent storage to protect player progress."
-        )
+
     return configured or "corporation.db"
+
 
 DB_PATH = _resolve_database_path()
 os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)) or ".", exist_ok=True)
-print(f"[Corporation] Persistent SQLite database: {DB_PATH}")
+
+if _is_railway_runtime():
+    _mount = os.path.abspath(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", ""))
+    _exists = os.path.exists(DB_PATH)
+    _size = os.path.getsize(DB_PATH) if _exists else 0
+    print(
+        f"[Corporation] PERSISTENT STORAGE OK | "
+        f"mount={_mount} | db={DB_PATH} | exists={_exists} | size={_size}"
+    )
+else:
+    print(f"[Corporation] Local SQLite database: {DB_PATH}")
 # ============================================================================
 
 TAX_RATE = 0.05

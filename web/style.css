@@ -47,3 +47,129 @@ h1{font-size:25px;line-height:1.1;margin:5px 0 0;letter-spacing:-.5px;word-break
 
 @media(max-width:480px){.app{padding-left:10px;padding-right:10px}.money{font-size:33px}.metrics.three{grid-template-columns:repeat(3,1fr)}.metrics div{padding:9px 8px}.metrics b{font-size:11px}.metrics span{font-size:8.5px}.profile-stats{grid-template-columns:1fr 1fr}.world-map{height:380px}.property-card img{height:190px}.tabs{width:calc(100% - 14px);border-radius:22px;padding-left:4px;padding-right:4px}.tab small{font-size:7px}}
 @media(max-width:360px){.money{font-size:30px}.upgrade-grid{grid-template-columns:1fr}.stock-header{flex-direction:column}.stock-price-block{text-align:left}.world-map{height:330px}.tab small{font-size:6.2px}.gold-orb{width:48px;height:48px}}
+
+/* === CORPORATION V14: CLEAR BOTTOM NAV ==================================== */
+.tabs{
+  position:fixed !important;
+  left:max(6px, env(safe-area-inset-left)) !important;
+  right:max(6px, env(safe-area-inset-right)) !important;
+  bottom:max(6px, env(safe-area-inset-bottom)) !important;
+  z-index:1000 !important;
+  display:grid !important;
+  grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+  gap:2px !important;
+  padding:6px !important;
+  margin:0 !important;
+  border:1px solid rgba(255,255,255,.58) !important;
+  border-radius:24px !important;
+  background:rgba(244,244,239,.97) !important;
+  box-shadow:0 16px 38px rgba(0,0,0,.38) !important;
+  backdrop-filter:blur(18px) !important;
+  -webkit-backdrop-filter:blur(18px) !important;
+  overflow:visible !important;
+}
+
+.tab,
+.tabs .tab,
+.tabs .tab[data-page="realestate"]{
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  min-width:0 !important;
+  min-height:54px !important;
+  height:54px !important;
+  padding:5px 2px 4px !important;
+  margin:0 !important;
+  border:0 !important;
+  border-radius:17px !important;
+  background:transparent !important;
+  color:#171719 !important;
+  box-shadow:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:3px !important;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  line-height:1 !important;
+  overflow:visible !important;
+}
+
+.tab::before,
+.tab::after,
+.tabs .tab[data-page="realestate"]::before,
+.tabs .tab[data-page="realestate"]::after{
+  content:none !important;
+  display:none !important;
+}
+
+.tab.active,
+.tabs .tab.active,
+.tabs .tab[data-page="realestate"].active{
+  transform:none !important;
+  background:#151517 !important;
+  color:#ffd400 !important;
+  box-shadow:0 5px 14px rgba(0,0,0,.23) !important;
+}
+
+.nav-icon{
+  width:21px !important;
+  height:21px !important;
+  flex:0 0 21px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:currentColor !important;
+  font-size:22px !important;
+  font-weight:900 !important;
+}
+
+.nav-icon svg{
+  width:21px !important;
+  height:21px !important;
+  display:block !important;
+  fill:none !important;
+  stroke:currentColor !important;
+  stroke-width:1.9 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+
+.nav-icon.nav-ruble{
+  font-family:Arial,sans-serif !important;
+  font-size:23px !important;
+  line-height:21px !important;
+}
+
+.nav-label{
+  display:block !important;
+  width:100% !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  font-size:7.5px !important;
+  line-height:10px !important;
+  font-weight:800 !important;
+  letter-spacing:-.25px !important;
+}
+
+.tab[data-page="realestate"] .nav-label{
+  font-size:6.8px !important;
+  letter-spacing:-.42px !important;
+}
+
+#content{padding-bottom:82px !important;}
+.app{padding-bottom:94px !important;}
+
+@media (min-width:430px){
+  .tabs{
+    left:50% !important;
+    right:auto !important;
+    width:min(420px,calc(100% - 16px)) !important;
+    transform:translateX(-50%) !important;
+  }
+  .nav-label{font-size:8px !important;}
+  .tab[data-page="realestate"] .nav-label{font-size:7.2px !important;}
+}
+/* ========================================================================== */
