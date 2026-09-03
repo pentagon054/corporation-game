@@ -6,6 +6,7 @@ let page = "businesses";
 let stocksCache = [];
 let brokerageCache = null;
 let bondsCache = [];
+let investmentView = "home";
 let realEstateCache = [];
 let worldMap = null;
 
@@ -79,24 +80,46 @@ async function renderInvestments(){
     stocksCache=stocks; brokerageCache=broker; bondsCache=bonds;
     const profit=Number(broker.total_profit||0);
     const bondIncome=(bondsCache||[]).reduce((sum,b)=>sum+Number(b.income_hour||0),0);
-    c.innerHTML=`<section class="investment-page">
-      <article class="investment-summary">
-        <div class="eyebrow">МОЙ БРОКЕРСКИЙ СЧЁТ</div>
-        <h2>${fmt(broker.total_current_value)}</h2>
-        <div class="investment-profit ${profit>=0?"positive":"negative"}">${profit>=0?"▲":"▼"} ${fmt(Math.abs(profit))} (${fmtPercent(broker.total_profit_percent)})</div>
-        <div class="investment-summary-grid">
-          <div><span>Дивиденды акций</span><b>${fmt(broker.dividend_hour)}/ч</b></div>
-          <div><span>Доход облигаций</span><b>${fmt(bondIncome)}/ч</b></div>
-        </div>
-      </article>
-      <div class="investment-section-title"><div><div class="eyebrow">ФОНДОВЫЙ РЫНОК</div><h2>📈 Акции</h2></div><button class="refresh-market" onclick="refreshInvestments()">↻</button></div>
-      <div class="grid">${stocks.map(renderStockCard).join("")}</div>
-      ${renderHoldings()}
-      <div class="investment-section-title bond-section-title"><div><div class="eyebrow">ФИКСИРОВАННЫЙ ДОХОД</div><h2>🏦 Облигации</h2></div></div>
-      <div class="grid">${bondsCache.map(renderBondCard).join("")}</div>
+    const bondValue=(bondsCache||[]).reduce((sum,b)=>sum+Number(b.current_value||0),0);
+    const accountValue=Number(broker.total_current_value||0)+bondValue;
+    const summary=`<article class="investment-summary">
+      <div class="eyebrow">МОЙ БРОКЕРСКИЙ СЧЁТ</div>
+      <h2>${fmt(accountValue)}</h2>
+      <div class="investment-profit ${profit>=0?"positive":"negative"}">${profit>=0?"▲":"▼"} Результат по акциям: ${fmt(Math.abs(profit))} (${fmtPercent(broker.total_profit_percent)})</div>
+      <div class="investment-summary-grid">
+        <div><span>Дивиденды акций</span><b>${fmt(broker.dividend_hour)}/ч</b></div>
+        <div><span>Доход облигаций</span><b>${fmt(bondIncome)}/ч</b></div>
+      </div>
+    </article>`;
+
+    if(investmentView==="stocks"){
+      c.innerHTML=`<section class="investment-page">${summary}
+        <div class="investment-subpage-head"><button class="investment-back" onclick="openInvestmentHome()">←</button><div><div class="eyebrow">ФОНДОВЫЙ РЫНОК</div><h2>Акции</h2></div><button class="refresh-market" onclick="refreshInvestments()">↻</button></div>
+        <div class="grid">${stocks.map(renderStockCard).join("")}</div>
+        ${renderHoldings()}
+      </section>`;
+      return;
+    }
+
+    if(investmentView==="bonds"){
+      c.innerHTML=`<section class="investment-page">${summary}
+        <div class="investment-subpage-head"><button class="investment-back" onclick="openInvestmentHome()">←</button><div><div class="eyebrow">ФИКСИРОВАННЫЙ ДОХОД</div><h2>Облигации</h2></div></div>
+        <div class="grid">${bondsCache.map(renderBondCard).join("")}</div>
+      </section>`;
+      return;
+    }
+
+    c.innerHTML=`<section class="investment-page">${summary}
+      <div class="investment-market-menu">
+        <button class="investment-market-button" onclick="openInvestmentStocks()"><span class="investment-market-icon">↗</span><div><b>Акции</b><small>Котировки, графики, свечи и торговля</small></div><span class="investment-market-arrow">›</span></button>
+        <button class="investment-market-button" onclick="openInvestmentBonds()"><span class="investment-market-icon">₽</span><div><b>Облигации</b><small>Фиксированная доходность и портфель</small></div><span class="investment-market-arrow">›</span></button>
+      </div>
     </section>`;
   }catch(e){modal("Инвестиции",e.message)}
 }
+function openInvestmentHome(){investmentView="home";return renderInvestments()}
+function openInvestmentStocks(){investmentView="stocks";return renderInvestments()}
+function openInvestmentBonds(){investmentView="bonds";return renderInvestments()}
 function renderStockCard(s){
   const h=getHolding(s.id),owned=Number(h?.quantity||0),change=stockChange(s);
   return `<article class="card stock-card">
@@ -142,7 +165,7 @@ async function openBondTrade(id,side){
   if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}
   try{
     const r=await api(`/api/bonds/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});
-    state=r.state; bondsCache=r.bonds||await loadBonds(); renderHeader(); await renderInvestments();
+    state=r.state; bondsCache=r.bonds||await loadBonds(); investmentView="bonds"; renderHeader(); await renderInvestments();
     modal(side==="buy"?"Облигации куплены":"Облигации проданы",`Количество: ${qty} шт.
 Сумма: ${fmt(side==="buy"?r.total_cost:r.total_income)}`);
   }catch(e){modal("Операция не выполнена",e.message)}
@@ -152,7 +175,7 @@ function formatTaxTime(sec){const t=Math.max(0,Number(sec||0)),h=Math.floor(t/36
 function renderTaxes(){const t=state?.taxes||{},u=Number(t.unpaid||0),b=Boolean(t.blocked);document.querySelector("#content").innerHTML=`<section class="tax-page"><article class="tax-hero ${b?"tax-blocked":""}"><div class="eyebrow">НАЛОГОВАЯ СИСТЕМА</div><h2>${b?"⛔ Доход остановлен":"🧾 Налоги"}</h2><p>Налог — 5% с автоматического дохода, дивидендов, дохода по облигациям, аренды и прибыли от продажи акций.</p></article><article class="stats-card"><span>Неоплаченный налог</span><b>${fmt(u)}</b></article><article class="card tax-info">${u>0?(b?"Срок оплаты истёк. Весь пассивный доход остановлен.":`До остановки дохода: <b>${formatTaxTime(t.seconds_left)}</b>.`):"Задолженности нет."}</article><button class="buy" ${u>0?"":"disabled"} onclick="payTaxes()">${u>0?`Оплатить ${fmt(u)}`:"Налогов к оплате нет"}</button></section>`}
 async function payTaxes(){try{const r=await api("/api/taxes/pay",{method:"POST"});state=r.state;renderHeader();renderTaxes();modal("Налог оплачен",`Оплачено ${fmt(r.paid)}.`)}catch(e){modal("Не удалось оплатить",e.message)}}
 
-async function renderRealEstate(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем карту...</div>`;try{const d=await api("/api/real-estate");realEstateCache=d.properties||[];c.innerHTML=`<section class="realestate-page"><div><div class="eyebrow">МИРОВАЯ НЕДВИЖИМОСТЬ</div><h2>🌍 Карта мира</h2><p class="section-note">Приближай карту и нажимай на маркеры городов.</p></div><div id="worldMap" class="world-map"></div><div class="realestate-summary"><span>🏠 Куплено объектов</span><b>${state.real_estate_count||0}</b><span>📈 Рост цены</span><b>+0,5% в сутки</b></div></section>`;setTimeout(initWorldMap,0)}catch(e){modal("Недвижимость",e.message)}}
+async function renderRealEstate(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем карту...</div>`;try{const d=await api("/api/real-estate");realEstateCache=d.properties||[];c.innerHTML=`<section class="realestate-page"><div><div class="eyebrow">МИРОВАЯ НЕДВИЖИМОСТЬ</div><h2>🌍 Карта мира</h2><p class="section-note">Приближай карту и нажимай на маркеры городов.</p></div><div id="worldMap" class="world-map"></div><div class="realestate-summary"><span>🏠 Куплено объектов</span><b>${state.real_estate_count||0}</b><span>📈 Рост цены</span><b>≈ +3,7% в год</b></div></section>`;setTimeout(initWorldMap,0)}catch(e){modal("Недвижимость",e.message)}}
 function initWorldMap(){
   if(worldMap){worldMap.remove();worldMap=null}
   if(!window.L)return modal("Карта","Не удалось загрузить карту.");
@@ -227,8 +250,8 @@ function renderPropertyCard(p){
     </div>
     <div class="property-body">
       <div class="business-head"><div><h3>${p.name}</h3><p>${p.description}</p></div>${p.owned?"<b>✅ Куплено</b>":""}</div>
-      <div class="property-metrics"><div><span>${p.owned?"Текущая стоимость":"Цена"}</span><b>${fmt(p.current_value)}</b></div><div><span>Аренда</span><b>${fmt(p.rent_hour)}/ч</b></div></div>
-      ${p.owned?`<div class="property-growth">📈 Стоимость растёт на 0,5% в сутки от цены покупки</div><div class="upgrade-grid">${p.upgrades.map(u=>`<button class="upgrade-btn ${u.owned?"owned":""}" ${u.owned?"disabled":""} onclick="upgradeProperty('${p.id}','${u.id}')"><b>${u.name}</b><span>${u.owned?"Установлено":`+${u.income_bonus_percent}% к аренде · ${fmt(u.cost)}`}</span></button>`).join("")}</div>`:`<button class="buy" onclick="buyProperty('${p.id}')">Купить за ${fmt(p.purchase_price)}</button>`}
+      <div class="property-metrics"><div><span>${p.owned?"Текущая стоимость":"Цена"}</span><b>${fmt(p.current_value)}</b></div><div><span>Аренда</span><b>${fmt(p.rent_hour)}/ч</b></div></div><div class="property-yield">Доходность аренды: <b>${Number(p.annual_yield_percent||0).toFixed(2)}% годовых</b></div>
+      ${p.owned?`<div class="property-growth">📈 Базовый рост стоимости: около 3,7% в год</div><div class="upgrade-grid">${p.upgrades.map(u=>`<button class="upgrade-btn ${u.owned?"owned":""}" ${u.owned?"disabled":""} onclick="upgradeProperty('${p.id}','${u.id}')"><b>${u.name}</b><span>${u.owned?"Установлено":`+${u.income_bonus_percent}% к аренде · ${fmt(u.cost)}`}</span></button>`).join("")}</div>`:`<button class="buy" onclick="buyProperty('${p.id}')">Купить за ${fmt(p.purchase_price)}</button>`}
     </div>
   </article>`;
 }
@@ -238,12 +261,167 @@ async function upgradeProperty(pid,uid){try{const r=await api(`/api/real-estate/
 
 function render(){renderHeader();if(page==="businesses")return renderBusinesses();if(page==="investments")return renderInvestments();if(page==="realestate")return renderRealEstate();if(page==="taxes")return renderTaxes();if(page==="statistics")return renderStatistics();if(page==="rating")return renderRating()}
 function updateActiveTab(){document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===page))}
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{page=b.dataset.page;updateActiveTab();render()});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(b.dataset.page==="investments")investmentView="home";page=b.dataset.page;updateActiveTab();render()});
 window.buyBusiness=async id=>{try{state=await api(`/api/business/${id}/buy`,{method:"POST"});render()}catch(e){modal("Не удалось",e.message)}};
 window.upgradeBusiness=async(id,upgradeId)=>{try{state=await api(`/api/business/${id}/upgrade/${upgradeId}`,{method:"POST"});render();modal("Бизнес прокачан","Доход бизнеса увеличен.")}catch(e){modal("Прокачка не выполнена",e.message)}};
 window.sellBusiness=async id=>{const b=(state.businesses||[]).find(x=>x.id===id);if(!b||!confirm(`Продать ${b.name} за ${fmt(b.sell_price)}?`))return;try{const r=await api(`/api/business/${id}/sell`,{method:"POST"});state=r.state;render();modal("Бизнес продан",`Получено ${fmt(r.sell_price)}.`)}catch(e){modal("Ошибка",e.message)}};
 document.querySelector("#renameBtn").onclick=async()=>{if(!state)return;const name=prompt("Новое название корпорации:",state.player.corp_name);if(!name)return;try{state=await api("/api/rename",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});render()}catch(e){modal("Ошибка",e.message)}};
-Object.assign(window,{openPlayerProfile,backToRating,openStock,openTrade,openBondTrade,refreshInvestments,payTaxes,renderRealEstate,openCity,buyProperty,upgradeProperty});
+Object.assign(window,{openPlayerProfile,backToRating,openStock,openTrade,openBondTrade,refreshInvestments,openInvestmentHome,openInvestmentStocks,openInvestmentBonds,payTaxes,renderRealEstate,openCity,buyProperty,upgradeProperty});
 async function refresh(){try{state=await api("/api/state");updateActiveTab();render()}catch(e){console.error(e);modal("Ошибка запуска",e.message)}}
 refresh();
 setInterval(async()=>{try{state=await api("/api/state");renderHeader();if(page==="taxes")renderTaxes()}catch{}},60000);
+
+/* === CORPORATION_STOCK_MARKET_V17 === */
+let corporationStockViewMode="line";
+let corporationStockReturnScroll=0;
+let corporationActiveStockId=null;
+
+function corporationBuildCandles(history,size=5){
+  const points=(history||[]).map(x=>({price:Number(x.price||0),created_at:Number(x.created_at||0)})).filter(x=>Number.isFinite(x.price));
+  const out=[];
+  for(let i=0;i<points.length;i+=size){
+    const c=points.slice(i,i+size);
+    if(!c.length)continue;
+    const p=c.map(x=>x.price);
+    out.push({open:p[0],close:p[p.length-1],high:Math.max(...p),low:Math.min(...p),created_at:c[c.length-1].created_at});
+  }
+  return out;
+}
+
+function corporationRenderChart(history,mode=corporationStockViewMode){
+  const rows=(history||[]).map(x=>({price:Number(x.price||0),created_at:Number(x.created_at||0)})).filter(x=>Number.isFinite(x.price));
+  if(rows.length<2)return `<div class="corp-stock-chart-empty">История цены пока формируется</div>`;
+
+  const prices=rows.map(x=>x.price), visibleMax=Math.max(...prices), visibleMin=Math.min(...prices);
+  const spread=Math.max(visibleMax-visibleMin,Math.max(visibleMax,1)*0.004), pad=spread*.12;
+  const chartMin=visibleMin-pad, chartMax=visibleMax+pad, range=chartMax-chartMin||1;
+  const W=820,H=390,L=56,R=105,T=20,B=38,PW=W-L-R,PH=H-T-B;
+  const y=p=>T+PH-((p-chartMin)/range)*PH;
+  const x=(i,n)=>L+(n<=1?PW/2:(i/(n-1))*PW);
+
+  const maxY=y(visibleMax),minY=y(visibleMin),last=prices.at(-1),lastY=y(last);
+
+  let series="";
+  if(mode==="candles"){
+    const candles=corporationBuildCandles(rows,5),slot=PW/Math.max(candles.length,1),bw=Math.max(4,Math.min(15,slot*.52));
+    series=candles.map((c,i)=>{
+      const cx=L+(i+.5)*slot,yo=y(c.open),yc=y(c.close),yh=y(c.high),yl=y(c.low),up=c.close>=c.open;
+      return `<line x1="${cx}" y1="${yh}" x2="${cx}" y2="${yl}" class="corp-candle-wick ${up?"up":"down"}"/>
+      <rect x="${cx-bw/2}" y="${Math.min(yo,yc)}" width="${bw}" height="${Math.max(2,Math.abs(yc-yo))}" rx="2" class="corp-candle-body ${up?"up":"down"}"/>`;
+    }).join("");
+  }else{
+    const pts=prices.map((p,i)=>`${x(i,prices.length)},${y(p)}`).join(" ");
+    series=`<polygon points="${L},${T+PH} ${pts} ${L+PW},${T+PH}" class="corp-stock-area"/>
+    <polyline points="${pts}" class="corp-stock-line"/>`;
+  }
+
+  const guideVals=[chartMax-pad*.25,visibleMax-(visibleMax-visibleMin)*.33,visibleMin+(visibleMax-visibleMin)*.33,chartMin+pad*.25];
+  const guides=guideVals.map(v=>`<line x1="${L}" y1="${y(v)}" x2="${L+PW}" y2="${y(v)}" class="corp-chart-grid"/>
+  <text x="${L-7}" y="${y(v)+4}" text-anchor="end" class="corp-chart-axis">${fmtNumber(v)}</text>`).join("");
+
+  const labels=[];
+  const count=Math.min(5,rows.length);
+  for(let k=0;k<count;k++){
+    const idx=Math.round(k*(rows.length-1)/(count-1));
+    const ts=rows[idx]?.created_at;
+    let label="";
+    if(ts)label=new Date(ts*1000).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+    labels.push(`<text x="${x(idx,rows.length)}" y="${H-7}" text-anchor="${k===0?"start":k===count-1?"end":"middle"}" class="corp-chart-time">${label}</text>`);
+  }
+
+  return `<div class="corp-stock-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${guides}
+    <line x1="${L}" y1="${maxY}" x2="${L+PW}" y2="${maxY}" class="corp-extreme-line"/>
+    <text x="${L+PW+8}" y="${maxY+4}" class="corp-extreme-label">MAX ${fmtNumber(visibleMax)}</text>
+    <line x1="${L}" y1="${minY}" x2="${L+PW}" y2="${minY}" class="corp-extreme-line"/>
+    <text x="${L+PW+8}" y="${minY+4}" class="corp-extreme-label">MIN ${fmtNumber(visibleMin)}</text>
+    ${series}
+    <line x1="${L}" y1="${lastY}" x2="${L+PW}" y2="${lastY}" class="corp-current-price-line"/>
+    <circle cx="${L+PW}" cy="${lastY}" r="4" class="corp-current-dot"/>
+    ${labels.join("")}
+  </svg></div>`;
+}
+
+renderStockMiniChart=function(history){return corporationRenderChart(history,"line")};
+
+renderStockCard=function(stock){
+  const change=Number(stock.change_percent||0),owned=Number(getHolding(stock.id)?.quantity||0);
+  return `<button class="corp-stock-row" type="button" onclick="openStock('${stock.id}')">
+    <div class="corp-stock-icon">${String(stock.symbol||stock.name||"?").slice(0,2).toUpperCase()}</div>
+    <div class="corp-stock-name"><strong>${stock.name}</strong><span>${owned>0?`В портфеле · ${owned} шт.`:"Доступно"}</span></div>
+    <div class="corp-stock-quote"><strong>${fmt(stock.current_price)}</strong><span class="${change>=0?"positive":"negative"}">${change>=0?"+":"−"} ${Math.abs(change).toFixed(2)}%</span></div>
+    <span class="corp-stock-arrow">›</span>
+  </button>`;
+};
+
+openStock=async function(id,keepScroll=false){
+  const c=document.querySelector("#content");
+  if(!keepScroll)corporationStockReturnScroll=window.scrollY||0;
+  corporationActiveStockId=String(id);
+  investmentView="stocks";
+  c.innerHTML=`<div class="empty">Загружаем акцию...</div>`;
+  try{
+    const s=await api(`/api/stocks/${id}`),h=getHolding(id),owned=Number(h?.quantity||0),change=Number(s.change_percent||0);
+    stocksCache=stocksCache.map(x=>String(x.id)===String(s.id)?{...x,...s}:x);
+    c.innerHTML=`<section class="corp-stock-page">
+      <div class="corp-stock-page-top"><button class="corp-stock-back" onclick="corporationCloseStock()">←</button></div>
+      <div class="corp-stock-company">
+        <div class="corp-stock-logo-large">${String(s.symbol||s.name||"?").slice(0,2).toUpperCase()}</div>
+        <div class="corp-stock-symbol">${s.symbol||""}</div><h2>${s.name}</h2>
+      </div>
+      <article class="corp-stock-chart-card">
+        <div class="corp-stock-chart-head">
+          <div><span>Текущая цена</span><strong>${fmt(s.current_price)}</strong><small class="${change>=0?"positive":"negative"}">${change>=0?"+":"−"} ${Math.abs(change).toFixed(2)}%</small></div>
+          <button class="corp-chart-switch" onclick="corporationToggleStockChart('${s.id}')">${corporationStockViewMode==="candles"?"〽 Линия":"🕯 Свечи"}</button>
+        </div>
+        ${corporationRenderChart(s.history||[],corporationStockViewMode)}
+        <div class="corp-extreme-note">MAX и MIN — максимум и минимум видимой истории графика.</div>
+      </article>
+      <button class="corp-stock-buy-main" onclick="openTrade('${s.id}','buy')">Купить акции</button>
+      ${owned>0?`<button class="corp-stock-sell-main" onclick="openTrade('${s.id}','sell')">Продать акции · ${owned} шт.</button>`:""}
+      <section class="corp-stock-info">
+        <h2>Сведения</h2>
+        <div class="corp-stock-info-row"><span>Стоимость одной акции</span><strong>${fmt(s.current_price)}</strong></div>
+        <div class="corp-stock-info-row"><span>В портфеле</span><strong>${owned} шт.</strong></div>
+        <div class="corp-stock-info-row"><span>Дивиденды</span><strong>${Number(s.dividend_rate_percent||0).toFixed(2)}% / ч</strong></div>
+        <div class="corp-stock-description"><span>О компании</span><p>${s.description||"Описание компании пока отсутствует."}</p></div>
+      </section>
+    </section>`;
+    window.scrollTo({top:0,left:0,behavior:"auto"});
+  }catch(e){corporationActiveStockId=null;modal("Ошибка",e.message);await renderInvestments()}
+};
+
+corporationToggleStockChart=async function(id){
+  corporationStockViewMode=corporationStockViewMode==="line"?"candles":"line";
+  await openStock(id,true);
+};
+
+corporationCloseStock=async function(){
+  corporationActiveStockId=null;
+  investmentView="stocks";
+  await renderInvestments();
+  requestAnimationFrame(()=>window.scrollTo({top:corporationStockReturnScroll,left:0,behavior:"auto"}));
+};
+
+openTrade=async function(id,side){
+  const s=stocksCache.find(x=>String(x.id)===String(id));if(!s)return;
+  const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price||0);
+  const max=side==="buy"?Math.floor(Number(state.player.money||0)/price):owned;
+  if(max<=0){modal("Сделка",side==="buy"?"Недостаточно средств для покупки.":"У тебя нет этих акций.");return}
+  const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");
+  if(raw===null)return;
+  const qty=parseInt(raw,10);
+  if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}
+  try{
+    const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});
+    state=r.state;renderHeader();await Promise.all([loadStocks(),loadBrokerage()]);
+    if(corporationActiveStockId===String(id))await openStock(id,true);else await renderInvestments();
+    modal(side==="buy"?"Акции куплены":"Акции проданы",side==="sell"&&Number(r.realized_profit)>0?`Прибыль сделки: ${fmt(r.realized_profit)}\nНалог с прибыли: ${fmt(r.profit_tax)}`:`Сумма сделки: ${fmt(side==="buy"?r.total_cost:r.total_income)}`);
+  }catch(e){modal("Сделка не выполнена",e.message)}
+};
+
+window.openStock=openStock;
+window.openTrade=openTrade;
+window.corporationToggleStockChart=corporationToggleStockChart;
+window.corporationCloseStock=corporationCloseStock;
+/* === /CORPORATION_STOCK_MARKET_V17 === */
