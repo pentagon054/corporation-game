@@ -11,7 +11,7 @@ from datetime import datetime
 from urllib.parse import parse_qsl
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -87,7 +87,7 @@ TAX_RATE = 0.05
 TAX_GRACE_SECONDS = 12 * 60 * 60
 STOCK_UPDATE_INTERVAL = 60
 MAX_STOCK_HISTORY_POINTS = 720
-REAL_ESTATE_DAILY_GROWTH = 0.0001
+REAL_ESTATE_DAILY_GROWTH = 0.00015
 
 BUSINESSES = {
     "coffee": {"name": "☕ Кофейня", "desc": "Небольшая, но стабильная точка.", "base_cost": 5000, "base_income": 350},
@@ -477,6 +477,30 @@ REAL_ESTATE = {
     },
 }
 
+
+# === CORPORATION V20: REAL ESTATE BALANCE ===================================
+# Slightly lower entry prices and make more expensive property progressively
+# more profitable. Base annual rental yield ranges from ~8% to ~14%.
+def _rebalance_real_estate_v20():
+    prices = [float(p["price"]) for p in REAL_ESTATE.values()]
+    if not prices:
+        return
+    lo, hi = min(prices), max(prices)
+    import math
+    log_lo, log_hi = math.log(max(lo, 1.0)), math.log(max(hi, 1.0))
+    span = max(log_hi - log_lo, 1e-9)
+    for prop in REAL_ESTATE.values():
+        new_price = round(float(prop["price"]) * 0.90, 2)
+        score = (math.log(max(new_price, 1.0)) - math.log(max(lo * 0.90, 1.0))) / span
+        score = min(1.0, max(0.0, score))
+        annual_yield = 0.08 + 0.06 * score
+        prop["price"] = new_price
+        prop["base_rent_hour"] = round(new_price * annual_yield / 8760, 2)
+        prop["target_annual_yield"] = annual_yield
+
+_rebalance_real_estate_v20()
+# ============================================================================
+
 api = FastAPI(title="Corporation")
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 api.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
@@ -594,6 +618,12 @@ def init_db():
             captured_at INTEGER NOT NULL,
             PRIMARY KEY(season_id, place)
         );
+        CREATE TABLE IF NOT EXISTS seasons (
+            season_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            started_at INTEGER NOT NULL DEFAULT 0,
+            ended_at INTEGER NOT NULL DEFAULT 0
+        );
         CREATE TABLE IF NOT EXISTS admin_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER NOT NULL,
@@ -608,11 +638,21 @@ def init_db():
         ensure_column(conn, "businesses", "equipment", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "businesses", "staff", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "businesses", "automation", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "season_results", "capital", "REAL NOT NULL DEFAULT 0")
+        conn.execute("UPDATE season_results SET capital=money WHERE capital<=0")
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
         conn.execute(
             "INSERT OR IGNORE INTO game_state(id,is_frozen,frozen_at,current_season,season_started_at,season_ended_at,maintenance_message) VALUES(1,0,0,1,?,0,'')",
             (now,),
         )
+        gs_row = conn.execute("SELECT current_season,season_started_at,season_ended_at FROM game_state WHERE id=1").fetchone()
+        conn.execute(
+            "INSERT OR IGNORE INTO seasons(season_id,name,started_at,ended_at) VALUES(?,?,?,?)",
+            (int(gs_row["current_season"]), f"Сезон №{int(gs_row['current_season'])}", int(gs_row["season_started_at"] or now), int(gs_row["season_ended_at"] or 0)),
+        )
+        for sr in conn.execute("SELECT DISTINCT season_id FROM season_results").fetchall():
+            sid = int(sr["season_id"])
+            conn.execute("INSERT OR IGNORE INTO seasons(season_id,name,started_at,ended_at) VALUES(?,?,0,0)", (sid, f"Сезон №{sid}"))
 
         # REAL_ESTATE_V18_REVALUE: keep ownership/upgrades, but rebase legacy purchase prices
         # to the new realistic market model so old low prices cannot create extreme yields.
@@ -1055,6 +1095,68 @@ def get_tax_status(uid):
     return {"rate": TAX_RATE, "rate_percent": 5, "unpaid": round(unpaid, 2), "due_since": due_since, "last_paid": last_paid, "blocked": blocked, "seconds_left": seconds_left}
 
 
+
+def property_capitalization_from_row(row, now=None):
+    if not row:
+        return 0.0
+    now = int(now or time.time())
+    purchase_price = float(row["purchase_price"])
+    days = max(0.0, (now - int(row["purchased_at"])) / 86400)
+    market_value = purchase_price * (1 + REAL_ESTATE_DAILY_GROWTH * days)
+    upgrades_value = 0.0
+    for key, cfg in REAL_ESTATE_UPGRADES.items():
+        if int(row[key] or 0) > 0:
+            upgrades_value += purchase_price * float(cfg["cost_rate"])
+    return round(market_value + upgrades_value, 2)
+
+
+def player_capital(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        now = int(time.time())
+        player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
+        cash = float(player["money"] if player else 0)
+        business_value = 0.0
+        for row in conn.execute("SELECT * FROM businesses WHERE user_id=?", (uid,)).fetchall():
+            bid = row["business_id"]
+            lvl = int(row["level"] or 0)
+            if bid in BUSINESSES and lvl > 0:
+                business_value += business_capitalization(bid, lvl, row)
+        stock_value = sum(float(r["current_price"]) * int(r["quantity"]) for r in conn.execute(
+            "SELECT h.quantity,s.current_price FROM stock_holdings h JOIN stocks s ON s.id=h.stock_id WHERE h.user_id=? AND h.quantity>0", (uid,)
+        ).fetchall())
+        bond_value = sum(float(BONDS[r["bond_id"]]["price"]) * int(r["quantity"]) for r in conn.execute(
+            "SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0", (uid,)
+        ).fetchall() if r["bond_id"] in BONDS)
+        property_value = sum(property_capitalization_from_row(r, now) for r in conn.execute(
+            "SELECT * FROM real_estate_holdings WHERE user_id=?", (uid,)
+        ).fetchall())
+        total = cash + business_value + stock_value + bond_value + property_value
+        return {
+            "total": round(total,2), "cash": round(cash,2), "businesses": round(business_value,2),
+            "stocks": round(stock_value,2), "bonds": round(bond_value,2), "real_estate": round(property_value,2),
+        }
+    finally:
+        if own:
+            conn.close()
+
+
+def all_ranked_players(limit=None):
+    update_stock_market()
+    with closing(db()) as conn:
+        ids=[int(r["user_id"]) for r in conn.execute("SELECT user_id FROM players").fetchall()]
+    for uid in ids:
+        sync_passive_income(uid)
+    with closing(db()) as conn:
+        rows=[]
+        for p in conn.execute("SELECT user_id,corp_name,username,money FROM players").fetchall():
+            cap=player_capital(int(p["user_id"]), conn)
+            rows.append({**dict(p), "capital": cap["total"], "capital_breakdown": cap})
+    rows.sort(key=lambda x:(-float(x["capital"]), int(x["user_id"])))
+    return rows[:limit] if limit else rows
+
 def property_payload(uid):
     now = int(time.time())
     with closing(db()) as conn:
@@ -1084,7 +1186,8 @@ def property_payload(uid):
                 "income_bonus_percent": round(cfg["income_bonus"] * 100),
             })
         annual_yield_percent = (rent * 8760 / purchase_price * 100) if purchase_price > 0 else 0
-        result.append({"id": pid, **prop, "owned": owned, "purchase_price": round(purchase_price, 2), "current_value": round(current_value, 2), "rent_hour": round(rent, 2), "annual_yield_percent": round(annual_yield_percent, 2), "growth_daily_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3), "upgrades": upgrade_info})
+        capitalization = property_capitalization_from_row(row, now) if owned else float(prop["price"])
+        result.append({"id": pid, **prop, "owned": owned, "purchase_price": round(purchase_price, 2), "current_value": round(current_value, 2), "capitalization": round(capitalization,2), "sell_price": round(capitalization,2) if owned else 0, "rent_hour": round(rent, 2), "annual_yield_percent": round(annual_yield_percent, 2), "growth_daily_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3), "upgrades": upgrade_info})
     return result
 
 
@@ -1130,8 +1233,11 @@ def snapshot(uid):
             "sell_price": round(cap * 0.30, 2),
             "upgrades": upgrades,
         })
+    capital = player_capital(uid)
     return {
         "player": dict(p),
+        "capital": capital["total"],
+        "capital_breakdown": capital,
         "hourly_income": 0 if tax_status["blocked"] else round(total_rate, 2),
         "gross_hourly_income": round(total_rate, 2),
         "income_breakdown": {"business": round(business_rate, 2), "dividends": round(dividend_rate, 2), "bonds": round(bond_rate, 2), "rent": round(rent_rate, 2)},
@@ -1161,6 +1267,8 @@ def public_profile(uid):
     businesses = [{"id": bid, "name": BUSINESSES[bid]["name"], "description": BUSINESSES[bid]["desc"], "level": level} for bid, level in levels.items() if level > 0 and bid in BUSINESSES]
     return {
         "player": {"user_id": player["user_id"], "username": player["username"], "corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]},
+        "capital": player_capital(uid)["total"],
+        "capital_breakdown": player_capital(uid),
         "hourly_income": snapshot(uid)["hourly_income"],
         "stats": dict(stats),
         "businesses": businesses,
@@ -1246,7 +1354,18 @@ class QuantityBody(BaseModel):
 
 @api.get("/")
 def index():
-    return FileResponse(os.path.join(WEB_DIR, "index.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+    path = os.path.join(WEB_DIR, "index.html")
+    with open(path, "r", encoding="utf-8") as f:
+        html = f.read()
+    tag = '<script src="/static/v20.js?v=200"></script>'
+    if tag not in html:
+        html = html.replace("</body>", tag + "\n</body>")
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+
+
+@api.get("/seasons")
+def seasons_page():
+    return FileResponse(os.path.join(WEB_DIR, "seasons.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
 
 
 @api.get("/admin")
@@ -1268,11 +1387,18 @@ def state(x_telegram_init_data: str | None = Header(None), x_user_id: str | None
 @api.post("/api/rename")
 def rename(body: NameBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    name = body.name.strip()[:32]
+    name = " ".join(body.name.strip().split())[:32]
     if len(name) < 2:
         raise HTTPException(400, "Название должно содержать минимум 2 символа")
     with closing(db()) as conn:
-        conn.execute("UPDATE players SET corp_name=? WHERE user_id=?", (name, uid)); conn.commit()
+        duplicate = conn.execute(
+            "SELECT user_id FROM players WHERE user_id<>? AND lower(trim(corp_name))=lower(trim(?)) LIMIT 1",
+            (uid, name),
+        ).fetchone()
+        if duplicate:
+            raise HTTPException(409, "Компания с таким названием уже существует. Выбери другое название.")
+        conn.execute("UPDATE players SET corp_name=? WHERE user_id=?", (name, uid))
+        conn.commit()
     return snapshot(uid)
 
 
@@ -1384,19 +1510,18 @@ def pay_taxes(x_telegram_init_data: str | None = Header(None), x_user_id: str | 
 
 @api.get("/api/statistics")
 def statistics(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
-    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid); update_stock_market()
     player = get_player(uid)
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
-    return {"player": {"corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]}, "hourly_income": snapshot(uid)["hourly_income"], "total_spent": stats["total_spent"], "total_earned": stats["total_earned"], "companies_bought": stats["companies_bought"], "properties_bought": stats["properties_bought"], "daily_profit": get_daily_profit(uid)}
+    cap = player_capital(uid)
+    return {"player": {"corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]}, "capital": cap["total"], "capital_breakdown": cap, "hourly_income": snapshot(uid)["hourly_income"], "total_spent": stats["total_spent"], "total_earned": stats["total_earned"], "companies_bought": stats["companies_bought"], "properties_bought": stats["properties_bought"], "daily_profit": get_daily_profit(uid)}
 
 
 @api.get("/api/rating")
 def rating(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
-    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
-    with closing(db()) as conn:
-        rows = conn.execute("SELECT user_id,corp_name,username,money FROM players ORDER BY money DESC LIMIT 20").fetchall()
-    return [dict(r) for r in rows]
+    auth(x_telegram_init_data, x_user_id)
+    return all_ranked_players(20)
 
 
 @api.get("/api/player/{player_id}")
@@ -1582,6 +1707,44 @@ def upgrade_property(property_id: str, upgrade_id: str, x_telegram_init_data: st
         conn.commit()
     return {"state": snapshot(uid), "properties": property_payload(uid)}
 
+
+@api.post("/api/real-estate/{property_id}/sell")
+def sell_property(property_id: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
+    if property_id not in REAL_ESTATE:
+        raise HTTPException(404, "Объект не найден")
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM real_estate_holdings WHERE user_id=? AND property_id=?", (uid, property_id)).fetchone()
+        if not row:
+            conn.rollback(); raise HTTPException(400, "У тебя нет этой недвижимости")
+        price = property_capitalization_from_row(row, now)
+        conn.execute("DELETE FROM real_estate_holdings WHERE user_id=? AND property_id=?", (uid, property_id))
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (price, uid))
+        conn.commit()
+    return {"sell_price": round(price,2), "state": snapshot(uid), "properties": property_payload(uid)}
+
+
+@api.get("/api/seasons")
+def public_seasons(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    auth(x_telegram_init_data, x_user_id)
+    state = get_game_state()
+    current_id = int(state["current_season"])
+    current = all_ranked_players(20)
+    with closing(db()) as conn:
+        meta = {int(r["season_id"]): dict(r) for r in conn.execute("SELECT * FROM seasons ORDER BY season_id DESC").fetchall()}
+        rows = conn.execute("SELECT * FROM season_results ORDER BY season_id DESC,place ASC").fetchall()
+    previous = {}
+    for r in rows:
+        sid = int(r["season_id"])
+        previous.setdefault(str(sid), []).append(dict(r))
+    return {
+        "current": {"season_id": current_id, "name": meta.get(current_id, {}).get("name", f"Сезон №{current_id}"), "leaders": current, "started_at": state.get("season_started_at",0), "ended_at": state.get("season_ended_at",0)},
+        "previous": previous,
+        "meta": {str(k):v for k,v in meta.items()},
+    }
+
 # === CORPORATION ADMIN PANEL V19 ============================================
 class AdminFreezeBody(BaseModel):
     frozen: bool
@@ -1590,6 +1753,10 @@ class AdminFreezeBody(BaseModel):
 
 class AdminConfirmBody(BaseModel):
     confirmation: str
+
+
+class AdminSeasonNameBody(BaseModel):
+    name: str
 
 
 @api.get("/api/admin/overview")
@@ -1627,7 +1794,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v19-admin",
+        "version": "v20",
     }
 
 
@@ -1670,11 +1837,29 @@ def admin_seasons(x_telegram_init_data: str | None = Header(None), x_user_id: st
     require_admin(x_telegram_init_data, x_user_id)
     with closing(db()) as conn:
         rows = conn.execute("SELECT * FROM season_results ORDER BY season_id DESC,place ASC").fetchall()
+        meta = {str(r["season_id"]): dict(r) for r in conn.execute("SELECT * FROM seasons ORDER BY season_id DESC").fetchall()}
     grouped = {}
     for r in rows:
         grouped.setdefault(str(r["season_id"]), []).append(dict(r))
-    return {"current": get_game_state(), "results": grouped}
+    return {"current": get_game_state(), "results": grouped, "meta": meta}
 
+
+
+@api.post("/api/admin/season/{season_id}/rename")
+def admin_rename_season(season_id: int, body: AdminSeasonNameBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    name = " ".join(body.name.strip().split())[:50]
+    if len(name) < 2:
+        raise HTTPException(400, "Название сезона слишком короткое")
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        exists = conn.execute("SELECT 1 FROM seasons WHERE season_id=?", (season_id,)).fetchone()
+        if not exists:
+            conn.rollback(); raise HTTPException(404, "Сезон не найден")
+        conn.execute("UPDATE seasons SET name=? WHERE season_id=?", (name, season_id))
+        admin_log(admin_id, "rename_season", f"season={season_id}; name={name}", conn)
+        conn.commit()
+    return {"ok": True, "season_id": season_id, "name": name}
 
 @api.post("/api/admin/freeze")
 def admin_freeze(body: AdminFreezeBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
@@ -1712,21 +1897,15 @@ def admin_end_season(body: AdminConfirmBody, x_telegram_init_data: str | None = 
     admin_id = require_admin(x_telegram_init_data, x_user_id)
     if body.confirmation.strip().upper() != "END SEASON":
         raise HTTPException(400, "Для подтверждения введи END SEASON")
-    if not game_is_frozen():
-        with closing(db()) as conn:
-            ids = [int(r["user_id"]) for r in conn.execute("SELECT user_id FROM players").fetchall()]
-        for uid in ids:
-            sync_passive_income(uid)
-        update_stock_market()
+    leaders = all_ranked_players()
     now = int(time.time())
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        gs = conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()
-        season = int(gs["current_season"])
+        season = int(conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()["current_season"])
         conn.execute("DELETE FROM season_results WHERE season_id=?", (season,))
-        leaders = conn.execute("SELECT user_id,username,corp_name,money FROM players ORDER BY money DESC,user_id ASC").fetchall()
         for place, r in enumerate(leaders, start=1):
-            conn.execute("INSERT INTO season_results(season_id,place,user_id,username,corp_name,money,captured_at) VALUES(?,?,?,?,?,?,?)", (season, place, r["user_id"], r["username"], r["corp_name"], r["money"], now))
+            conn.execute("INSERT INTO season_results(season_id,place,user_id,username,corp_name,money,capital,captured_at) VALUES(?,?,?,?,?,?,?,?)", (season, place, r["user_id"], r["username"], r["corp_name"], r["money"], r["capital"], now))
+        conn.execute("UPDATE seasons SET ended_at=? WHERE season_id=?", (now, season))
         conn.execute("UPDATE game_state SET is_frozen=1,frozen_at=?,season_ended_at=?,maintenance_message='Сезон завершён. Итоги зафиксированы.' WHERE id=1", (now, now))
         admin_log(admin_id, "end_season", f"season={season}; players={len(leaders)}", conn)
         conn.commit()
@@ -1761,6 +1940,7 @@ def admin_new_season(body: AdminConfirmBody, x_telegram_init_data: str | None = 
         current = int(conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()["current_season"])
         reset_all_progress_conn(conn, now)
         next_season = current + 1
+        conn.execute("INSERT OR REPLACE INTO seasons(season_id,name,started_at,ended_at) VALUES(?,?,?,0)", (next_season, f"Сезон №{next_season}", now))
         conn.execute("UPDATE game_state SET current_season=?,season_started_at=?,season_ended_at=0,is_frozen=0,frozen_at=0,maintenance_message='' WHERE id=1", (next_season, now))
         admin_log(admin_id, "start_new_season", f"season={next_season}; backup={os.path.basename(backup_path)}", conn)
         conn.commit()

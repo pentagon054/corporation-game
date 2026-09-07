@@ -10,7 +10,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "191"
+WEBAPP_VERSION = "200"
 ADMIN_IDS = {
     int(x.strip())
     for x in (os.getenv("ADMIN_IDS") or "").split(",")
@@ -50,12 +50,17 @@ async def main():
             text="🎮 Играть",
             web_app=WebAppInfo(url=f"{WEBAPP_URL.rstrip('/')}/?v={WEBAPP_VERSION}"),
         )
+        kb.button(
+            text="🏆 Сезоны",
+            web_app=WebAppInfo(url=f"{WEBAPP_URL.rstrip('/')}/seasons?v={WEBAPP_VERSION}"),
+        )
         if is_admin(message.from_user.id if message.from_user else None):
             kb.button(
                 text="🛠 Админ-панель",
                 web_app=WebAppInfo(url=f"{WEBAPP_URL.rstrip('/')}/admin?v={WEBAPP_VERSION}"),
             )
-            kb.adjust(1)
+
+        kb.adjust(1)
 
         await message.answer(
             "🏢 <b>Построй свою корпорацию</b>\n\n"
