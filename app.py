@@ -2044,7 +2044,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v21",
+        "version": "v21.1",
     }
 
 
@@ -2052,20 +2052,20 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
 def admin_players(q: str = "", limit: int = 100, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     require_admin(x_telegram_init_data, x_user_id)
     limit = max(1, min(int(limit), 250))
-    q = (q or "").strip()
-    with closing(db()) as conn:
-        if q:
-            like = f"%{q}%"
-            rows = conn.execute(
-                "SELECT p.user_id,p.username,p.corp_name,p.money,p.created_at,p.last_income_sync,s.total_earned,s.total_spent,s.companies_bought,s.properties_bought FROM players p LEFT JOIN stats s ON s.user_id=p.user_id WHERE CAST(p.user_id AS TEXT) LIKE ? OR COALESCE(p.username,'') LIKE ? OR p.corp_name LIKE ? ORDER BY p.money DESC LIMIT ?",
-                (like, like, like, limit),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT p.user_id,p.username,p.corp_name,p.money,p.created_at,p.last_income_sync,s.total_earned,s.total_spent,s.companies_bought,s.properties_bought FROM players p LEFT JOIN stats s ON s.user_id=p.user_id ORDER BY p.money DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-    return [dict(r) for r in rows]
+    q = (q or "").strip().lower()
+
+    # Админский рейтинг использует ровно ту же модель полной капитализации,
+    # что и игровой рейтинг: деньги + 100% бизнеса + акции по текущей цене +
+    # облигации + 100% текущей капитализации недвижимости с улучшениями.
+    ranked = all_ranked_players()
+    if q:
+        ranked = [
+            row for row in ranked
+            if q in str(row.get("user_id", "")).lower()
+            or q in str(row.get("username", "") or "").lower()
+            or q in str(row.get("corp_name", "") or "").lower()
+        ]
+    return ranked[:limit]
 
 
 @api.get("/api/admin/player/{player_id}")
