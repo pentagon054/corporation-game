@@ -1,6 +1,6 @@
 (() => {
 const css=`
-.v20-capital-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v20-capital-grid .stats-card{margin:0}.v20-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.v20-action-grid button{min-height:44px;border-radius:13px}.v20-secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--line)}.v20-sell-all{background:rgba(255,90,82,.08);color:#ff7b75;border:1px solid rgba(255,90,82,.3)}.v20-property-sell{width:100%;margin-top:10px;min-height:46px;border-radius:14px;background:rgba(255,90,82,.08);color:#ff7b75;border:1px solid rgba(255,90,82,.3)}.v20-cap-note{font-size:11px;color:var(--hint);margin-top:8px}`;
+.v20-capital-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v20-capital-grid .stats-card{margin:0}.v20-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.v20-action-grid button{min-height:44px;border-radius:13px}.v20-secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--line)}.v20-sell-all{background:rgba(255,90,82,.08);color:#ff7b75;border:1px solid rgba(255,90,82,.3)}.v20-property-sell{width:100%;margin-top:10px;min-height:46px;border-radius:14px;background:rgba(255,90,82,.08);color:#ff7b75;border:1px solid rgba(255,90,82,.3)}.v20-cap-note{font-size:11px;color:var(--hint);margin-top:8px}.v21-news-entry{width:100%;min-height:52px;margin:0 0 12px;padding:13px 15px;border:1px solid rgba(230,194,84,.28);border-radius:16px;background:linear-gradient(145deg,rgba(230,194,84,.12),rgba(255,255,255,.025));color:var(--text);font-size:15px;font-weight:850;text-align:left}.v21-news-page{display:grid;gap:14px}.v21-news-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.v21-news-head h2{margin:0}.v21-news-next{font-size:11px;color:var(--hint)}.v21-news-card{overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--card)}.v21-news-photo{width:100%;height:180px;object-fit:cover;display:block}.v21-news-body{padding:15px}.v21-news-kicker{display:flex;justify-content:space-between;gap:8px;color:var(--hint);font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}.v21-news-body h3{margin:9px 0 9px;font-size:20px;line-height:1.2}.v21-news-body p{margin:0;color:var(--text);font-size:13px;line-height:1.55}.v21-news-reaction{margin-top:13px;padding-top:12px;border-top:1px solid var(--line);font-size:12px}.v21-good{color:var(--positive)}.v21-bad{color:var(--negative)}`;
 const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
 function capGrid(b){return `<div class="v20-capital-grid"><article class="stats-card"><span>💵 Свободные деньги</span><b>${fmt(b.cash)}</b></article><article class="stats-card"><span>🏢 Бизнесы</span><b>${fmt(b.businesses)}</b></article><article class="stats-card"><span>📈 Акции</span><b>${fmt(b.stocks)}</b></article><article class="stats-card"><span>🏦 Облигации</span><b>${fmt(b.bonds)}</b></article><article class="stats-card"><span>🏠 Недвижимость</span><b>${fmt(b.real_estate)}</b></article></div>`}
@@ -28,3 +28,47 @@ async function sellProperty(id){const p=realEstateCache.find(x=>String(x.id)===S
 window.sellProperty=sellProperty;
 window.renderStatistics=renderStatistics;window.renderRating=renderRating;window.openPlayerProfile=openPlayerProfile;window.renderRealEstate=renderRealEstate;window.renderPropertyCard=renderPropertyCard;window.renderBondCard=renderBondCard;
 })();
+
+// === CORPORATION V21: MARKET NEWS ==========================================
+let v21NewsTimer=null;
+function v21Date(ts){return ts?new Date(Number(ts)*1000).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
+function v21Countdown(sec){sec=Math.max(0,Number(sec||0));const m=Math.floor(sec/60),s=Math.floor(sec%60);return `${m}:${String(s).padStart(2,'0')}`}
+async function renderMarketNews(){
+  const c=document.querySelector('#content');
+  c.innerHTML='<div class="empty">Загружаем новости рынка...</div>';
+  try{
+    const d=await api('/api/market-news');
+    const now=Number(d.server_time||Math.floor(Date.now()/1000));
+    const next=Math.max(0,Number(d.next_news_at||0)-now);
+    const cards=(d.news||[]).map(n=>{
+      const cls=n.sentiment==='good'?'v21-good':'v21-bad';
+      const label=n.sentiment==='good'?'ПОЗИТИВНЫЙ СИГНАЛ':'НЕГАТИВНЫЙ СИГНАЛ';
+      const reaction=n.applied
+        ? `<div class="v21-news-reaction ${cls}"><b>Рынок отреагировал: ${Number(n.impact_percent)>=0?'+':''}${Number(n.impact_percent).toFixed(2)}%</b> · ${fmt(n.price_before)} → ${fmt(n.price_after)}</div>`
+        : `<div class="v21-news-reaction ${cls}"><b>${label}</b> · переоценка рынка через <span data-impact-at="${n.impact_at}">${v21Countdown(n.seconds_to_impact)}</span></div>`;
+      return `<article class="v21-news-card"><img class="v21-news-photo" src="${n.photo}" alt="${n.company}" loading="lazy"><div class="v21-news-body"><div class="v21-news-kicker"><span>CORPORATION JOURNAL · ${n.symbol}</span><span>${v21Date(n.published_at)}</span></div><h3>${n.title}</h3><p>${n.article}</p>${reaction}</div></article>`;
+    }).join('');
+    c.innerHTML=`<section class="v21-news-page"><div class="v21-news-head"><div><div class="eyebrow">MARKET NEWS</div><h2>📰 Новости рынка</h2></div><button class="back-button" onclick="v21BackInvestments()">← Назад</button></div><div class="v21-news-next">Следующая публикация примерно через ${v21Countdown(next)}. После каждой новости рынок реагирует через 2 минуты.</div>${cards||'<div class="empty">Новостей пока нет.</div>'}</section>`;
+    clearInterval(v21NewsTimer);
+    v21NewsTimer=setInterval(()=>{
+      document.querySelectorAll('[data-impact-at]').forEach(el=>{const left=Math.max(0,Number(el.dataset.impactAt)-Math.floor(Date.now()/1000));el.textContent=v21Countdown(left);if(left===0){clearInterval(v21NewsTimer);setTimeout(()=>renderMarketNews(),1500)}})
+    },1000);
+  }catch(e){modal('Ошибка',e.message)}
+}
+function openInvestmentNews(){investmentView='news';renderMarketNews()}
+function v21BackInvestments(){investmentView='home';clearInterval(v21NewsTimer);renderInvestments()}
+window.openInvestmentNews=openInvestmentNews;window.renderMarketNews=renderMarketNews;window.v21BackInvestments=v21BackInvestments;
+
+const v21BaseRenderInvestments=renderInvestments;
+renderInvestments=async function(){
+  if(investmentView==='news')return renderMarketNews();
+  clearInterval(v21NewsTimer);
+  await v21BaseRenderInvestments();
+  const c=document.querySelector('#content');
+  if(!c||c.querySelector('.v21-news-entry')||corporationActiveStockId)return;
+  const page=c.querySelector('.investment-page')||c.firstElementChild;
+  if(page){const b=document.createElement('button');b.type='button';b.className='v21-news-entry';b.innerHTML='📰 Новости рынка <span style="float:right">›</span>';b.onclick=openInvestmentNews;page.insertBefore(b,page.children[1]||page.firstChild)}
+};
+window.renderInvestments=renderInvestments;
+// ============================================================================
+

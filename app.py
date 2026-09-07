@@ -6,6 +6,7 @@ import random
 import shutil
 import sqlite3
 import time
+import threading
 from contextlib import closing
 from datetime import datetime
 from urllib.parse import parse_qsl
@@ -142,6 +143,107 @@ STOCKS = {
         "volatility": 0.011, "drift": 0.0011, "dividend_rate": 0.012,
     },
 }
+
+# === CORPORATION V21: MARKET NEWS ===========================================
+MARKET_NEWS_INTERVAL = 60 * 60
+MARKET_NEWS_REACTION_DELAY = 2 * 60
+MARKET_NEWS_MIN_IMPACT = 0.20
+MARKET_NEWS_MAX_IMPACT = 0.60
+
+MARKET_NEWS_TEMPLATES = {
+    "bmw": {
+        "photo": "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("BMW ускоряет выпуск нового поколения электромобилей после сильных предзаказов", "BMW сообщила о спросе на новую электрическую линейку выше внутренних ожиданий. Компания расширяет производственный план и рассчитывает быстрее загрузить европейские заводы, что участники рынка воспринимают как сигнал к росту выручки в премиальном сегменте."),
+            ("Маржа BMW укрепилась на фоне устойчивого спроса на премиальные модели", "Немецкий автопроизводитель сообщил об улучшении рентабельности ключевого автомобильного подразделения. Более дорогие комплектации и дисциплина расходов помогли компенсировать давление логистики, усилив ожидания инвесторов по денежному потоку."),
+            ("BMW заключает крупное соглашение по батареям для будущей модельной линейки", "Компания договорилась о долгосрочных поставках аккумуляторов на более выгодных условиях. Соглашение снижает риск дефицита компонентов и потенциально улучшает себестоимость электромобилей в ближайших производственных циклах."),
+        ],
+        "bad": [
+            ("BMW предупреждает о росте затрат и давлении на автомобильную маржу", "BMW сообщила, что удорожание компонентов и логистики сильнее ожидаемого влияет на прибыльность. Руководство сохраняет инвестиционную программу, однако рынок закладывает более слабую маржу в ближайшие периоды."),
+            ("BMW отзывает крупную партию автомобилей из-за технической проверки", "Автопроизводитель объявил масштабную сервисную кампанию для дополнительной проверки ряда моделей. Прямые расходы и возможная остановка части поставок усилили опасения инвесторов относительно краткосрочных финансовых показателей."),
+            ("Продажи BMW в ключевом регионе оказались ниже ожиданий", "Новые данные показали ослабление спроса на премиальные автомобили на одном из крупнейших рынков компании. Аналитики пересматривают прогнозы поставок, опасаясь более жесткой ценовой конкуренции."),
+        ],
+    },
+    "kfc": {
+        "photo": "https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("KFC фиксирует ускорение сопоставимых продаж после обновления меню", "Новые позиции меню и рост цифровых заказов поддержали трафик в ресторанах KFC. Сеть отмечает особенно сильную динамику доставки и заказов через приложение, что повышает ожидания по выручке франчайзинговой системы."),
+            ("KFC расширяет сеть быстрее плана на растущих рынках", "Компания сообщила об ускорении открытия новых ресторанов в регионах с высоким спросом на быстрый сервис. Более активная франчайзинговая экспансия может увеличить комиссионные поступления без сопоставимого роста капитальных затрат."),
+            ("Цифровые продажи KFC достигли нового максимума", "Доля заказов через приложение, киоски и доставку заметно выросла. Руководство связывает это с персональными предложениями и программой лояльности, которые повышают средний чек и частоту повторных покупок."),
+        ],
+        "bad": [
+            ("KFC сталкивается с ростом цен на сырье и давлением на рентабельность", "Удорожание курицы, упаковки и труда увеличивает расходы ресторанной сети. Часть франчайзи осторожнее относится к новым открытиям, а рынок опасается более слабой маржи в ближайшие месяцы."),
+            ("KFC временно закрывает часть ресторанов после сбоя поставок", "Нарушения в цепочке поставок затронули несколько крупных регионов сети. Компания заявила, что восстанавливает логистику, однако краткосрочные потери продаж могут оказаться заметнее первоначальных оценок."),
+            ("Рост трафика KFC замедлился на фоне жесткой конкуренции", "Промоакции конкурентов и более осторожные расходы потребителей привели к замедлению посещаемости. Аналитики отмечают риск усиления скидок, что способно дополнительно давить на прибыльность сети."),
+        ],
+    },
+    "spotify": {
+        "photo": "https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("Spotify добавила подписчиков быстрее ожиданий и улучшила прогноз", "Музыкальный сервис сообщил о более сильном росте премиальной аудитории, чем ожидал рынок. Одновременно компания продолжила контролировать расходы, усилив ожидания по операционной прибыли и свободному денежному потоку."),
+            ("Spotify расширяет рекламный бизнес с новой платформой для брендов", "Компания представила инструменты, которые упрощают покупку аудиорекламы и таргетинг кампаний. Рынок рассчитывает, что более эффективная монетизация бесплатной аудитории станет вторым заметным источником роста наряду с подписками."),
+            ("Повышение цен Spotify прошло без заметного роста оттока", "После изменения тарифов сервис сохранил устойчивую динамику удержания подписчиков. Это повышает уверенность инвесторов в ценовой силе платформы и способности увеличивать среднюю выручку на пользователя."),
+        ],
+        "bad": [
+            ("Spotify сообщает о замедлении прироста премиальных подписчиков", "Темпы привлечения платной аудитории оказались слабее ожиданий. Участники рынка опасаются, что более высокая конкуренция среди стриминговых сервисов потребует дополнительных расходов на маркетинг и эксклюзивный контент."),
+            ("Расходы Spotify на лицензирование контента растут быстрее выручки", "Новые соглашения с правообладателями увеличивают стоимость контента для платформы. Инвесторы оценивают риск снижения маржи, если компания не сможет компенсировать расходы ценами или ростом рекламной выручки."),
+            ("Spotify столкнулась с крупным техническим сбоем", "Часть пользователей несколько часов испытывала проблемы с воспроизведением и доступом к приложению. Хотя сервис восстановлен, инцидент усилил вопросы к надежности инфраструктуры в период быстрого роста аудитории."),
+        ],
+    },
+    "nvidia": {
+        "photo": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("NVIDIA получила новую волну крупных заказов на ИИ-ускорители", "Крупные облачные провайдеры расширили заказы на вычислительные ускорители NVIDIA. Высокий спрос на инфраструктуру искусственного интеллекта усиливает ожидания по выручке дата-центров и загрузке будущих поколений чипов."),
+            ("NVIDIA представила архитектуру с заметным приростом производительности", "Компания раскрыла новое поколение ускорителей, обещающее существенно более высокую эффективность в ИИ-нагрузках. Первые клиенты уже объявили планы внедрения, что снижает опасения о замедлении технологического цикла."),
+            ("Поставки ключевых чипов NVIDIA растут после расширения производственных мощностей", "Партнеры по производству увеличили доступные мощности для передовых ускорителей. Улучшение предложения позволяет NVIDIA быстрее закрывать накопленный спрос и превращать заказы в фактическую выручку."),
+        ],
+        "bad": [
+            ("NVIDIA предупреждает о новых ограничениях поставок на часть рынков", "Дополнительные экспортные ограничения могут сократить доступный рынок для высокопроизводительных ускорителей. Компания оценивает варианты адаптации продуктовой линейки, однако инвесторы закладывают риск потери части будущей выручки."),
+            ("Крупный клиент NVIDIA замедляет закупки ИИ-ускорителей", "Один из заметных покупателей пересматривает темпы расширения дата-центров после периода агрессивных инвестиций. Новость усилила опасения, что часть спроса на инфраструктуру ИИ может быть перенесена на более поздние сроки."),
+            ("Новая линейка NVIDIA столкнулась с задержкой поставок", "Сообщается о технических корректировках, которые сдвигают часть отгрузок нового поколения ускорителей. Даже ограниченная задержка способна перенести признание выручки и увеличить расходы на запуск продукта."),
+        ],
+    },
+    "tesla": {
+        "photo": "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("Tesla отчиталась о рекордных поставках после ускорения производства", "Производитель электромобилей сообщил о сильном квартальном объеме поставок, превысившем ожидания рынка. Рост загрузки заводов улучшает перспективы операционного рычага и поддерживает прогноз по денежному потоку."),
+            ("Tesla объявила о снижении себестоимости нового поколения батарей", "Компания заявила о технологическом прогрессе в производстве аккумуляторов, который должен уменьшить стоимость батарейного блока. Более низкая себестоимость дает Tesla пространство для маржи или более агрессивного ценообразования."),
+            ("Энергетический бизнес Tesla ускорил рост", "Поставки систем накопления энергии заметно увеличились, а портфель заказов продолжает расширяться. Инвесторы рассматривают энергетическое направление как все более важный источник диверсификации выручки компании."),
+        ],
+        "bad": [
+            ("Поставки Tesla не достигли ожиданий аналитиков", "Данные по отгрузкам электромобилей оказались слабее рыночного консенсуса. Инвесторы опасаются, что ценовая конкуренция и более медленный спрос могут потребовать дополнительных скидок."),
+            ("Tesla снова снижает цены на ключевые модели", "Компания объявила очередное снижение цен на нескольких рынках. Для покупателей это поддерживает доступность автомобилей, однако для инвесторов повышает риск дальнейшего давления на автомобильную маржу."),
+            ("Tesla приостанавливает часть производства для внеплановой модернизации", "На одном из крупных предприятий временно сокращен выпуск автомобилей. Компания называет остановку плановой технической работой, но рынок учитывает риск более низких поставок в ближайшем отчетном периоде."),
+        ],
+    },
+    "mcdonalds": {
+        "photo": "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("McDonald's ускорила продажи благодаря росту цифровых заказов", "Сеть ресторанов сообщила о сильной динамике приложения и программы лояльности. Персональные предложения повышают частоту заказов, а цифровой канал помогает компании эффективнее управлять средним чеком."),
+            ("McDonald's расширяет высокомаржинальную франчайзинговую сеть", "Компания ускоряет открытие ресторанов с участием франчайзи на нескольких ключевых рынках. Такой формат позволяет увеличивать системные продажи при более умеренной потребности в собственном капитале."),
+            ("Новые продукты McDonald's поддержали трафик и средний чек", "Ограниченные сезонные предложения и обновленное меню показали сильный спрос. Компания отмечает рост посещаемости в ключевых регионах и более высокую конверсию участников программы лояльности."),
+        ],
+        "bad": [
+            ("McDonald's видит давление на трафик из-за осторожности потребителей", "Часть клиентов стала реже посещать рестораны на фоне роста стоимости жизни. Сеть усиливает недорогие предложения, однако инвесторы опасаются, что промоакции могут ограничить рост маржи."),
+            ("Рост зарплат увеличивает расходы ресторанов McDonald's", "Затраты на персонал заметно выросли на нескольких крупных рынках. Компания работает над производительностью и автоматизацией, но краткосрочно более высокие расходы могут давить на прибыльность."),
+            ("McDonald's временно ограничивает продажи ряда позиций после перебоев поставок", "Сбои у нескольких поставщиков затронули доступность отдельных ингредиентов. Компания ожидает нормализации поставок, однако часть ресторанов может недополучить продажи в ближайшие недели."),
+        ],
+    },
+    "toyota": {
+        "photo": "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&h=700&q=84",
+        "good": [
+            ("Toyota повышает прогноз производства после стабилизации поставок компонентов", "Автопроизводитель сообщил об улучшении доступности ключевых деталей и намерен увеличить выпуск автомобилей. Более высокая загрузка заводов способна поддержать продажи и распределение фиксированных затрат."),
+            ("Гибриды Toyota демонстрируют сильный мировой спрос", "Продажи гибридных моделей продолжают расти на нескольких ключевых рынках. Компания выигрывает от широкой линейки и накопленного опыта, что помогает ей удерживать устойчивую прибыльность в переходный период отрасли."),
+            ("Toyota раскрыла план снижения стоимости батарей нового поколения", "Компания представила технологическую дорожную карту аккумуляторов с более высокой плотностью энергии и меньшей себестоимостью. Инвесторы рассматривают это как потенциальное усиление позиций Toyota на рынке электромобилей."),
+        ],
+        "bad": [
+            ("Toyota сокращает план выпуска из-за дефицита отдельных компонентов", "Проблемы с поставками вынуждают автопроизводителя временно уменьшить производство на ряде площадок. Более низкий объем выпуска может ограничить продажи даже при сохранении устойчивого спроса."),
+            ("Toyota объявляет крупную сервисную кампанию", "Компания проведет дополнительную проверку значительного числа автомобилей. Хотя сервисные кампании типичны для отрасли, масштаб потенциальных расходов заставил рынок осторожнее оценить ближайшую прибыль."),
+            ("Сильная ценовая конкуренция давит на продажи Toyota в ключевом сегменте", "Конкуренты активизировали скидки и обновили модельные ряды. Toyota сохраняет объемы, но инвесторы опасаются, что для защиты доли рынка компании придется жертвовать частью ценовой силы."),
+        ],
+    },
+}
+# ============================================================================
 
 BONDS = {
     "ofz_ru": {
@@ -625,6 +727,25 @@ def init_db():
             started_at INTEGER NOT NULL DEFAULT 0,
             ended_at INTEGER NOT NULL DEFAULT 0
         );
+        CREATE TABLE IF NOT EXISTS market_news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id TEXT NOT NULL,
+            sentiment TEXT NOT NULL CHECK(sentiment IN ('good','bad')),
+            title TEXT NOT NULL,
+            article TEXT NOT NULL,
+            photo TEXT NOT NULL,
+            published_at INTEGER NOT NULL,
+            impact_at INTEGER NOT NULL,
+            impact_percent REAL NOT NULL,
+            price_before REAL NOT NULL DEFAULT 0,
+            price_after REAL NOT NULL DEFAULT 0,
+            applied_at INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_market_news_time ON market_news(published_at DESC);
+        CREATE TABLE IF NOT EXISTS market_news_state (
+            id INTEGER PRIMARY KEY CHECK(id=1),
+            next_news_at INTEGER NOT NULL DEFAULT 0
+        );
         CREATE TABLE IF NOT EXISTS admin_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER NOT NULL,
@@ -646,6 +767,7 @@ def init_db():
             "INSERT OR IGNORE INTO game_state(id,is_frozen,frozen_at,current_season,season_started_at,season_ended_at,maintenance_message) VALUES(1,0,0,1,?,0,'')",
             (now,),
         )
+        conn.execute("INSERT OR IGNORE INTO market_news_state(id,next_news_at) VALUES(1,?)", (now,))
         gs_row = conn.execute("SELECT current_season,season_started_at,season_ended_at FROM game_state WHERE id=1").fetchone()
         conn.execute(
             "INSERT OR IGNORE INTO seasons(season_id,name,started_at,ended_at) VALUES(?,?,?,?)",
@@ -731,6 +853,8 @@ def create_database_backup(reason="manual"):
 
 def reset_stock_market_conn(conn, now):
     conn.execute("DELETE FROM stock_history")
+    conn.execute("DELETE FROM market_news")
+    conn.execute("INSERT OR REPLACE INTO market_news_state(id,next_news_at) VALUES(1,?)", (now,))
     for stock_id, stock in STOCKS.items():
         conn.execute(
             "UPDATE stocks SET symbol=?,name=?,description=?,min_price=?,max_price=?,current_price=?,trend='up',last_update=? WHERE id=?",
@@ -869,10 +993,127 @@ def business_capitalization(bid, level, row=None):
                 upgrade_costs += business_upgrade_cost(bid, upgrade_id)
     return round(legacy_cost + upgrade_costs, 2)
 
+
+def _eligible_news_stocks(conn, sentiment):
+    eligible=[]
+    for row in conn.execute("SELECT id,current_price,min_price,max_price FROM stocks").fetchall():
+        price=float(row["current_price"])
+        if price<=0: continue
+        if sentiment=="good":
+            room=float(row["max_price"])/price-1.0
+        else:
+            room=1.0-float(row["min_price"])/price
+        if room >= MARKET_NEWS_MIN_IMPACT:
+            eligible.append(row["id"])
+    return eligible
+
+
+def _publish_market_news_conn(conn, published_at):
+    sentiment = "good" if random.random() < 0.5 else "bad"
+    eligible = _eligible_news_stocks(conn, sentiment)
+    stock_ids = eligible or [sid for sid in MARKET_NEWS_TEMPLATES if sid in STOCKS]
+    stock_id = random.choice(stock_ids)
+    template = random.choice(MARKET_NEWS_TEMPLATES[stock_id][sentiment])
+    stock = conn.execute("SELECT current_price,min_price,max_price FROM stocks WHERE id=?", (stock_id,)).fetchone()
+    current=float(stock["current_price"])
+    if sentiment=="good":
+        max_room=max(0.0, float(stock["max_price"])/current-1.0)
+    else:
+        max_room=max(0.0, 1.0-float(stock["min_price"])/current)
+    upper=min(MARKET_NEWS_MAX_IMPACT, max_room)
+    lower=min(MARKET_NEWS_MIN_IMPACT, upper)
+    impact=random.uniform(lower, upper) if upper>0 else 0.0
+    if impact < MARKET_NEWS_MIN_IMPACT and eligible:
+        impact=MARKET_NEWS_MIN_IMPACT
+    signed = impact if sentiment=="good" else -impact
+    conn.execute(
+        "INSERT INTO market_news(stock_id,sentiment,title,article,photo,published_at,impact_at,impact_percent) VALUES(?,?,?,?,?,?,?,?)",
+        (stock_id,sentiment,template[0],template[1],MARKET_NEWS_TEMPLATES[stock_id]["photo"],int(published_at),int(published_at)+MARKET_NEWS_REACTION_DELAY,float(signed)),
+    )
+
+
+def process_market_news(now=None):
+    now=int(now or time.time())
+    if game_is_frozen():
+        return
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        st=conn.execute("SELECT next_news_at FROM market_news_state WHERE id=1").fetchone()
+        next_at=int(st["next_news_at"] if st else now)
+        # First update post is created immediately; overdue hourly posts are caught up safely.
+        generated=0
+        while next_at <= now and generated < 48:
+            _publish_market_news_conn(conn, next_at)
+            next_at += MARKET_NEWS_INTERVAL
+            generated += 1
+        conn.execute("INSERT OR REPLACE INTO market_news_state(id,next_news_at) VALUES(1,?)", (next_at,))
+
+        pending=conn.execute("SELECT * FROM market_news WHERE applied_at=0 AND impact_at<=? ORDER BY impact_at ASC,id ASC", (now,)).fetchall()
+        for news in pending:
+            row=conn.execute("SELECT current_price,min_price,max_price FROM stocks WHERE id=?", (news["stock_id"],)).fetchone()
+            if not row:
+                conn.execute("UPDATE market_news SET applied_at=? WHERE id=?", (now,news["id"]))
+                continue
+            before=float(row["current_price"])
+            pct=float(news["impact_percent"])
+            after=before*(1.0+pct)
+            after=min(float(row["max_price"]),max(float(row["min_price"]),after))
+            after=round(after,2)
+            actual_pct=(after/before-1.0) if before else 0.0
+            trend="up" if actual_pct>=0 else "down"
+            impact_time=int(news["impact_at"])
+            conn.execute("UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?", (after,trend,impact_time,news["stock_id"]))
+            conn.execute("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", (news["stock_id"],after,impact_time))
+            conn.execute("UPDATE market_news SET impact_percent=?,price_before=?,price_after=?,applied_at=? WHERE id=?", (actual_pct,before,after,now,news["id"]))
+        conn.commit()
+
+
+def get_market_news(limit=50):
+    process_market_news()
+    limit=max(1,min(int(limit),100))
+    with closing(db()) as conn:
+        rows=conn.execute("SELECT * FROM market_news ORDER BY published_at DESC,id DESC LIMIT ?", (limit,)).fetchall()
+        next_row=conn.execute("SELECT next_news_at FROM market_news_state WHERE id=1").fetchone()
+    now=int(time.time())
+    items=[]
+    for r in rows:
+        d=dict(r)
+        cfg=STOCKS.get(d["stock_id"],{})
+        applied=bool(int(d["applied_at"] or 0))
+        items.append({
+            "id":d["id"],"stock_id":d["stock_id"],"company":cfg.get("name",d["stock_id"]),"symbol":cfg.get("symbol",""),
+            "sentiment":d["sentiment"],"title":d["title"],"article":d["article"],"photo":d["photo"],
+            "published_at":d["published_at"],"impact_at":d["impact_at"],"applied":applied,"applied_at":d["applied_at"],
+            "impact_percent":round(float(d["impact_percent"])*100,2) if applied else None,
+            "price_before":round(float(d["price_before"]),2) if applied else None,"price_after":round(float(d["price_after"]),2) if applied else None,
+            "seconds_to_impact":max(0,int(d["impact_at"])-now) if not applied else 0,
+        })
+    return {"news":items,"next_news_at":int(next_row["next_news_at"] if next_row else 0),"server_time":now}
+
+
+_market_news_worker_started=False
+def _market_news_worker():
+    while True:
+        try:
+            process_market_news()
+        except Exception as exc:
+            print(f"[Corporation] market news worker error: {exc}")
+        time.sleep(5)
+
+
+def start_market_news_worker():
+    global _market_news_worker_started
+    if _market_news_worker_started:
+        return
+    _market_news_worker_started=True
+    threading.Thread(target=_market_news_worker,name="corporation-market-news",daemon=True).start()
+
+
 def update_stock_market():
     """Минутная игровая модель. При глобальной заморозке рынок полностью стоит."""
     if game_is_frozen():
         return
+    process_market_news()
     now = int(time.time())
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -1359,7 +1600,7 @@ def index():
     path = os.path.join(WEB_DIR, "index.html")
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
-    tag = '<script src="/static/v20.js?v=201"></script>'
+    tag = '<script src="/static/v20.js?v=210"></script>'
     if tag not in html:
         html = html.replace("</body>", tag + "\n</body>")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
@@ -1529,6 +1770,12 @@ def rating(x_telegram_init_data: str | None = Header(None), x_user_id: str | Non
 @api.get("/api/player/{player_id}")
 def player_profile(player_id: int, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     auth(x_telegram_init_data, x_user_id); return public_profile(player_id)
+
+
+@api.get("/api/market-news")
+def market_news(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    auth(x_telegram_init_data, x_user_id)
+    return get_market_news()
 
 
 @api.get("/api/stocks")
@@ -1766,16 +2013,17 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
     admin_id = require_admin(x_telegram_init_data, x_user_id)
     now = int(time.time())
     state = get_game_state()
+    capital_rows = all_ranked_players()
     with closing(db()) as conn:
         players = int(conn.execute("SELECT COUNT(*) c FROM players").fetchone()["c"])
         active_today = int(conn.execute("SELECT COUNT(*) c FROM players WHERE last_income_sync>=?", (now-86400,)).fetchone()["c"])
-        economy = float(conn.execute("SELECT COALESCE(SUM(money),0) s FROM players").fetchone()["s"] or 0)
-        avg_money = float(conn.execute("SELECT COALESCE(AVG(money),0) a FROM players").fetchone()["a"] or 0)
+        economy = sum(float(r["capital"]) for r in capital_rows)
+        avg_money = economy / players if players else 0.0
         businesses_count = int(conn.execute("SELECT COUNT(*) c FROM businesses WHERE level>0").fetchone()["c"])
         properties_count = int(conn.execute("SELECT COUNT(*) c FROM real_estate_holdings").fetchone()["c"])
         stocks_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM stock_holdings").fetchone()["c"] or 0)
         bonds_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM bond_holdings").fetchone()["c"] or 0)
-        leader = conn.execute("SELECT user_id,username,corp_name,money FROM players ORDER BY money DESC,user_id ASC LIMIT 1").fetchone()
+        leader = capital_rows[0] if capital_rows else None
         popular_business = conn.execute("SELECT business_id,COUNT(*) c FROM businesses WHERE level>0 GROUP BY business_id ORDER BY c DESC LIMIT 1").fetchone()
         popular_stock = conn.execute("SELECT stock_id,SUM(quantity) q FROM stock_holdings WHERE quantity>0 GROUP BY stock_id ORDER BY q DESC LIMIT 1").fetchone()
         logs = [dict(r) for r in conn.execute("SELECT * FROM admin_logs ORDER BY id DESC LIMIT 20").fetchall()]
@@ -1796,7 +2044,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v20",
+        "version": "v21",
     }
 
 
@@ -1884,10 +2132,15 @@ def admin_freeze(body: AdminFreezeBody, x_telegram_init_data: str | None = Heade
             admin_log(admin_id, "freeze_game", body.message, conn)
             conn.commit()
     else:
+        frozen_at=int(current.get("frozen_at") or now)
+        pause=max(0,now-frozen_at)
         with closing(db()) as conn:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute("UPDATE players SET last_income_sync=?", (now,))
             conn.execute("UPDATE stocks SET last_update=?", (now,))
+            if pause>0:
+                conn.execute("UPDATE market_news_state SET next_news_at=next_news_at+? WHERE id=1", (pause,))
+                conn.execute("UPDATE market_news SET impact_at=impact_at+? WHERE applied_at=0", (pause,))
             conn.execute("UPDATE game_state SET is_frozen=0,frozen_at=0,maintenance_message='' WHERE id=1")
             admin_log(admin_id, "unfreeze_game", "", conn)
             conn.commit()
@@ -1957,3 +2210,8 @@ def admin_backup(x_telegram_init_data: str | None = Header(None), x_user_id: str
     return {"ok": True, "backup": os.path.basename(path), "size": os.path.getsize(path)}
 # ============================================================================
 
+
+
+# Create the first v21 news item immediately, then keep the scheduler alive.
+process_market_news()
+start_market_news_worker()
