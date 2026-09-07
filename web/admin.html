@@ -53,7 +53,35 @@ $('#newSeasonBtn').onclick=async()=>{const v=await modal('Начать новы�
 async function loadPlayers(){try{const q=$('#playerSearch').value.trim();const rows=await api('/api/admin/players?q='+encodeURIComponent(q));$('#playerList').innerHTML=rows.length?rows.map((p,i)=>`<div class="row player" onclick="openPlayer(${p.user_id})"><div><b>#${i+1} ${p.corp_name}</b><br><small>@${p.username||'—'} · ID ${p.user_id}</small></div><div>${fmt(p.money)}</div></div>`).join(''):'<p class="notice">Игроки не найдены.</p>'}catch(e){toast(e.message)}}
 let timer;$('#playerSearch').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadPlayers,250)};
 window.openPlayer=async id=>{try{const r=await api('/api/admin/player/'+id),s=r.state;const txt=`<div class="kv"><span>Корпорация</span><b>${s.player.corp_name}</b><span>Telegram ID</span><b>${s.player.user_id}</b><span>Баланс</span><b>${fmt(s.player.money)}</b><span>Доход/ч</span><b>${fmt(s.gross_hourly_income)}</b><span>Бизнесов</span><b>${s.stats.companies_bought}</b><span>Недвижимости</span><b>${s.stats.properties_bought}</b><span>Акций позиций</span><b>${r.stocks.length}</b><span>Облигаций позиций</span><b>${r.bonds.length}</b></div>`;await modal('Игрок',txt,null)}catch(e){toast(e.message)}};
-async function loadSeasons(){try{const r=await api('/api/admin/seasons');const ids=new Set([...Object.keys(r.meta||{}),...Object.keys(r.results||{})]);const entries=[...ids].sort((a,b)=>Number(b)-Number(a));$('#seasonList').innerHTML=entries.length?entries.map(sid=>{const rows=(r.results||{})[sid]||[],name=r.meta?.[sid]?.name||`Сезон №${sid}`;return `<div class="section"><div class="row"><div><h2 style="margin:0">${name}</h2><small>Сезон №${sid}</small></div><button class="btn" onclick="renameSeason(${sid},${JSON.stringify(name)})">✏️ Переименовать</button></div>${rows.length?rows.slice(0,20).map(x=>`<div class="row"><div><b>${x.place}. ${x.corp_name}</b><br><small>@${x.username||'—'} · ID ${x.user_id}</small></div><div>${fmt(x.capital||x.money)}</div></div>`).join(''):'<p class="notice">Текущий сезон — результаты ещё не зафиксированы.</p>'}</div>`}).join(''):'<p class="notice">Сезонов пока нет.</p>'}catch(e){toast(e.message)}};async function renameSeason(id,current){const name=prompt('Новое название сезона:',current);if(!name)return;try{await api(`/api/admin/season/${id}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});toast('Сезон переименован');await loadSeasons();await load()}catch(e){toast(e.message)}};window.renameSeason=renameSeason
+let seasonNameCache={};
+async function loadSeasons(){
+  try{
+    const r=await api('/api/admin/seasons');
+    seasonNameCache={};
+    const ids=new Set([...Object.keys(r.meta||{}),...Object.keys(r.results||{})]);
+    const entries=[...ids].sort((a,b)=>Number(b)-Number(a));
+    $('#seasonList').innerHTML=entries.length?entries.map(sid=>{
+      const rows=(r.results||{})[sid]||[];
+      const name=r.meta?.[sid]?.name||`Сезон №${sid}`;
+      seasonNameCache[String(sid)]=name;
+      return `<div class="section"><div class="row"><div><h2 style="margin:0">${name}</h2><small>Сезон №${sid}</small></div><button class="btn" type="button" onclick="renameSeason(${Number(sid)})">✏️ Переименовать</button></div>${rows.length?rows.slice(0,20).map(x=>`<div class="row"><div><b>${x.place}. ${x.corp_name}</b><br><small>@${x.username||'—'} · ID ${x.user_id}</small></div><div>${fmt(x.capital||x.money)}</div></div>`).join(''):'<p class="notice">Текущий сезон — результаты ещё не зафиксированы.</p>'}</div>`;
+    }).join(''):'<p class="notice">Сезонов пока нет.</p>';
+  }catch(e){toast(e.message)}
+}
+async function renameSeason(id){
+  const current=seasonNameCache[String(id)]||`Сезон №${id}`;
+  const name=await modal('Переименовать сезон',`Текущее название: <b>${current}</b><br><br>Введи новое название сезона:`);
+  if(name===null)return;
+  const clean=String(name).trim();
+  if(clean.length<2){toast('Название слишком короткое');return}
+  try{
+    await api(`/api/admin/season/${id}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:clean})});
+    toast('Сезон переименован');
+    await loadSeasons();
+    await load();
+  }catch(e){toast(e.message)}
+}
+window.renameSeason=renameSeason
 function renderLogs(){if(!overview)return;$('#logList').innerHTML=(overview.logs||[]).length?overview.logs.map(x=>`<div class="row"><div><b>${x.action}</b><br><small>${x.details||'—'}</small></div><div><small>${date(x.created_at)}</small></div></div>`).join(''):'<p class="notice">Лог пуст.</p>'}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.querySelectorAll('.pane').forEach(x=>x.classList.add('hidden'));$('#'+t.dataset.tab).classList.remove('hidden');if(t.dataset.tab==='players')loadPlayers();if(t.dataset.tab==='seasons')loadSeasons();if(t.dataset.tab==='logs')renderLogs()});
 load(); setInterval(()=>{if(!document.hidden)load()},30000);

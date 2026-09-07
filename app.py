@@ -478,9 +478,10 @@ REAL_ESTATE = {
 }
 
 
-# === CORPORATION V20: REAL ESTATE BALANCE ===================================
-# Slightly lower entry prices and make more expensive property progressively
-# more profitable. Base annual rental yield ranges from ~8% to ~14%.
+# === CORPORATION V20.1: REAL ESTATE BALANCE ================================
+# Game-balance yield is hourly, like other Corporation assets.
+# More expensive properties are progressively more profitable: ~1.0% to 2.2%/h
+# before upgrades, while retaining 100% resale capitalization.
 def _rebalance_real_estate_v20():
     prices = [float(p["price"]) for p in REAL_ESTATE.values()]
     if not prices:
@@ -493,10 +494,10 @@ def _rebalance_real_estate_v20():
         new_price = round(float(prop["price"]) * 0.90, 2)
         score = (math.log(max(new_price, 1.0)) - math.log(max(lo * 0.90, 1.0))) / span
         score = min(1.0, max(0.0, score))
-        annual_yield = 0.08 + 0.06 * score
+        hourly_yield = 0.010 + 0.012 * score
         prop["price"] = new_price
-        prop["base_rent_hour"] = round(new_price * annual_yield / 8760, 2)
-        prop["target_annual_yield"] = annual_yield
+        prop["base_rent_hour"] = round(new_price * hourly_yield, 2)
+        prop["target_hourly_yield"] = hourly_yield
 
 _rebalance_real_estate_v20()
 # ============================================================================
@@ -1185,9 +1186,10 @@ def property_payload(uid):
                 "cost": round(purchase_price * cfg["cost_rate"], 2),
                 "income_bonus_percent": round(cfg["income_bonus"] * 100),
             })
-        annual_yield_percent = (rent * 8760 / purchase_price * 100) if purchase_price > 0 else 0
+        hourly_yield_percent = (rent / purchase_price * 100) if purchase_price > 0 else 0
+        annual_yield_percent = hourly_yield_percent * 8760
         capitalization = property_capitalization_from_row(row, now) if owned else float(prop["price"])
-        result.append({"id": pid, **prop, "owned": owned, "purchase_price": round(purchase_price, 2), "current_value": round(current_value, 2), "capitalization": round(capitalization,2), "sell_price": round(capitalization,2) if owned else 0, "rent_hour": round(rent, 2), "annual_yield_percent": round(annual_yield_percent, 2), "growth_daily_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3), "upgrades": upgrade_info})
+        result.append({"id": pid, **prop, "owned": owned, "purchase_price": round(purchase_price, 2), "current_value": round(current_value, 2), "capitalization": round(capitalization,2), "sell_price": round(capitalization,2) if owned else 0, "rent_hour": round(rent, 2), "hourly_yield_percent": round(hourly_yield_percent, 3), "annual_yield_percent": round(annual_yield_percent, 2), "growth_daily_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3), "upgrades": upgrade_info})
     return result
 
 
@@ -1357,7 +1359,7 @@ def index():
     path = os.path.join(WEB_DIR, "index.html")
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
-    tag = '<script src="/static/v20.js?v=200"></script>'
+    tag = '<script src="/static/v20.js?v=201"></script>'
     if tag not in html:
         html = html.replace("</body>", tag + "\n</body>")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
