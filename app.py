@@ -3,18 +3,22 @@ import hmac
 import json
 import os
 import random
+import shutil
 import sqlite3
 import time
 from contextlib import closing
 from datetime import datetime
 from urllib.parse import parse_qsl
 
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
+ADMIN_IDS = {int(x.strip()) for x in (os.getenv("ADMIN_IDS") or "").split(",") if x.strip().isdigit()}
+STARTING_MONEY = 10000.0
+
 # === CORPORATION_PERSISTENT_DB_V14_1 ==========================================
 def _is_railway_runtime():
     return bool(
@@ -571,6 +575,32 @@ def init_db():
             appliances INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY(user_id, property_id)
         );
+        CREATE TABLE IF NOT EXISTS game_state (
+            id INTEGER PRIMARY KEY CHECK(id=1),
+            is_frozen INTEGER NOT NULL DEFAULT 0,
+            frozen_at INTEGER NOT NULL DEFAULT 0,
+            current_season INTEGER NOT NULL DEFAULT 1,
+            season_started_at INTEGER NOT NULL DEFAULT 0,
+            season_ended_at INTEGER NOT NULL DEFAULT 0,
+            maintenance_message TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS season_results (
+            season_id INTEGER NOT NULL,
+            place INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            username TEXT,
+            corp_name TEXT NOT NULL,
+            money REAL NOT NULL,
+            captured_at INTEGER NOT NULL,
+            PRIMARY KEY(season_id, place)
+        );
+        CREATE TABLE IF NOT EXISTS admin_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            details TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL
+        );
         """)
         ensure_column(conn, "players", "last_income_sync", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "stats", "properties_bought", "INTEGER NOT NULL DEFAULT 0")
@@ -579,6 +609,10 @@ def init_db():
         ensure_column(conn, "businesses", "staff", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "businesses", "automation", "INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
+        conn.execute(
+            "INSERT OR IGNORE INTO game_state(id,is_frozen,frozen_at,current_season,season_started_at,season_ended_at,maintenance_message) VALUES(1,0,0,1,?,0,'')",
+            (now,),
+        )
 
         # REAL_ESTATE_V18_REVALUE: keep ownership/upgrades, but rebase legacy purchase prices
         # to the new realistic market model so old low prices cannot create extreme yields.
@@ -608,6 +642,83 @@ def init_db():
 
 
 init_db()
+
+
+def get_game_state():
+    with closing(db()) as conn:
+        row = conn.execute("SELECT * FROM game_state WHERE id=1").fetchone()
+    return dict(row) if row else {"is_frozen": 0, "frozen_at": 0, "current_season": 1, "season_started_at": 0, "season_ended_at": 0, "maintenance_message": ""}
+
+
+def game_is_frozen():
+    return bool(int(get_game_state().get("is_frozen", 0)))
+
+
+def admin_log(admin_id, action, details="", conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        conn.execute(
+            "INSERT INTO admin_logs(admin_id,action,details,created_at) VALUES(?,?,?,?)",
+            (int(admin_id), str(action), str(details)[:2000], int(time.time())),
+        )
+        if own:
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
+def require_admin(x_telegram_init_data, x_user_id):
+    uid, _, _ = user_from_request(x_telegram_init_data, x_user_id)
+    if uid not in ADMIN_IDS:
+        raise HTTPException(403, "Нет доступа к админ-панели")
+    return uid
+
+
+def create_database_backup(reason="manual"):
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "admin_backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    safe_reason = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in str(reason))[:40] or "backup"
+    target = os.path.join(backup_dir, f"corporation_{now}_{safe_reason}.db")
+    with closing(db()) as source, closing(sqlite3.connect(target)) as dest:
+        source.backup(dest)
+    return target
+
+
+def reset_stock_market_conn(conn, now):
+    conn.execute("DELETE FROM stock_history")
+    for stock_id, stock in STOCKS.items():
+        conn.execute(
+            "UPDATE stocks SET symbol=?,name=?,description=?,min_price=?,max_price=?,current_price=?,trend='up',last_update=? WHERE id=?",
+            (stock["symbol"], stock["name"], stock["description"], stock["min_price"], stock["max_price"], stock["initial_price"], now, stock_id),
+        )
+        conn.execute("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", (stock_id, stock["initial_price"], now))
+
+
+def reset_all_progress_conn(conn, now):
+    for table in ("businesses", "daily_profit", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
+        conn.execute(f"DELETE FROM {table}")
+    conn.execute(
+        "UPDATE players SET money=?,last_collect=0,last_income_sync=?",
+        (STARTING_MONEY, now),
+    )
+    conn.execute("INSERT INTO stats(user_id) SELECT user_id FROM players")
+    conn.execute("INSERT INTO taxes(user_id) SELECT user_id FROM players")
+    reset_stock_market_conn(conn, now)
+
+
+@api.middleware("http")
+async def corporation_freeze_guard(request: Request, call_next):
+    path = request.url.path
+    if request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and path.startswith("/api/") and not path.startswith("/api/admin/"):
+        if game_is_frozen():
+            state = get_game_state()
+            message = state.get("maintenance_message") or "Игра заморожена администратором. Просмотр доступен, игровые действия временно отключены."
+            return JSONResponse(status_code=423, content={"detail": message, "game_frozen": True})
+    return await call_next(request)
 
 
 def verify_init_data(init_data: str):
@@ -718,7 +829,9 @@ def business_capitalization(bid, level, row=None):
     return round(legacy_cost + upgrade_costs, 2)
 
 def update_stock_market():
-    """Минутная игровая модель: тренд + шум + редкие импульсы + возврат к середине диапазона."""
+    """Минутная игровая модель. При глобальной заморозке рынок полностью стоит."""
+    if game_is_frozen():
+        return
     now = int(time.time())
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -873,8 +986,10 @@ def accrue_tax_conn(conn, uid, amount, due_since):
 
 
 def sync_passive_income(uid):
-    update_stock_market()
     now = int(time.time())
+    if game_is_frozen():
+        return {"earned": 0, "business": 0, "dividends": 0, "bonds": 0, "rent": 0}
+    update_stock_market()
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         player = conn.execute("SELECT last_income_sync FROM players WHERE user_id=?", (uid,)).fetchone()
@@ -1025,6 +1140,7 @@ def snapshot(uid):
         "stats": dict(stats),
         "taxes": tax_status,
         "real_estate_count": int(stats["properties_bought"] or 0),
+        "game": get_game_state(),
     }
 
 
@@ -1131,6 +1247,11 @@ class QuantityBody(BaseModel):
 @api.get("/")
 def index():
     return FileResponse(os.path.join(WEB_DIR, "index.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+
+
+@api.get("/admin")
+def admin_page():
+    return FileResponse(os.path.join(WEB_DIR, "admin.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
 
 
 def auth(x_telegram_init_data, x_user_id):
@@ -1460,3 +1581,197 @@ def upgrade_property(property_id: str, upgrade_id: str, x_telegram_init_data: st
         conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (cost, uid))
         conn.commit()
     return {"state": snapshot(uid), "properties": property_payload(uid)}
+
+# === CORPORATION ADMIN PANEL V19 ============================================
+class AdminFreezeBody(BaseModel):
+    frozen: bool
+    message: str = ""
+
+
+class AdminConfirmBody(BaseModel):
+    confirmation: str
+
+
+@api.get("/api/admin/overview")
+def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    now = int(time.time())
+    state = get_game_state()
+    with closing(db()) as conn:
+        players = int(conn.execute("SELECT COUNT(*) c FROM players").fetchone()["c"])
+        active_today = int(conn.execute("SELECT COUNT(*) c FROM players WHERE last_income_sync>=?", (now-86400,)).fetchone()["c"])
+        economy = float(conn.execute("SELECT COALESCE(SUM(money),0) s FROM players").fetchone()["s"] or 0)
+        avg_money = float(conn.execute("SELECT COALESCE(AVG(money),0) a FROM players").fetchone()["a"] or 0)
+        businesses_count = int(conn.execute("SELECT COUNT(*) c FROM businesses WHERE level>0").fetchone()["c"])
+        properties_count = int(conn.execute("SELECT COUNT(*) c FROM real_estate_holdings").fetchone()["c"])
+        stocks_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM stock_holdings").fetchone()["c"] or 0)
+        bonds_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM bond_holdings").fetchone()["c"] or 0)
+        leader = conn.execute("SELECT user_id,username,corp_name,money FROM players ORDER BY money DESC,user_id ASC LIMIT 1").fetchone()
+        popular_business = conn.execute("SELECT business_id,COUNT(*) c FROM businesses WHERE level>0 GROUP BY business_id ORDER BY c DESC LIMIT 1").fetchone()
+        popular_stock = conn.execute("SELECT stock_id,SUM(quantity) q FROM stock_holdings WHERE quantity>0 GROUP BY stock_id ORDER BY q DESC LIMIT 1").fetchone()
+        logs = [dict(r) for r in conn.execute("SELECT * FROM admin_logs ORDER BY id DESC LIMIT 20").fetchall()]
+    backup_dir = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "admin_backups")
+    last_backup = None
+    if os.path.isdir(backup_dir):
+        files = [os.path.join(backup_dir, x) for x in os.listdir(backup_dir) if x.endswith('.db')]
+        if files:
+            f = max(files, key=os.path.getmtime)
+            last_backup = {"name": os.path.basename(f), "created_at": int(os.path.getmtime(f)), "size": os.path.getsize(f)}
+    return {
+        "admin_id": admin_id,
+        "server_time": now,
+        "game": state,
+        "stats": {"players": players, "active_today": active_today, "money_in_economy": round(economy,2), "avg_money": round(avg_money,2), "businesses": businesses_count, "properties": properties_count, "stocks": stocks_count, "bonds": bonds_count},
+        "leader": dict(leader) if leader else None,
+        "popular_business": ({"id": popular_business["business_id"], "name": BUSINESSES.get(popular_business["business_id"], {}).get("name", popular_business["business_id"]), "count": int(popular_business["c"])} if popular_business else None),
+        "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
+        "last_backup": last_backup,
+        "logs": logs,
+        "version": "v19-admin",
+    }
+
+
+@api.get("/api/admin/players")
+def admin_players(q: str = "", limit: int = 100, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    require_admin(x_telegram_init_data, x_user_id)
+    limit = max(1, min(int(limit), 250))
+    q = (q or "").strip()
+    with closing(db()) as conn:
+        if q:
+            like = f"%{q}%"
+            rows = conn.execute(
+                "SELECT p.user_id,p.username,p.corp_name,p.money,p.created_at,p.last_income_sync,s.total_earned,s.total_spent,s.companies_bought,s.properties_bought FROM players p LEFT JOIN stats s ON s.user_id=p.user_id WHERE CAST(p.user_id AS TEXT) LIKE ? OR COALESCE(p.username,'') LIKE ? OR p.corp_name LIKE ? ORDER BY p.money DESC LIMIT ?",
+                (like, like, like, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT p.user_id,p.username,p.corp_name,p.money,p.created_at,p.last_income_sync,s.total_earned,s.total_spent,s.companies_bought,s.properties_bought FROM players p LEFT JOIN stats s ON s.user_id=p.user_id ORDER BY p.money DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+    return [dict(r) for r in rows]
+
+
+@api.get("/api/admin/player/{player_id}")
+def admin_player_detail(player_id: int, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    require_admin(x_telegram_init_data, x_user_id)
+    if not get_player(player_id):
+        raise HTTPException(404, "Игрок не найден")
+    sync_passive_income(player_id)
+    snap = snapshot(player_id)
+    with closing(db()) as conn:
+        stock_rows = [dict(r) for r in conn.execute("SELECT stock_id,quantity,avg_buy_price FROM stock_holdings WHERE user_id=? AND quantity>0", (player_id,)).fetchall()]
+        bond_rows = [dict(r) for r in conn.execute("SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0", (player_id,)).fetchall()]
+        properties = [dict(r) for r in conn.execute("SELECT property_id,purchase_price,purchased_at FROM real_estate_holdings WHERE user_id=?", (player_id,)).fetchall()]
+    return {"state": snap, "stocks": stock_rows, "bonds": bond_rows, "properties": properties}
+
+
+@api.get("/api/admin/seasons")
+def admin_seasons(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    require_admin(x_telegram_init_data, x_user_id)
+    with closing(db()) as conn:
+        rows = conn.execute("SELECT * FROM season_results ORDER BY season_id DESC,place ASC").fetchall()
+    grouped = {}
+    for r in rows:
+        grouped.setdefault(str(r["season_id"]), []).append(dict(r))
+    return {"current": get_game_state(), "results": grouped}
+
+
+@api.post("/api/admin/freeze")
+def admin_freeze(body: AdminFreezeBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    now = int(time.time())
+    current = get_game_state()
+    desired = bool(body.frozen)
+    if desired == bool(current["is_frozen"]):
+        return get_game_state()
+
+    if desired:
+        with closing(db()) as conn:
+            ids = [int(r["user_id"]) for r in conn.execute("SELECT user_id FROM players").fetchall()]
+        for uid in ids:
+            sync_passive_income(uid)
+        update_stock_market()
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE game_state SET is_frozen=1,frozen_at=?,maintenance_message=? WHERE id=1", (now, body.message.strip()[:500]))
+            admin_log(admin_id, "freeze_game", body.message, conn)
+            conn.commit()
+    else:
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE players SET last_income_sync=?", (now,))
+            conn.execute("UPDATE stocks SET last_update=?", (now,))
+            conn.execute("UPDATE game_state SET is_frozen=0,frozen_at=0,maintenance_message='' WHERE id=1")
+            admin_log(admin_id, "unfreeze_game", "", conn)
+            conn.commit()
+    return get_game_state()
+
+
+@api.post("/api/admin/end-season")
+def admin_end_season(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if body.confirmation.strip().upper() != "END SEASON":
+        raise HTTPException(400, "Для подтверждения введи END SEASON")
+    if not game_is_frozen():
+        with closing(db()) as conn:
+            ids = [int(r["user_id"]) for r in conn.execute("SELECT user_id FROM players").fetchall()]
+        for uid in ids:
+            sync_passive_income(uid)
+        update_stock_market()
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        gs = conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()
+        season = int(gs["current_season"])
+        conn.execute("DELETE FROM season_results WHERE season_id=?", (season,))
+        leaders = conn.execute("SELECT user_id,username,corp_name,money FROM players ORDER BY money DESC,user_id ASC").fetchall()
+        for place, r in enumerate(leaders, start=1):
+            conn.execute("INSERT INTO season_results(season_id,place,user_id,username,corp_name,money,captured_at) VALUES(?,?,?,?,?,?,?)", (season, place, r["user_id"], r["username"], r["corp_name"], r["money"], now))
+        conn.execute("UPDATE game_state SET is_frozen=1,frozen_at=?,season_ended_at=?,maintenance_message='Сезон завершён. Итоги зафиксированы.' WHERE id=1", (now, now))
+        admin_log(admin_id, "end_season", f"season={season}; players={len(leaders)}", conn)
+        conn.commit()
+    return {"season": season, "players": len(leaders), "game": get_game_state()}
+
+
+@api.post("/api/admin/reset-progress")
+def admin_reset_progress(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if body.confirmation.strip().upper() != "RESET SEASON":
+        raise HTTPException(400, "Для подтверждения введи RESET SEASON")
+    backup_path = create_database_backup("before_reset")
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        reset_all_progress_conn(conn, now)
+        conn.execute("UPDATE game_state SET is_frozen=1,frozen_at=?,maintenance_message='Прогресс игроков сброшен. Ожидается запуск нового сезона.' WHERE id=1", (now,))
+        admin_log(admin_id, "reset_all_progress", os.path.basename(backup_path), conn)
+        conn.commit()
+    return {"ok": True, "backup": os.path.basename(backup_path), "game": get_game_state()}
+
+
+@api.post("/api/admin/new-season")
+def admin_new_season(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if body.confirmation.strip().upper() != "NEW SEASON":
+        raise HTTPException(400, "Для подтверждения введи NEW SEASON")
+    backup_path = create_database_backup("before_new_season")
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        current = int(conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()["current_season"])
+        reset_all_progress_conn(conn, now)
+        next_season = current + 1
+        conn.execute("UPDATE game_state SET current_season=?,season_started_at=?,season_ended_at=0,is_frozen=0,frozen_at=0,maintenance_message='' WHERE id=1", (next_season, now))
+        admin_log(admin_id, "start_new_season", f"season={next_season}; backup={os.path.basename(backup_path)}", conn)
+        conn.commit()
+    return {"ok": True, "season": next_season, "backup": os.path.basename(backup_path), "game": get_game_state()}
+
+
+@api.post("/api/admin/backup")
+def admin_backup(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    path = create_database_backup("manual")
+    admin_log(admin_id, "manual_backup", os.path.basename(path))
+    return {"ok": True, "backup": os.path.basename(path), "size": os.path.getsize(path)}
+# ============================================================================
+
