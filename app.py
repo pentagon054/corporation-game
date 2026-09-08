@@ -1710,7 +1710,7 @@ def index():
         html = f.read()
     tags = [
         '<script src="/static/v20.js?v=210"></script>',
-        '<script src="/static/v22_performance.js?v=220"></script>',
+        '<script src="/static/v22_performance.js?v=221"></script>',
     ]
     for tag in tags:
         if tag not in html:
@@ -1730,12 +1730,12 @@ def _html_with_optional_script(filename, script_src):
 
 @api.get("/seasons")
 def seasons_page():
-    return _html_with_optional_script("seasons.html", "/static/v22_performance.js?v=220")
+    return _html_with_optional_script("seasons.html", "/static/v22_performance.js?v=221")
 
 
 @api.get("/admin")
 def admin_page():
-    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=220")
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=221")
 
 
 def auth(x_telegram_init_data, x_user_id):
