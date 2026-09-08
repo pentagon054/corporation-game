@@ -612,6 +612,12 @@ api.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 def db():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
+    # Better concurrent read/write behavior for Telegram Mini App traffic.
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=30000")
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA foreign_keys=OFF")
     return conn
 
 
@@ -761,7 +767,20 @@ def init_db():
         ensure_column(conn, "businesses", "staff", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "businesses", "automation", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "season_results", "capital", "REAL NOT NULL DEFAULT 0")
+        ensure_column(conn, "players", "is_frozen", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "players", "frozen_at", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "players", "is_blocked", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column(conn, "players", "blocked_at", "INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE season_results SET capital=money WHERE capital<=0")
+        conn.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_players_last_income_sync ON players(last_income_sync);
+        CREATE INDEX IF NOT EXISTS idx_businesses_user ON businesses(user_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_holdings_user ON stock_holdings(user_id);
+        CREATE INDEX IF NOT EXISTS idx_bond_holdings_user ON bond_holdings(user_id);
+        CREATE INDEX IF NOT EXISTS idx_real_estate_user ON real_estate_holdings(user_id);
+        CREATE INDEX IF NOT EXISTS idx_daily_profit_user_day ON daily_profit(user_id, day);
+        CREATE INDEX IF NOT EXISTS idx_season_results_season_place ON season_results(season_id, place);
+        """)
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
         conn.execute(
             "INSERT OR IGNORE INTO game_state(id,is_frozen,frozen_at,current_season,season_started_at,season_ended_at,maintenance_message) VALUES(1,0,0,1,?,0,'')",
@@ -878,11 +897,25 @@ def reset_all_progress_conn(conn, now):
 @api.middleware("http")
 async def corporation_freeze_guard(request: Request, call_next):
     path = request.url.path
-    if request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and path.startswith("/api/") and not path.startswith("/api/admin/"):
-        if game_is_frozen():
+    method = request.method.upper()
+    if path.startswith("/api/") and not path.startswith("/api/admin/"):
+        # Global freeze: reads remain available, game mutations stop.
+        if method in {"POST", "PUT", "PATCH", "DELETE"} and game_is_frozen():
             state = get_game_state()
             message = state.get("maintenance_message") or "Игра заморожена администратором. Просмотр доступен, игровые действия временно отключены."
             return JSONResponse(status_code=423, content={"detail": message, "game_frozen": True})
+
+        # Per-player moderation is enforced server-side, not only hidden in UI.
+        try:
+            uid, _, _ = user_from_request(request.headers.get("x-telegram-init-data"), request.headers.get("x-user-id"))
+            if uid not in ADMIN_IDS:
+                restrictions = get_player_restrictions(uid)
+                if restrictions["is_blocked"]:
+                    return JSONResponse(status_code=403, content={"detail": "Аккаунт заблокирован администратором Corporation", "player_blocked": True})
+                if method in {"POST", "PUT", "PATCH", "DELETE"} and restrictions["is_frozen"]:
+                    return JSONResponse(status_code=423, content={"detail": "Аккаунт заморожен администратором. Просмотр доступен, игровые действия и начисление дохода остановлены.", "player_frozen": True})
+        except HTTPException:
+            pass
     return await call_next(request)
 
 
@@ -931,6 +964,25 @@ def ensure_player(uid, username=""):
 def get_player(uid):
     with closing(db()) as conn:
         return conn.execute("SELECT * FROM players WHERE user_id=?", (uid,)).fetchone()
+
+
+def get_player_restrictions(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        row = conn.execute("SELECT is_frozen,frozen_at,is_blocked,blocked_at FROM players WHERE user_id=?", (uid,)).fetchone()
+        if not row:
+            return {"is_frozen": False, "frozen_at": 0, "is_blocked": False, "blocked_at": 0}
+        return {
+            "is_frozen": bool(int(row["is_frozen"] or 0)),
+            "frozen_at": int(row["frozen_at"] or 0),
+            "is_blocked": bool(int(row["is_blocked"] or 0)),
+            "blocked_at": int(row["blocked_at"] or 0),
+        }
+    finally:
+        if own:
+            conn.close()
 
 
 def get_levels(uid):
@@ -1092,6 +1144,8 @@ def get_market_news(limit=50):
 
 
 _market_news_worker_started=False
+_market_update_lock = threading.Lock()
+_market_update_last_check = 0.0
 def _market_news_worker():
     while True:
         try:
@@ -1110,81 +1164,81 @@ def start_market_news_worker():
 
 
 def update_stock_market():
-    """Минутная игровая модель. При глобальной заморозке рынок полностью стоит."""
+    """Минутная игровая модель с дешёвым throttle для большого числа параллельных запросов."""
+    global _market_update_last_check
     if game_is_frozen():
         return
-    process_market_news()
-    now = int(time.time())
-    with closing(db()) as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        rows = conn.execute("SELECT * FROM stocks").fetchall()
-        for stock in rows:
-            config = STOCKS.get(stock["id"])
-            if not config:
-                continue
+    monotonic_now = time.monotonic()
+    if monotonic_now - _market_update_last_check < 1.0:
+        return
+    if not _market_update_lock.acquire(blocking=False):
+        return
+    try:
+        monotonic_now = time.monotonic()
+        if monotonic_now - _market_update_last_check < 1.0:
+            return
+        process_market_news()
+        now = int(time.time())
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            rows = conn.execute("SELECT * FROM stocks").fetchall()
+            for stock in rows:
+                config = STOCKS.get(stock["id"])
+                if not config:
+                    continue
 
-            elapsed = now - int(stock["last_update"])
-            if elapsed < STOCK_UPDATE_INTERVAL:
-                # Даже старые записи гарантированно держим внутри жёстких границ.
-                safe = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
-                if safe != float(stock["current_price"]):
-                    conn.execute("UPDATE stocks SET current_price=? WHERE id=?", (safe, stock["id"]))
-                continue
+                elapsed = now - int(stock["last_update"])
+                if elapsed < STOCK_UPDATE_INTERVAL:
+                    safe = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
+                    if safe != float(stock["current_price"]):
+                        conn.execute("UPDATE stocks SET current_price=? WHERE id=?", (safe, stock["id"]))
+                    continue
 
-            steps = min(int(elapsed // STOCK_UPDATE_INTERVAL), MAX_STOCK_HISTORY_POINTS)
-            price = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
-            trend = stock["trend"] if stock["trend"] in ("up", "down") else "up"
-            last_update = int(stock["last_update"])
-            floor = float(config["min_price"])
-            ceiling = float(config["max_price"])
-            midpoint = (floor + ceiling) / 2
-            span = max(ceiling - floor, 1.0)
+                steps = min(int(elapsed // STOCK_UPDATE_INTERVAL), MAX_STOCK_HISTORY_POINTS)
+                price = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
+                trend = stock["trend"] if stock["trend"] in ("up", "down") else "up"
+                last_update = int(stock["last_update"])
+                floor = float(config["min_price"])
+                ceiling = float(config["max_price"])
+                midpoint = (floor + ceiling) / 2
+                span = max(ceiling - floor, 1.0)
 
-            for _ in range(steps):
-                position = (price - floor) / span
-                direction = 1 if trend == "up" else -1
-
-                # Базовый минутный шум и тренд.
-                move = random.gauss(direction * config["drift"], config["volatility"])
-
-                # Мягкое притяжение к центру не даёт графику постоянно залипать у границ.
-                mean_reversion = ((midpoint - price) / span) * 0.006
-                move += mean_reversion
-
-                # Редкий рыночный импульс создаёт заметные свечи/скачки.
-                if random.random() < 0.035:
-                    move += random.uniform(-config["volatility"] * 2.2, config["volatility"] * 2.2)
-
-                next_price = price * (1 + move)
-
-                # ЖЁСТКИЙ пол и потолок: цена физически не может выйти за диапазон.
-                if next_price <= floor:
-                    next_price = floor
-                    trend = "up"
-                elif next_price >= ceiling:
-                    next_price = ceiling
-                    trend = "down"
-                else:
-                    # Чем ближе к границе, тем вероятнее разворот.
-                    if position < 0.12 and random.random() < 0.42:
-                        trend = "up"
-                    elif position > 0.88 and random.random() < 0.42:
-                        trend = "down"
-                    elif random.random() < 0.055:
-                        trend = "down" if trend == "up" else "up"
-
-                price = round(min(ceiling, max(floor, next_price)), 2)
-                last_update += STOCK_UPDATE_INTERVAL
-                conn.execute(
-                    "INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)",
-                    (stock["id"], price, last_update),
-                )
-
-            conn.execute(
-                "UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?",
-                (price, trend, last_update, stock["id"]),
-            )
-        conn.commit()
+                history_batch = []
+                for _ in range(steps):
+                    position = (price - floor) / span
+                    direction = 1 if trend == "up" else -1
+                    move = random.gauss(direction * config["drift"], config["volatility"])
+                    move += ((midpoint - price) / span) * 0.006
+                    if random.random() < 0.035:
+                        move += random.uniform(-config["volatility"] * 2.2, config["volatility"] * 2.2)
+                    next_price = price * (1 + move)
+                    if next_price <= floor:
+                        next_price = floor; trend = "up"
+                    elif next_price >= ceiling:
+                        next_price = ceiling; trend = "down"
+                    else:
+                        if position < 0.12 and random.random() < 0.42:
+                            trend = "up"
+                        elif position > 0.88 and random.random() < 0.42:
+                            trend = "down"
+                        elif random.random() < 0.055:
+                            trend = "down" if trend == "up" else "up"
+                    price = round(min(ceiling, max(floor, next_price)), 2)
+                    last_update += STOCK_UPDATE_INTERVAL
+                    history_batch.append((stock["id"], price, last_update))
+                if history_batch:
+                    conn.executemany("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", history_batch)
+                conn.execute("UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?", (price, trend, last_update, stock["id"]))
+            # Keep history bounded globally instead of letting SQLite grow forever.
+            conn.execute("""DELETE FROM stock_history WHERE id IN (
+                SELECT h.id FROM stock_history h
+                JOIN (SELECT stock_id, MAX(id) max_id FROM stock_history GROUP BY stock_id) m ON m.stock_id=h.stock_id
+                WHERE h.id < m.max_id - ?
+            )""", (MAX_STOCK_HISTORY_POINTS * 2,))
+            conn.commit()
+        _market_update_last_check = monotonic_now
+    finally:
+        _market_update_lock.release()
 
 def dividend_hourly_income(uid, conn=None):
     own = conn is None
@@ -1270,6 +1324,9 @@ def accrue_tax_conn(conn, uid, amount, due_since):
 def sync_passive_income(uid):
     now = int(time.time())
     if game_is_frozen():
+        return {"earned": 0, "business": 0, "dividends": 0, "bonds": 0, "rent": 0}
+    restrictions = get_player_restrictions(uid)
+    if restrictions["is_blocked"] or restrictions["is_frozen"]:
         return {"earned": 0, "business": 0, "dividends": 0, "bonds": 0, "rent": 0}
     update_stock_market()
     with closing(db()) as conn:
@@ -1385,19 +1442,70 @@ def player_capital(uid, conn=None):
             conn.close()
 
 
-def all_ranked_players(limit=None):
+def _bulk_ranked_players(limit=None):
+    """Full capitalization + pending passive income using one DB snapshot (no N+1 player queries)."""
     update_stock_market()
+    now = int(time.time())
     with closing(db()) as conn:
-        ids=[int(r["user_id"]) for r in conn.execute("SELECT user_id FROM players").fetchall()]
-    for uid in ids:
-        sync_passive_income(uid)
-    with closing(db()) as conn:
-        rows=[]
-        for p in conn.execute("SELECT user_id,corp_name,username,money FROM players").fetchall():
-            cap=player_capital(int(p["user_id"]), conn)
-            rows.append({**dict(p), "capital": cap["total"], "capital_breakdown": cap})
+        players = [dict(r) for r in conn.execute("SELECT user_id,corp_name,username,money,last_income_sync,is_frozen,frozen_at,is_blocked,blocked_at FROM players").fetchall()]
+        businesses = conn.execute("SELECT * FROM businesses WHERE level>0").fetchall()
+        stocks = conn.execute("SELECT h.user_id,h.stock_id,h.quantity,s.current_price FROM stock_holdings h JOIN stocks s ON s.id=h.stock_id WHERE h.quantity>0").fetchall()
+        bonds = conn.execute("SELECT user_id,bond_id,quantity FROM bond_holdings WHERE quantity>0").fetchall()
+        properties = conn.execute("SELECT * FROM real_estate_holdings").fetchall()
+        taxes = {int(r["user_id"]): dict(r) for r in conn.execute("SELECT user_id,unpaid,due_since FROM taxes").fetchall()}
+
+    breakdown = {int(p["user_id"]): {"cash": float(p["money"] or 0), "businesses": 0.0, "stocks": 0.0, "bonds": 0.0, "real_estate": 0.0} for p in players}
+    hourly = {uid: 0.0 for uid in breakdown}
+    for r in businesses:
+        uid=int(r["user_id"]); bid=r["business_id"]; lvl=int(r["level"] or 0)
+        if uid in breakdown and bid in BUSINESSES:
+            breakdown[uid]["businesses"] += business_capitalization(bid,lvl,r)
+            hourly[uid] += BUSINESSES[bid]["base_income"] * lvl * business_upgrade_multiplier(r,bid)
+    for r in stocks:
+        uid=int(r["user_id"]); sid=r["stock_id"]; qty=int(r["quantity"] or 0); value=float(r["current_price"])*qty
+        if uid in breakdown:
+            breakdown[uid]["stocks"] += value
+            hourly[uid] += value * STOCKS.get(sid,{}).get("dividend_rate",0)
+    for r in bonds:
+        uid=int(r["user_id"]); bid=r["bond_id"]; qty=int(r["quantity"] or 0)
+        if uid in breakdown and bid in BONDS:
+            value=float(BONDS[bid]["price"])*qty
+            breakdown[uid]["bonds"] += value
+            hourly[uid] += value * float(BONDS[bid]["yield_rate"])
+    for r in properties:
+        uid=int(r["user_id"]); prop=REAL_ESTATE.get(r["property_id"])
+        if uid in breakdown:
+            breakdown[uid]["real_estate"] += property_capitalization_from_row(r,now)
+            if prop:
+                hourly[uid] += float(prop["base_rent_hour"]) * property_upgrade_multiplier(r)
+
+    global_frozen = game_is_frozen()
+    rows=[]
+    for p in players:
+        uid=int(p["user_id"]); b=breakdown[uid]
+        # Project exactly the income that sync_passive_income would credit now, without writing every player.
+        if not int(p.get("is_frozen") or 0) and not int(p.get("is_blocked") or 0) and not global_frozen:
+            last_sync=int(p.get("last_income_sync") or now)
+            rate=float(hourly.get(uid,0))
+            tax=taxes.get(uid,{})
+            unpaid=float(tax.get("unpaid") or 0); due_since=int(tax.get("due_since") or 0)
+            if unpaid>0 and due_since>0:
+                earn_until=min(now,due_since+TAX_GRACE_SECONDS)
+            elif rate>0:
+                earn_until=min(now,last_sync+TAX_GRACE_SECONDS)
+            else:
+                earn_until=now
+            seconds=max(0,earn_until-last_sync)
+            b["cash"] += rate*(seconds/3600)
+        total=sum(b.values())
+        cap={k:round(v,2) for k,v in b.items()}
+        cap["total"]=round(total,2)
+        rows.append({**p,"money":cap["cash"],"capital":cap["total"],"capital_breakdown":cap})
     rows.sort(key=lambda x:(-float(x["capital"]), int(x["user_id"])))
     return rows[:limit] if limit else rows
+
+def all_ranked_players(limit=None):
+    return _bulk_ranked_players(limit)
 
 def property_payload(uid):
     now = int(time.time())
@@ -1600,7 +1708,21 @@ def index():
     path = os.path.join(WEB_DIR, "index.html")
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
-    tag = '<script src="/static/v20.js?v=210"></script>'
+    tags = [
+        '<script src="/static/v20.js?v=210"></script>',
+        '<script src="/static/v22_performance.js?v=220"></script>',
+    ]
+    for tag in tags:
+        if tag not in html:
+            html = html.replace("</body>", tag + "\n</body>")
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+
+
+def _html_with_optional_script(filename, script_src):
+    path = os.path.join(WEB_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        html = f.read()
+    tag = f'<script src="{script_src}"></script>'
     if tag not in html:
         html = html.replace("</body>", tag + "\n</body>")
     return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
@@ -1608,17 +1730,20 @@ def index():
 
 @api.get("/seasons")
 def seasons_page():
-    return FileResponse(os.path.join(WEB_DIR, "seasons.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+    return _html_with_optional_script("seasons.html", "/static/v22_performance.js?v=220")
 
 
 @api.get("/admin")
 def admin_page():
-    return FileResponse(os.path.join(WEB_DIR, "admin.html"), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=220")
 
 
 def auth(x_telegram_init_data, x_user_id):
     uid, username, _ = user_from_request(x_telegram_init_data, x_user_id)
     ensure_player(uid, username)
+    restrictions = get_player_restrictions(uid)
+    if restrictions["is_blocked"] and uid not in ADMIN_IDS:
+        raise HTTPException(403, "Аккаунт заблокирован администратором Corporation")
     return uid
 
 
@@ -1975,19 +2100,28 @@ def sell_property(property_id: str, x_telegram_init_data: str | None = Header(No
     return {"sell_price": round(price,2), "state": snapshot(uid), "properties": property_payload(uid)}
 
 
+def _season_public_row(row, viewer_id, is_admin):
+    item = dict(row)
+    if not is_admin and int(item.get("user_id") or 0) != int(viewer_id):
+        item.pop("user_id", None)
+        item.pop("username", None)
+    return item
+
+
 @api.get("/api/seasons")
 def public_seasons(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
-    auth(x_telegram_init_data, x_user_id)
+    viewer_id = auth(x_telegram_init_data, x_user_id)
+    viewer_is_admin = viewer_id in ADMIN_IDS
     state = get_game_state()
     current_id = int(state["current_season"])
-    current = all_ranked_players(20)
+    current = [_season_public_row(r, viewer_id, viewer_is_admin) for r in all_ranked_players(20)]
     with closing(db()) as conn:
         meta = {int(r["season_id"]): dict(r) for r in conn.execute("SELECT * FROM seasons ORDER BY season_id DESC").fetchall()}
         rows = conn.execute("SELECT * FROM season_results ORDER BY season_id DESC,place ASC").fetchall()
     previous = {}
     for r in rows:
         sid = int(r["season_id"])
-        previous.setdefault(str(sid), []).append(dict(r))
+        previous.setdefault(str(sid), []).append(_season_public_row(r, viewer_id, viewer_is_admin))
     return {
         "current": {"season_id": current_id, "name": meta.get(current_id, {}).get("name", f"Сезон №{current_id}"), "leaders": current, "started_at": state.get("season_started_at",0), "ended_at": state.get("season_ended_at",0)},
         "previous": previous,
@@ -2006,6 +2140,14 @@ class AdminConfirmBody(BaseModel):
 
 class AdminSeasonNameBody(BaseModel):
     name: str
+
+
+class AdminPlayerFlagBody(BaseModel):
+    enabled: bool
+
+
+class AdminPlayerDeleteBody(BaseModel):
+    confirmation: str
 
 
 @api.get("/api/admin/overview")
@@ -2044,7 +2186,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v21.1",
+        "version": "v22.0",
     }
 
 
@@ -2080,6 +2222,75 @@ def admin_player_detail(player_id: int, x_telegram_init_data: str | None = Heade
         bond_rows = [dict(r) for r in conn.execute("SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0", (player_id,)).fetchall()]
         properties = [dict(r) for r in conn.execute("SELECT property_id,purchase_price,purchased_at FROM real_estate_holdings WHERE user_id=?", (player_id,)).fetchall()]
     return {"state": snap, "stocks": stock_rows, "bonds": bond_rows, "properties": properties}
+
+
+@api.post("/api/admin/player/{player_id}/freeze")
+def admin_player_freeze(player_id: int, body: AdminPlayerFlagBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if player_id in ADMIN_IDS:
+        raise HTTPException(400, "Администратора нельзя заморозить через панель")
+    if not get_player(player_id):
+        raise HTTPException(404, "Игрок не найден")
+    now = int(time.time())
+    if body.enabled:
+        sync_passive_income(player_id)
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE players SET is_frozen=1,frozen_at=? WHERE user_id=?", (now, player_id))
+            admin_log(admin_id, "freeze_player", f"player={player_id}", conn)
+            conn.commit()
+    else:
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE players SET is_frozen=0,frozen_at=0,last_income_sync=? WHERE user_id=?", (now, player_id))
+            admin_log(admin_id, "unfreeze_player", f"player={player_id}", conn)
+            conn.commit()
+    return {"ok": True, "player_id": player_id, **get_player_restrictions(player_id)}
+
+
+@api.post("/api/admin/player/{player_id}/block")
+def admin_player_block(player_id: int, body: AdminPlayerFlagBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if player_id in ADMIN_IDS:
+        raise HTTPException(400, "Администратора нельзя заблокировать через панель")
+    if not get_player(player_id):
+        raise HTTPException(404, "Игрок не найден")
+    now = int(time.time())
+    if body.enabled:
+        sync_passive_income(player_id)
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE players SET is_blocked=1,blocked_at=?,is_frozen=1,frozen_at=? WHERE user_id=?", (now, now, player_id))
+            admin_log(admin_id, "block_player", f"player={player_id}", conn)
+            conn.commit()
+    else:
+        with closing(db()) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE players SET is_blocked=0,blocked_at=0,is_frozen=0,frozen_at=0,last_income_sync=? WHERE user_id=?", (now, player_id))
+            admin_log(admin_id, "unblock_player", f"player={player_id}", conn)
+            conn.commit()
+    return {"ok": True, "player_id": player_id, **get_player_restrictions(player_id)}
+
+
+@api.delete("/api/admin/player/{player_id}")
+def admin_delete_player(player_id: int, body: AdminPlayerDeleteBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if player_id in ADMIN_IDS:
+        raise HTTPException(400, "Администратора нельзя удалить через панель")
+    if body.confirmation.strip().upper() != "DELETE PLAYER":
+        raise HTTPException(400, "Для удаления введи DELETE PLAYER")
+    player = get_player(player_id)
+    if not player:
+        raise HTTPException(404, "Игрок не найден")
+    backup_path = create_database_backup(f"before_delete_{player_id}")
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        for table in ("businesses", "daily_profit", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
+            conn.execute(f"DELETE FROM {table} WHERE user_id=?", (player_id,))
+        conn.execute("DELETE FROM players WHERE user_id=?", (player_id,))
+        admin_log(admin_id, "delete_player", f"player={player_id}; backup={os.path.basename(backup_path)}", conn)
+        conn.commit()
+    return {"ok": True, "deleted_player_id": player_id, "backup": os.path.basename(backup_path)}
 
 
 @api.get("/api/admin/seasons")

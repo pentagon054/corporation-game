@@ -10,7 +10,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "211"
+WEBAPP_VERSION = "220"
 ADMIN_IDS = {
     int(x.strip())
     for x in (os.getenv("ADMIN_IDS") or "").split(",")
