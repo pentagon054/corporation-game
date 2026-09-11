@@ -1,49 +1,24 @@
-# Построй свою корпорацию — Telegram Mini App
+# Corporation v22.1 — кнопка обновления
 
-## Что внутри
-- `app.py` — FastAPI backend + Telegram bot
-- `web/index.html` — интерфейс
-- `web/style.css` — стили
-- `web/app.js` — логика интерфейса
-- SQLite создаётся автоматически при запуске
+Кнопка ↻ добавляется в верхнюю панель слева от ✎.
 
-## Быстрый запуск для разработки
+Она обновляет:
+- баланс и общий капитал;
+- автодоход;
+- статистику;
+- рейтинг;
+- инвестиции и котировки;
+- недвижимость;
+- налоги.
 
-1. Установите Python 3.10+.
-2. Откройте терминал в этой папке.
-3. Установите зависимости:
-   `pip install -r requirements.txt`
-4. Для теста в браузере:
-   - Windows PowerShell:
-     `$env:ALLOW_DEV_AUTH="1"`
-   - затем:
-     `uvicorn app:api --host 0.0.0.0 --port 8000`
-5. Откройте `http://127.0.0.1:8000`
+Патч не трогает БД и Railway Volume.
 
-## Запуск в Telegram
+Установка:
+1. Распакуй ZIP в корень проекта Corporation, рядом с app.py.
+2. Запусти:
+   .\APPLY_REFRESH_HOTFIX.bat
 
-### 1. Создайте бота
-В @BotFather используйте `/newbot` и получите токен.
+Или:
+   python .\apply_refresh_button_v22_1.py
 
-### 2. Получите HTTPS URL
-Для разработки можно использовать Cloudflare Tunnel:
-`cloudflared tunnel --url http://localhost:8000`
-
-### 3. Запустите API
-Windows PowerShell:
-`$env:BOT_TOKEN="ВАШ_ТОКЕН"`
-`$env:WEBAPP_URL="https://ВАШ-АДРЕС.trycloudflare.com"`
-`uvicorn app:api --host 0.0.0.0 --port 8000`
-
-### 4. Запустите Telegram-бота
-Во втором терминале:
-`$env:BOT_TOKEN="ВАШ_ТОКЕН"`
-`$env:WEBAPP_URL="https://ВАШ-АДРЕС.trycloudflare.com"`
-`python app.py`
-
-### 5. Откройте бота и нажмите /start
-
-## Важно
-Для настоящего запуска API проверяет Telegram initData.
-Никогда не оставляйте `ALLOW_DEV_AUTH=1` на публичном сервере.
-Токен бота нельзя публиковать.
+Скрипт автоматически создаст backup_before_v22_1_...
