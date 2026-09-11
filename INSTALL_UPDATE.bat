@@ -1,18 +1,7 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
-
-echo ================================================
-echo Corporation v12 - постоянные сохранения Railway
-echo ================================================
+echo Corporation v13 Premium Gold
 echo.
-
-where py >nul 2>nul
-if %errorlevel%==0 (
-    py apply_persistence_update.py
-) else (
-    python apply_persistence_update.py
-)
-
+python apply_update_v13.py
 echo.
 pause
