@@ -391,3 +391,26 @@ h1{font-size:25px;line-height:1.1;margin:5px 0 0;letter-spacing:-.5px;word-break
 .investment-subpage-head{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:10px;padding:2px 1px}.investment-subpage-head h2{margin:3px 0 0;font-size:23px}.investment-back{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--card);font-size:20px;padding:0}.investment-subpage-head .refresh-market{justify-self:end}
 .property-yield{margin:-2px 0 10px;padding:10px 11px;border-radius:12px;background:rgba(68,209,120,.08);border:1px solid rgba(68,209,120,.14);color:#a7dfba;font-size:11px;display:flex;justify-content:space-between;gap:10px}.property-yield b{color:var(--positive);white-space:nowrap}
 /* === END CORPORATION V18 === */
+
+/* CORPORATION_V22_4_SELECTED_NEWS_IMAGES */
+img[src*="/static/news/"]{
+  display:block;
+  width:100%;
+  max-width:100%;
+  height:auto;
+  aspect-ratio:1 / 1;
+  object-fit:contain;
+  object-position:center;
+  background:#070a0c;
+  border-radius:16px;
+}
+@media (max-width:480px){
+  img[src*="/static/news/"]{
+    width:100%;
+    height:auto;
+    aspect-ratio:1 / 1;
+    object-fit:contain;
+    object-position:center;
+    border-radius:14px;
+  }
+}
