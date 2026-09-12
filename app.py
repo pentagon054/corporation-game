@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
 ADMIN_IDS = {int(x.strip()) for x in (os.getenv("ADMIN_IDS") or "").split(",") if x.strip().isdigit()}
-STARTING_MONEY = 10000.0
+STARTING_MONEY = 20000.0
 
 # === CORPORATION_PERSISTENT_DB_V14_1 ==========================================
 def _is_railway_runtime():
@@ -217,7 +217,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "mcdonalds": {
-        "photo": "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1200&h=700&q=84",
+        "photo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/McDonald%27s_Walsrode_exterior_2026.jpg/1280px-McDonald%27s_Walsrode_exterior_2026.jpg",
         "good": [
             ("McDonald's ускорила продажи благодаря росту цифровых заказов", "Сеть ресторанов сообщила о сильной динамике приложения и программы лояльности. Персональные предложения повышают частоту заказов, а цифровой канал помогает компании эффективнее управлять средним чеком."),
             ("McDonald's расширяет высокомаржинальную франчайзинговую сеть", "Компания ускоряет открытие ресторанов с участием франчайзи на нескольких ключевых рынках. Такой формат позволяет увеличивать системные продажи при более умеренной потребности в собственном капитале."),
@@ -638,7 +638,7 @@ def init_db():
             user_id INTEGER PRIMARY KEY,
             username TEXT,
             corp_name TEXT NOT NULL,
-            money REAL NOT NULL DEFAULT 10000,
+            money REAL NOT NULL DEFAULT 20000,
             last_collect INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL
         );
@@ -953,7 +953,7 @@ def ensure_player(uid, username=""):
     with closing(db()) as conn:
         conn.execute(
             "INSERT OR IGNORE INTO players(user_id,username,corp_name,money,last_collect,created_at,last_income_sync) VALUES(?,?,?,?,?,?,?)",
-            (uid, username, "Новая корпорация", 10000, 0, now, now),
+            (uid, username, "Новая корпорация", STARTING_MONEY, 0, now, now),
         )
         conn.execute("INSERT OR IGNORE INTO stats(user_id) VALUES(?)", (uid,))
         conn.execute("INSERT OR IGNORE INTO taxes(user_id) VALUES(?)", (uid,))
@@ -1134,7 +1134,7 @@ def get_market_news(limit=50):
         applied=bool(int(d["applied_at"] or 0))
         items.append({
             "id":d["id"],"stock_id":d["stock_id"],"company":cfg.get("name",d["stock_id"]),"symbol":cfg.get("symbol",""),
-            "sentiment":d["sentiment"],"title":d["title"],"article":d["article"],"photo":d["photo"],
+            "sentiment":d["sentiment"],"title":d["title"],"article":d["article"],"photo":(MARKET_NEWS_TEMPLATES.get(d["stock_id"],{}).get("photo",d["photo"]) if d["stock_id"]=="mcdonalds" else d["photo"]),
             "published_at":d["published_at"],"impact_at":d["impact_at"],"applied":applied,"applied_at":d["applied_at"],
             "impact_percent":round(float(d["impact_percent"])*100,2) if applied else None,
             "price_before":round(float(d["price_before"]),2) if applied else None,"price_after":round(float(d["price_after"]),2) if applied else None,
