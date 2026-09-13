@@ -1,0 +1,393 @@
+:root{
+--bg:#09090a;--card:#151517;--card2:#1b1b1e;--text:#f7f7f2;--hint:#909095;
+--gold:#ffd400;--gold2:#f4c400;--goldsoft:rgba(255,212,0,.12);--line:rgba(255,255,255,.08);
+--positive:#44d178;--negative:#ff5b57
+}
+*{box-sizing:border-box}html{background:var(--bg);color-scheme:dark}
+body{margin:0;min-width:320px;background:radial-gradient(circle at 50% -10%,rgba(255,212,0,.10),transparent 27%),linear-gradient(180deg,#0b0b0c,#080809);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;color:var(--text);font-weight:800;-webkit-tap-highlight-color:transparent}button:active{transform:scale(.985)}button:disabled{cursor:not-allowed;opacity:.42;transform:none}
+.app{width:100%;max-width:720px;margin:0 auto;padding:18px 14px calc(110px + env(safe-area-inset-bottom))}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px 16px}.eyebrow,.balance-label{font-size:10px;letter-spacing:1.7px;color:var(--hint);font-weight:900}
+h1{font-size:25px;line-height:1.1;margin:5px 0 0;letter-spacing:-.5px;word-break:break-word}h2{margin-top:0}
+.icon{width:42px;height:42px;border:1px solid var(--line);background:#151517;border-radius:50%;display:grid;place-items:center;font-size:19px}
+
+.balance{position:relative;overflow:hidden;background:linear-gradient(135deg,#f2f2ef 0%,#b9b9b7 42%,#f6e17a 72%,#ffd400 100%);color:#101010;border-radius:26px;padding:20px;margin-bottom:18px;border:1px solid rgba(255,255,255,.24);box-shadow:0 22px 48px rgba(0,0,0,.30)}
+.balance:after{content:"";position:absolute;width:230px;height:230px;border-radius:50%;right:-80px;top:-105px;background:radial-gradient(circle,rgba(255,255,255,.55),transparent 64%)}
+.balance-topline{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:relative;z-index:1}.balance .balance-label{color:rgba(0,0,0,.53)}
+.money{font-size:37px;line-height:1;font-weight:950;margin:8px 0 18px;letter-spacing:-1.5px}
+.gold-orb{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:radial-gradient(circle at 35% 28%,#fff7aa 0%,#ffe52e 34%,#f4c400 70%,#a87400 100%);box-shadow:0 8px 20px rgba(95,70,0,.24),inset 0 1px 1px rgba(255,255,255,.7);font-size:24px;font-weight:950}
+.metrics{display:grid;gap:8px;position:relative;z-index:1}.metrics.three{grid-template-columns:repeat(3,1fr)}.metrics div{background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.32);border-radius:15px;padding:11px;backdrop-filter:blur(8px)}
+.metrics span{display:block;color:rgba(0,0,0,.52);font-size:10px;margin-bottom:4px}.metrics b{font-size:13px;color:#111}.auto-income-note{position:relative;z-index:1;margin-top:12px;font-size:11px;color:rgba(0,0,0,.58);display:flex;align-items:center;gap:7px}.live-dot{width:7px;height:7px;border-radius:50%;background:#111;box-shadow:0 0 0 4px rgba(0,0,0,.08)}
+
+.tabs{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 20px),700px);z-index:900;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:8px 7px;background:rgba(239,239,232,.96);border:1px solid rgba(255,255,255,.46);border-radius:24px;box-shadow:0 18px 48px rgba(0,0,0,.45);backdrop-filter:blur(20px)}
+.tab{min-width:0;border:0;background:transparent;color:#191919;border-radius:16px;padding:7px 2px 5px;display:grid;place-items:center;gap:2px}.tab span{font-size:18px;line-height:1}.tab small{font-size:8px;font-weight:850;white-space:nowrap}.tab.active{background:#111;color:#fff}
+.tab-main span{width:35px;height:35px;margin-top:-24px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#111;border:4px solid #ededE6;box-shadow:0 8px 18px rgba(0,0,0,.22)}.tab-main.active{background:transparent;color:#111}.tab-main.active span{background:#111;color:var(--gold)}
+
+.grid,.stats-page,.profile-page,.investment-page,.tax-page,.realestate-page{display:grid;gap:12px}.card,.stats-card,.chart-card,.profile-header,.investment-summary,.tax-hero,.realestate-summary{background:linear-gradient(180deg,#171719,#131315);border:1px solid var(--line);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.card{padding:16px}.business-head,.stock-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.card h3{margin:0;font-size:17px;letter-spacing:-.2px}.card p,.section-note{margin:7px 0;color:var(--hint);font-size:12px;line-height:1.5}
+.buy,.modal-card button{width:100%;border:0;border-radius:15px;padding:14px 15px;background:var(--gold);color:#111;font-size:14px;font-weight:950;box-shadow:0 8px 24px rgba(255,212,0,.11)}
+.business-income-box{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:13px 0 9px;padding:12px 13px;border-radius:14px;background:#0f0f10;border:1px solid var(--line)}.business-income-box span,.business-capitalization{color:var(--hint);font-size:11px}.business-income-box b{color:#fff}.owned-badge{font-size:10px!important;color:var(--gold)!important;white-space:nowrap}
+.business-upgrade-title{margin:15px 0 8px;color:var(--hint);font-size:9px;font-weight:950;letter-spacing:1.2px}.upgrade-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.upgrade-btn{min-height:78px;border:1px solid var(--line);background:#101011;border-radius:14px;padding:11px;text-align:left}.upgrade-btn b,.upgrade-btn span{display:block}.upgrade-btn b{font-size:12px}.upgrade-btn span{font-size:9.5px;color:var(--hint);margin-top:6px;line-height:1.35}.upgrade-btn.owned{border-color:rgba(255,212,0,.28);background:var(--goldsoft)}
+.sell-business,.stock-sell{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:13px;background:transparent;color:#ececec}.sell-business{margin-top:9px;color:#ff7772;border-color:rgba(255,91,87,.22)}.business-capitalization{text-align:center;margin-top:8px}
+
+.investment-summary{padding:20px;background:linear-gradient(135deg,#eeeeec 0%,#bdbdbb 50%,#f7e27e 100%);color:#111}.investment-summary .eyebrow{color:rgba(0,0,0,.5)}.investment-summary h2{margin:7px 0 5px;font-size:31px;letter-spacing:-1px}.investment-profit{font-size:14px;font-weight:950;margin-bottom:17px}.investment-summary .positive{color:#177d3d}.investment-summary .negative{color:#b02825}.investment-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.investment-summary-grid div{background:rgba(255,255,255,.43);border-radius:13px;padding:11px;border:1px solid rgba(255,255,255,.28)}.investment-summary-grid span{display:block;color:rgba(0,0,0,.52);font-size:10px;margin-bottom:4px}
+.investment-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px 0}.investment-section-title h2{font-size:21px}.refresh-market{border:1px solid var(--line);background:#171719;border-radius:50%;width:40px;height:40px;font-size:20px}.stock-price-block{text-align:right}.stock-symbol{display:inline-block;padding:4px 7px;border-radius:8px;background:var(--goldsoft);color:var(--gold);font-size:9px;font-weight:950;letter-spacing:1px;margin-bottom:5px}.stock-price{display:block;font-size:17px}.stock-change{font-size:10px;font-weight:950}.positive{color:var(--positive)}.negative{color:var(--negative)}
+.dividend-badge,.bond-yield{margin:10px 0;padding:9px 11px;border-radius:12px;background:var(--goldsoft);color:#ffe55d;font-size:11px;font-weight:850}.stock-history-button{width:100%;border:1px solid var(--line);background:#101011;border-radius:12px;padding:10px;margin:8px 0 11px;color:#d9d9d9}.stock-position,.holding-row{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:11px;margin-top:9px;color:var(--hint);font-size:12px}.stock-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.stock-chart{width:100%;height:125px;margin:14px 0;padding:8px;background:#0d0d0e;border-radius:14px;color:var(--gold);overflow:hidden;border:1px solid var(--line)}.stock-chart svg{width:100%;height:100%;display:block}.stock-current-line{stroke:rgba(255,255,255,.24);stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke}.stock-current-dot{fill:currentColor}.stock-current-label-bg{fill:var(--gold)}.stock-current-label{fill:#111;font-size:11px;font-weight:950}.stock-chart-empty{height:100px;display:flex;align-items:center;justify-content:center;color:var(--hint)}.stock-detail-price{font-size:25px;font-weight:950;margin-bottom:7px}.holding-profit{margin-top:11px;font-size:12px;font-weight:950}.bond-section-title{margin-top:8px}.bond-card{border-color:rgba(255,212,0,.12)}
+
+.stats-card,.chart-card,.profile-header{padding:17px}.stats-card span{display:block;color:var(--hint);font-size:12px;margin-bottom:8px}.stats-card b{font-size:22px}.profit-chart{height:250px;display:flex;align-items:flex-end;gap:8px;padding-top:45px;overflow-x:auto}.chart-column{min-width:58px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative}.chart-value{position:absolute;top:-38px;font-size:9px;color:var(--hint);white-space:nowrap}.chart-bar{width:30px;min-height:6px;border-radius:10px 10px 3px 3px;background:linear-gradient(180deg,#ffe45d,var(--gold2))}.chart-date{font-size:9px;color:var(--hint);margin-top:7px}
+.rank-button{width:100%;border:1px solid var(--line);text-align:left;display:flex;gap:14px;background:#151517}.rank-num{font-size:19px;font-weight:950;color:var(--gold)}.back-button{border:0;background:transparent;color:var(--hint);text-align:left;padding:3px 0 9px;font-size:13px}.profile-header p{color:var(--hint)}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.profile-stats div,.profile-business{background:#151517;border:1px solid var(--line);border-radius:16px;padding:13px}.profile-stats span{display:block;color:var(--hint);font-size:10px;margin-bottom:6px}.profile-business{display:flex;justify-content:space-between;gap:12px}.profile-business h3{margin:0}.profile-business p{color:var(--hint);font-size:11px}
+
+.tax-hero{padding:20px;background:linear-gradient(135deg,#1a1a1d,#111113)}.tax-hero.tax-blocked{background:linear-gradient(135deg,#2b1515,#171112);border-color:rgba(255,91,87,.18)}.tax-hero p,.tax-info{color:var(--hint);line-height:1.5}.tax-info{padding:16px}
+.world-map{position:relative;height:430px;width:100%;border-radius:21px;overflow:hidden;border:1px solid var(--line);background:#101011;box-shadow:0 18px 45px rgba(0,0,0,.32)}.world-map .leaflet-tile-pane{filter:grayscale(1) contrast(1.12) brightness(.62)}.game-map-controls{display:grid;gap:7px;margin:10px}.game-map-controls button{width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:rgba(17,17,19,.94);color:var(--gold);font-size:21px;box-shadow:0 7px 18px rgba(0,0,0,.3)}.game-map-credits{margin:0 8px 7px 0;padding:4px 7px;border-radius:8px;background:rgba(0,0,0,.62);color:rgba(255,255,255,.32);font-size:8px;pointer-events:none}
+.game-city-marker-wrap{background:transparent;border:0}.game-city-marker{position:absolute;left:50%;top:0;width:27px;height:27px;transform:translateX(-50%);border-radius:50%;background:rgba(255,212,0,.12);border:1px solid rgba(255,226,81,.6);box-shadow:0 0 0 5px rgba(255,212,0,.06),0 0 20px rgba(255,212,0,.34)}.game-city-marker span{position:absolute;inset:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 11px rgba(255,212,0,.85)}.game-city-name{position:absolute;top:29px;left:0;width:120px;text-align:center;color:#fff;font-size:10px;font-weight:950;text-shadow:0 1px 5px #000,0 0 8px #000;white-space:nowrap}
+.realestate-summary{display:grid;grid-template-columns:1fr auto;gap:8px;padding:14px}.realestate-summary span{color:var(--hint)}.property-card{padding:0;overflow:hidden}.property-image-wrap{position:relative}.property-card img{width:100%;height:220px;object-fit:cover;display:block;background:#1b1b1d;filter:saturate(.78) contrast(1.04)}.property-body{padding:16px}.property-badges{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap}.property-badges span{padding:5px 8px;border-radius:999px;background:rgba(8,8,9,.86);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:9px;font-weight:950;backdrop-filter:blur(7px)}.property-badges .segment-economy{color:#d9d9d9}.property-badges .segment-business{color:#fff}.property-badges .segment-vip{color:var(--gold);border-color:rgba(255,212,0,.28)}.property-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.property-metrics div{background:#101011;border:1px solid var(--line);border-radius:12px;padding:10px}.property-metrics span{display:block;color:var(--hint);font-size:10px;margin-bottom:5px}.property-growth{color:#e9ce4e;font-size:11px;margin:10px 0}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;padding:14px;z-index:1000;backdrop-filter:blur(5px)}.modal.hidden{display:none}.modal-card{width:min(720px,100%);background:#171719;border:1px solid var(--line);border-radius:26px;padding:13px 20px 20px;max-height:85vh;overflow-y:auto;box-shadow:0 -20px 50px rgba(0,0,0,.35)}.modal-handle{width:42px;height:4px;border-radius:999px;background:#4c4c50;margin:0 auto 15px}.modal-card p{color:var(--hint);line-height:1.45}.empty{text-align:center;color:var(--hint);padding:34px 20px}
+
+@media(max-width:480px){.app{padding-left:10px;padding-right:10px}.money{font-size:33px}.metrics.three{grid-template-columns:repeat(3,1fr)}.metrics div{padding:9px 8px}.metrics b{font-size:11px}.metrics span{font-size:8.5px}.profile-stats{grid-template-columns:1fr 1fr}.world-map{height:380px}.property-card img{height:190px}.tabs{width:calc(100% - 14px);border-radius:22px;padding-left:4px;padding-right:4px}.tab small{font-size:7px}}
+@media(max-width:360px){.money{font-size:30px}.upgrade-grid{grid-template-columns:1fr}.stock-header{flex-direction:column}.stock-price-block{text-align:left}.world-map{height:330px}.tab small{font-size:6.2px}.gold-orb{width:48px;height:48px}}
+
+/* === CORPORATION V14: CLEAR BOTTOM NAV ==================================== */
+.tabs{
+  position:fixed !important;
+  left:max(6px, env(safe-area-inset-left)) !important;
+  right:max(6px, env(safe-area-inset-right)) !important;
+  bottom:max(6px, env(safe-area-inset-bottom)) !important;
+  z-index:1000 !important;
+  display:grid !important;
+  grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+  gap:2px !important;
+  padding:6px !important;
+  margin:0 !important;
+  border:1px solid rgba(255,255,255,.58) !important;
+  border-radius:24px !important;
+  background:rgba(244,244,239,.97) !important;
+  box-shadow:0 16px 38px rgba(0,0,0,.38) !important;
+  backdrop-filter:blur(18px) !important;
+  -webkit-backdrop-filter:blur(18px) !important;
+  overflow:visible !important;
+}
+
+.tab,
+.tabs .tab,
+.tabs .tab[data-page="realestate"]{
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  min-width:0 !important;
+  min-height:54px !important;
+  height:54px !important;
+  padding:5px 2px 4px !important;
+  margin:0 !important;
+  border:0 !important;
+  border-radius:17px !important;
+  background:transparent !important;
+  color:#171719 !important;
+  box-shadow:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:3px !important;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  line-height:1 !important;
+  overflow:visible !important;
+}
+
+.tab::before,
+.tab::after,
+.tabs .tab[data-page="realestate"]::before,
+.tabs .tab[data-page="realestate"]::after{
+  content:none !important;
+  display:none !important;
+}
+
+.tab.active,
+.tabs .tab.active,
+.tabs .tab[data-page="realestate"].active{
+  transform:none !important;
+  background:#151517 !important;
+  color:#ffd400 !important;
+  box-shadow:0 5px 14px rgba(0,0,0,.23) !important;
+}
+
+.nav-icon{
+  width:21px !important;
+  height:21px !important;
+  flex:0 0 21px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:currentColor !important;
+  font-size:22px !important;
+  font-weight:900 !important;
+}
+
+.nav-icon svg{
+  width:21px !important;
+  height:21px !important;
+  display:block !important;
+  fill:none !important;
+  stroke:currentColor !important;
+  stroke-width:1.9 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+
+.nav-icon.nav-ruble{
+  font-family:Arial,sans-serif !important;
+  font-size:23px !important;
+  line-height:21px !important;
+}
+
+.nav-label{
+  display:block !important;
+  width:100% !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  font-size:7.5px !important;
+  line-height:10px !important;
+  font-weight:800 !important;
+  letter-spacing:-.25px !important;
+}
+
+.tab[data-page="realestate"] .nav-label{
+  font-size:6.8px !important;
+  letter-spacing:-.42px !important;
+}
+
+#content{padding-bottom:82px !important;}
+.app{padding-bottom:94px !important;}
+
+@media (min-width:430px){
+  .tabs{
+    left:50% !important;
+    right:auto !important;
+    width:min(420px,calc(100% - 16px)) !important;
+    transform:translateX(-50%) !important;
+  }
+  .nav-label{font-size:8px !important;}
+  .tab[data-page="realestate"] .nav-label{font-size:7.2px !important;}
+}
+/* ========================================================================== */
+
+/* === CORPORATION V14.2: MOBILE NAV HARD FIX =============================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Всегда привязываем меню к реальной ширине Telegram WebView.
+   Никакого центрирования через 50%/translateX и никакой фиксированной ширины. */
+.tabs {
+  position: fixed !important;
+  left: 6px !important;
+  right: 6px !important;
+  bottom: max(6px, env(safe-area-inset-bottom)) !important;
+
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  margin: 0 !important;
+  padding: 6px !important;
+  transform: none !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 2px !important;
+
+  overflow: hidden !important;
+  z-index: 1000 !important;
+
+  border: 1px solid rgba(255,255,255,.58) !important;
+  border-radius: 22px !important;
+  background: rgba(244,244,239,.98) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.38) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.tabs .tab,
+.tabs .tab[data-page="realestate"] {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 54px !important;
+  min-height: 54px !important;
+
+  margin: 0 !important;
+  padding: 5px 1px 4px !important;
+  transform: none !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: transparent !important;
+  color: #171719 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.tabs .tab.active,
+.tabs .tab[data-page="realestate"].active {
+  background: #151517 !important;
+  color: #ffd400 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.tabs .tab::before,
+.tabs .tab::after,
+.tabs .tab[data-page="realestate"]::before,
+.tabs .tab[data-page="realestate"]::after {
+  content: none !important;
+  display: none !important;
+}
+
+.tabs .nav-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  flex: 0 0 20px !important;
+
+  color: currentColor !important;
+  font-size: 21px !important;
+  line-height: 20px !important;
+  font-weight: 900 !important;
+}
+
+.tabs .nav-icon svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.tabs .nav-label {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+
+  text-align: center !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 7px !important;
+  line-height: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.28px !important;
+}
+
+.tabs .tab[data-page="realestate"] .nav-label {
+  font-size: 6.2px !important;
+  letter-spacing: -0.48px !important;
+}
+
+/* На очень узких экранах сохраняем все шесть кнопок внутри viewport. */
+@media (max-width: 390px) {
+  .tabs {
+    left: 4px !important;
+    right: 4px !important;
+    padding: 5px 4px !important;
+    gap: 1px !important;
+  }
+
+  .tabs .tab,
+  .tabs .tab[data-page="realestate"] {
+    height: 52px !important;
+    min-height: 52px !important;
+    border-radius: 14px !important;
+  }
+
+  .tabs .nav-icon,
+  .tabs .nav-icon svg {
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .tabs .nav-label {
+    font-size: 6.5px !important;
+    letter-spacing: -0.4px !important;
+  }
+
+  .tabs .tab[data-page="realestate"] .nav-label {
+    font-size: 5.8px !important;
+    letter-spacing: -0.55px !important;
+  }
+}
+
+/* Старое desktop-правило v14 больше не должно сдвигать панель. */
+@media (min-width: 430px) {
+  .tabs {
+    left: 6px !important;
+    right: 6px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+}
+
+#content {
+  padding-bottom: 88px !important;
+}
+
+.app {
+  padding-bottom: 98px !important;
+}
+/* === END CORPORATION V14.2 ================================================ */
+
+/* === CORPORATION_STOCK_MARKET_V17 === */
+.investment-page>.grid:has(.corp-stock-row){display:grid;gap:0;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--card)}
+.corp-stock-row{width:100%;min-height:80px;display:grid;grid-template-columns:46px minmax(0,1fr) auto 14px;gap:11px;align-items:center;padding:13px 13px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;text-align:left;color:var(--text)}
+.corp-stock-row:last-child{border-bottom:0}.corp-stock-row:active{background:rgba(255,255,255,.035);transform:none}
+.corp-stock-icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid rgba(230,190,80,.28);background:linear-gradient(145deg,rgba(216,174,67,.15),rgba(255,255,255,.025));color:#e7c96d;font-size:12px;font-weight:900}
+.corp-stock-name{min-width:0;display:grid;gap:4px}.corp-stock-name strong{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:16px}.corp-stock-name span{color:var(--hint);font-size:12px}
+.corp-stock-quote{min-width:92px;display:grid;gap:5px;text-align:right}.corp-stock-quote strong{font-size:16px;white-space:nowrap}.corp-stock-quote span{font-size:11px;white-space:nowrap}.corp-stock-arrow{color:var(--hint);font-size:23px;font-weight:400}
+.corp-stock-page{display:grid;gap:15px;padding-bottom:22px}.corp-stock-page-top{display:flex;min-height:42px}.corp-stock-back{width:42px;height:42px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--text);font-size:23px}
+.corp-stock-company{text-align:center;padding:8px 0 0}.corp-stock-logo-large{width:82px;height:82px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;border-radius:24px;border:1px solid rgba(230,190,80,.28);background:linear-gradient(145deg,rgba(212,171,61,.14),rgba(255,255,255,.025));color:#e6c96d;font-size:22px;font-weight:900}.corp-stock-symbol{color:var(--hint);font-size:11px;font-weight:900;letter-spacing:1.4px}.corp-stock-company h2{margin:6px 0 0;font-size:28px}
+.corp-stock-chart-card{padding:15px 12px 11px;border:1px solid var(--line);border-radius:20px;background:var(--card)}.corp-stock-chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:7px}.corp-stock-chart-head>div{display:grid;gap:4px}.corp-stock-chart-head span{color:var(--hint);font-size:11px}.corp-stock-chart-head strong{font-size:24px}.corp-stock-chart-head small{font-size:12px;font-weight:800}
+.corp-chart-switch{flex-shrink:0;padding:9px 11px;border:1px solid rgba(226,190,78,.25);border-radius:12px;background:rgba(226,190,78,.08);color:#e5c86f;font-size:12px}
+.corp-stock-chart{width:100%;height:270px;overflow:hidden;color:#d6b756}.corp-stock-chart svg{width:100%;height:100%;display:block}.corp-chart-grid{stroke:rgba(255,255,255,.08);stroke-width:1;vector-effect:non-scaling-stroke}.corp-chart-axis,.corp-chart-time{fill:rgba(255,255,255,.42);font-size:10px}.corp-stock-area{fill:rgba(213,181,82,.055)}.corp-stock-line{fill:none;stroke:#d7b958;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.corp-extreme-line{stroke:rgba(229,203,121,.34);stroke-width:1;stroke-dasharray:6 7;vector-effect:non-scaling-stroke}.corp-extreme-label{fill:rgba(229,203,121,.66);font-size:9px;font-weight:800}.corp-current-price-line{stroke:rgba(255,255,255,.16);stroke-width:1;stroke-dasharray:3 5;vector-effect:non-scaling-stroke}.corp-current-dot{fill:#e0bf5b}
+.corp-candle-wick{stroke-width:1.25;vector-effect:non-scaling-stroke}.corp-candle-body{vector-effect:non-scaling-stroke}.corp-candle-wick.up{stroke:#35c759}.corp-candle-body.up{stroke:#35c759;fill:#35c759}.corp-candle-wick.down{stroke:#ff5a52}.corp-candle-body.down{stroke:#ff5a52;fill:#ff5a52}.corp-stock-chart-empty{height:235px;display:flex;align-items:center;justify-content:center;color:var(--hint)}.corp-extreme-note{margin-top:3px;color:var(--hint);font-size:10px}
+.corp-stock-buy-main,.corp-stock-sell-main{width:100%;min-height:54px;border-radius:17px;padding:15px;font-size:16px}.corp-stock-buy-main{border:1px solid rgba(230,194,84,.45);background:linear-gradient(135deg,#d4b04f,#f0d476);color:#17130a}.corp-stock-sell-main{border:1px solid rgba(255,90,82,.28);background:rgba(255,90,82,.06);color:#ff7b75}
+.corp-stock-info{padding:18px;border:1px solid var(--line);border-radius:20px;background:var(--card)}.corp-stock-info h2{margin:0 0 15px;font-size:22px}.corp-stock-info-row{display:flex;justify-content:space-between;gap:15px;padding:12px 0;border-top:1px solid var(--line)}.corp-stock-info-row span{color:var(--hint);font-size:13px}.corp-stock-info-row strong{text-align:right;font-size:14px}.corp-stock-description{padding-top:14px;border-top:1px solid var(--line)}.corp-stock-description span{color:var(--hint);font-size:12px}.corp-stock-description p{margin:7px 0 0;color:var(--text);font-size:13px;line-height:1.55}
+@media(max-width:420px){.corp-stock-row{grid-template-columns:40px minmax(0,1fr) auto 11px;gap:8px;padding:12px 9px;min-height:72px}.corp-stock-icon{width:39px;height:39px;font-size:10px}.corp-stock-name strong{font-size:14px}.corp-stock-quote{min-width:80px}.corp-stock-quote strong{font-size:14px}.corp-stock-quote span{font-size:10px}.corp-stock-chart{height:235px}.corp-stock-chart-head strong{font-size:21px}}
+/* === /CORPORATION_STOCK_MARKET_V17 === */
+
+
+/* === CORPORATION V18: INVESTMENT HUB + REALISTIC PROPERTY ECONOMICS === */
+.investment-market-menu{display:grid;gap:11px}
+.investment-market-button{width:100%;min-height:84px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,#171719,#121214);padding:14px;display:grid;grid-template-columns:46px minmax(0,1fr) 18px;align-items:center;gap:12px;text-align:left;color:var(--text)}
+.investment-market-icon{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:var(--goldsoft);border:1px solid rgba(255,212,0,.20);color:var(--gold);font-size:22px;font-weight:950}
+.investment-market-button div{display:grid;gap:5px}.investment-market-button b{font-size:18px}.investment-market-button small{font-size:11px;line-height:1.35;color:var(--hint);font-weight:650}.investment-market-arrow{font-size:28px;color:var(--hint);font-weight:400;text-align:right}
+.investment-subpage-head{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:10px;padding:2px 1px}.investment-subpage-head h2{margin:3px 0 0;font-size:23px}.investment-back{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--card);font-size:20px;padding:0}.investment-subpage-head .refresh-market{justify-self:end}
+.property-yield{margin:-2px 0 10px;padding:10px 11px;border-radius:12px;background:rgba(68,209,120,.08);border:1px solid rgba(68,209,120,.14);color:#a7dfba;font-size:11px;display:flex;justify-content:space-between;gap:10px}.property-yield b{color:var(--positive);white-space:nowrap}
+/* === END CORPORATION V18 === */
