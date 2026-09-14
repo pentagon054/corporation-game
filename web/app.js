@@ -15,7 +15,7 @@ function fmtNumber(n) { return Number(n || 0).toLocaleString("ru-RU", {maximumFr
 function fmtPercent(n) { const v=Number(n||0); return (v>0?"+":"")+v.toFixed(2)+"%"; }
 async function api(url, options={}) {
   const headers={...(options.headers||{})};
-  if (tg?.initData) headers["X-Telegram-Init-Data"]=tg.initData; else headers["X-User-Id"]=String(DEV_ID);
+  if (tg?.initData) headers["X-Telegram-Init-Data"]=tg.initData; else if (["localhost","127.0.0.1"].includes(location.hostname)) headers["X-User-Id"]=String(DEV_ID); else throw new Error("Открой игру через Telegram");
   const res=await fetch(url,{...options,headers,cache:"no-store"});
   if(!res.ok){let d;try{d=await res.json()}catch{d={detail:"Ошибка сервера"}}throw new Error(d.detail||"Ошибка")}
   return res.json();
@@ -45,7 +45,7 @@ function renderBusinesses(){
             <button class="upgrade-btn ${u.owned?"owned":""}" ${u.owned?"disabled":""}
               onclick="upgradeBusiness('${b.id}','${u.id}')">
               <b>${u.name}</b>
-              <span>${u.owned?"Установлено":`+${u.income_bonus_percent}% к доходу · ${fmt(u.cost)}`}</span>
+              <span>${u.owned?"Установлено":`+${u.income_bonus_percent}% от базового дохода · ${fmt(u.cost)}<br>+${fmt(u.income_delta)}/ч · ${fmt(b.current_income)} → ${fmt(u.income_after_upgrade)}/ч`}</span>
             </button>`).join("")}
         </div>
         <button class="sell-business" onclick="sellBusiness('${b.id}')">Продать за ${fmt(b.sell_price)}</button>
@@ -60,7 +60,7 @@ function renderBusinesses(){
   document.querySelector("#content").innerHTML=`<div class="grid">${html}</div>`;
 }
 
-function renderProfitChart(data){if(!data?.length)return `<div class="empty">Пока нет прибыли.</div>`;const max=Math.max(...data.map(x=>Number(x.earned||0)),1);return `<div class="profit-chart">${data.map(x=>{const h=Math.max(6,Math.round(Number(x.earned||0)/max*100));const date=String(x.day||"").split("-").slice(1).join(".");return `<div class="chart-column"><div class="chart-value">${fmt(x.earned)}</div><div class="chart-bar" style="height:${h}%"></div><div class="chart-date">${date}</div></div>`}).join("")}</div>`}
+function renderProfitChart(data){if(!data?.length)return `<div class="empty">Пока нет прибыли.</div>`;const max=Math.max(...data.map(x=>Number(x.earned||0)),1);return `<div class="profit-chart">${data.map(x=>{const h=Math.max(6,Math.round(Number(x.earned||0)/max*100));const date=String(x.day||"").split("-").slice(1).reverse().join(".");return `<div class="chart-column"><div class="chart-value">${fmt(x.earned)}</div><div class="chart-bar" style="height:${h}%"></div><div class="chart-date">${date}</div></div>`}).join("")}</div>`}
 async function renderStatistics(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем статистику...</div>`;try{const s=await api("/api/statistics");c.innerHTML=`<section class="stats-page"><article class="stats-card"><span>💰 Общая прибыль</span><b>${fmt(s.total_earned)}</b></article><article class="stats-card"><span>💸 Общие расходы</span><b>${fmt(s.total_spent)}</b></article><article class="stats-card"><span>🏢 Куплено бизнесов</span><b>${s.companies_bought}</b></article><article class="stats-card"><span>🏠 Куплено недвижимости</span><b>${s.properties_bought}</b></article><section class="chart-card"><h2>📊 Прибыль по дням</h2>${renderProfitChart(s.daily_profit||[])}</section></section>`}catch(e){modal("Ошибка",e.message)}}
 async function renderRating(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем рейтинг...</div>`;try{const rows=await api("/api/rating");c.innerHTML=`<div class="grid">${rows.map((p,i)=>`<button class="card rank-button" onclick="openPlayerProfile(${p.user_id})"><div class="rank-num">#${i+1}</div><div><h3>${p.corp_name}</h3><p>💰 ${fmt(p.money)}</p></div></button>`).join("")}</div>`}catch(e){modal("Ошибка",e.message)}}
 async function openPlayerProfile(id){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем профиль...</div>`;try{const p=await api(`/api/player/${id}`);const businesses=p.businesses?.length?p.businesses.map(b=>`<article class="profile-business"><div><h3>${b.name}</h3><p>${b.description}</p></div><b>ур. ${b.level}</b></article>`).join(""):`<div class="empty">Бизнесов пока нет.</div>`;c.innerHTML=`<section class="profile-page"><button class="back-button" onclick="backToRating()">← Назад к рейтингу</button><article class="profile-header"><div class="eyebrow">ПРОФИЛЬ ИГРОКА</div><h2>${p.player.corp_name}</h2><p>💰 Капитал: ${fmt(p.player.money)}</p><p>📈 Автодоход: ${fmt(p.hourly_income)}/ч</p></article><section class="profile-stats"><div><span>💰 Общая прибыль</span><b>${fmt(p.stats.total_earned)}</b></div><div><span>🏢 Бизнесы</span><b>${p.stats.companies_bought}</b></div><div><span>🏠 Недвижимость</span><b>${p.properties_bought}</b></div></section><section class="profile-businesses"><h2>🏢 Бизнесы</h2>${businesses}</section></section>`}catch(e){modal("Ошибка",e.message)}}
@@ -73,10 +73,12 @@ function getHolding(id){return (brokerageCache?.holdings||[]).find(x=>String(x.s
 function stockChange(s){return Number(s.change_percent??0)}
 function renderStockMiniChart(history){if(!history?.length)return `<div class="stock-chart-empty">История цены пока формируется</div>`;const prices=history.map(x=>Number(x.price||0)),min=Math.min(...prices),max=Math.max(...prices),range=max-min||1,w=360,h=120,labelW=78,plotW=w-labelW-8,top=8,ph=h-16,yFor=p=>top+ph-((p-min)/range*ph);const pts=prices.map((p,i)=>`${prices.length===1?plotW/2:i/(prices.length-1)*plotW},${yFor(p)}`).join(" "),cur=prices.at(-1),cy=yFor(cur),ly=Math.min(h-25,Math.max(3,cy-12));return `<div class="stock-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" y1="${cy}" x2="${plotW}" y2="${cy}" class="stock-current-line"/><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${plotW}" cy="${cy}" r="4" class="stock-current-dot"/><rect x="${plotW+5}" y="${ly}" width="${labelW}" height="24" rx="4" class="stock-current-label-bg"/><text x="${plotW+11}" y="${ly+16}" class="stock-current-label">${fmtNumber(cur)} ₽</text></svg></div>`}
 async function renderInvestments(){
+  const viewAtStart=investmentView;
   const c=document.querySelector("#content");
   c.innerHTML=`<div class="empty">Загружаем инвестиции...</div>`;
   try{
     const [stocks,broker,bonds]=await Promise.all([loadStocks(),loadBrokerage(),loadBonds()]);
+    if(page!=="investments" || investmentView!==viewAtStart || corporationActiveStockId)return;
     stocksCache=stocks; brokerageCache=broker; bondsCache=bonds;
     const profit=Number(broker.total_profit||0);
     const bondIncome=(bondsCache||[]).reduce((sum,b)=>sum+Number(b.income_hour||0),0);
@@ -117,15 +119,15 @@ async function renderInvestments(){
     </section>`;
   }catch(e){modal("Инвестиции",e.message)}
 }
-function openInvestmentHome(){investmentView="home";return renderInvestments()}
-function openInvestmentStocks(){investmentView="stocks";return renderInvestments()}
-function openInvestmentBonds(){investmentView="bonds";return renderInvestments()}
+function openInvestmentHome(){corporationActiveStockId=null;investmentView="home";return renderInvestments()}
+function openInvestmentStocks(){corporationActiveStockId=null;investmentView="stocks";return renderInvestments()}
+function openInvestmentBonds(){corporationActiveStockId=null;investmentView="bonds";return renderInvestments()}
 function renderStockCard(s){
   const h=getHolding(s.id),owned=Number(h?.quantity||0),change=stockChange(s);
   return `<article class="card stock-card">
     <div class="stock-header">
       <div><div class="stock-symbol">${s.symbol}</div><h3>${s.name}</h3></div>
-      <div class="stock-price-block"><b class="stock-price">${fmt(s.current_price)}</b><span class="stock-change ${change>=0?"positive":"negative"}">${change>=0?"▲":"▼"} ${Math.abs(change).toFixed(2)}%</span></div>
+      <div class="stock-price-block"><b class="stock-price">${fmt(s.current_price)}</b><span class="stock-change ${change>=0?"positive":"negative"}">${change>=0?"▲":"▼"} ${Math.abs(change).toFixed(2)}%</span><small class="quote-period">к предыдущей котировке</small></div>
     </div>
     <p>${s.description||""}</p>
     <div class="dividend-badge">💸 Дивиденды: ${s.dividend_rate_percent}% в час</div>
@@ -138,7 +140,7 @@ function renderStockCard(s){
 function renderHoldings(){if(!brokerageCache?.holdings?.length)return `<article class="card empty">У тебя пока нет акций.</article>`;return `<section class="holdings-section"><h2>💼 Портфель</h2><div class="grid">${brokerageCache.holdings.map(h=>`<article class="card"><div class="business-head"><div><div class="stock-symbol">${h.symbol}</div><h3>${h.name}</h3></div><b>${h.quantity} шт.</b></div><div class="holding-row"><span>Стоимость</span><b>${fmt(h.current_value)}</b></div><div class="holding-row"><span>Дивиденды</span><b>${fmt(h.dividend_hour)}/ч</b></div><div class="holding-profit ${h.profit>=0?"positive":"negative"}">${h.profit>=0?"▲ Прибыль":"▼ Убыток"} ${fmt(Math.abs(h.profit))} (${fmtPercent(h.profit_percent)})</div></article>`).join("")}</div></section>`}
 async function openStock(id){try{const s=await api(`/api/stocks/${id}`),h=getHolding(id),change=stockChange(s);document.querySelector("#modalTitle").textContent=`${s.symbol} — ${s.name}`;document.querySelector("#modalText").innerHTML=`<div class="stock-detail-price">${fmt(s.current_price)}</div><div class="${change>=0?"positive":"negative"}">${change>=0?"▲":"▼"} ${Math.abs(change).toFixed(2)}%</div><div class="dividend-badge">💸 ${s.dividend_rate_percent}% дивидендов в час</div>${renderStockMiniChart(s.history||[])}<p>У тебя: ${h?.quantity||0} шт.</p>`;document.querySelector("#modal").classList.remove("hidden")}catch(e){modal("Ошибка",e.message)}}
 async function refreshInvestments(){state=await api("/api/state");renderHeader();await renderInvestments()}
-async function openTrade(id,side){const s=stocksCache.find(x=>x.id===id);if(!s)return;const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price),max=side==="buy"?Math.floor(Number(state.player.money)/price):owned;if(max<=0){modal("Сделка","Недостаточно средств или акций.");return}const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");if(raw===null)return;const qty=parseInt(raw,10);if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}try{const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});state=r.state;renderHeader();await renderInvestments();modal(side==="buy"?"Акции куплены":"Акции проданы",side==="sell"&&r.realized_profit>0?`Прибыль сделки: ${fmt(r.realized_profit)}\nНалог с прибыли: ${fmt(r.profit_tax)}`:`Сумма сделки: ${fmt(side==="buy"?r.total_cost:r.total_income)}`)}catch(e){modal("Сделка не выполнена",e.message)}}
+async function openTrade(id,side){const s=stocksCache.find(x=>x.id===id);if(!s)return;const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price),max=side==="buy"?Math.floor(Number(state.player.money)/price):owned;if(max<=0){modal("Сделка","Недостаточно средств или акций.");return}const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");if(raw===null)return;const qty=parseTradeQuantity(raw,max);if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}try{const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});state=r.state;renderHeader();await renderInvestments();modal(side==="buy"?"Акции куплены":"Акции проданы",side==="sell"&&r.realized_profit>0?`Прибыль сделки: ${fmt(r.realized_profit)}\nНалог с прибыли: ${fmt(r.profit_tax)}`:`Сумма сделки: ${fmt(side==="buy"?r.total_cost:r.total_income)}`)}catch(e){modal("Сделка не выполнена",e.message)}}
 
 function renderBondCard(b){
   const owned=Number(b.quantity||0);
@@ -161,7 +163,7 @@ async function openBondTrade(id,side){
 Максимум: ${max} шт.
 Введите количество:`,"1");
   if(raw===null)return;
-  const qty=parseInt(raw,10);
+  const qty=parseTradeQuantity(raw,max);
   if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}
   try{
     const r=await api(`/api/bonds/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});
@@ -261,7 +263,7 @@ async function upgradeProperty(pid,uid){try{const r=await api(`/api/real-estate/
 
 function render(){renderHeader();if(page==="businesses")return renderBusinesses();if(page==="investments")return renderInvestments();if(page==="realestate")return renderRealEstate();if(page==="taxes")return renderTaxes();if(page==="statistics")return renderStatistics();if(page==="rating")return renderRating()}
 function updateActiveTab(){document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.page===page))}
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(b.dataset.page==="investments")investmentView="home";page=b.dataset.page;updateActiveTab();render()});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{corporationActiveStockId=null;clearInterval(v21NewsTimer);if(b.dataset.page==="investments")investmentView="home";page=b.dataset.page;updateActiveTab();render()});
 window.buyBusiness=async id=>{try{state=await api(`/api/business/${id}/buy`,{method:"POST"});render()}catch(e){modal("Не удалось",e.message)}};
 window.upgradeBusiness=async(id,upgradeId)=>{try{state=await api(`/api/business/${id}/upgrade/${upgradeId}`,{method:"POST"});render();modal("Бизнес прокачан","Доход бизнеса увеличен.")}catch(e){modal("Прокачка не выполнена",e.message)}};
 window.sellBusiness=async id=>{const b=(state.businesses||[]).find(x=>x.id===id);if(!b||!confirm(`Продать ${b.name} за ${fmt(b.sell_price)}?`))return;try{const r=await api(`/api/business/${id}/sell`,{method:"POST"});state=r.state;render();modal("Бизнес продан",`Получено ${fmt(r.sell_price)}.`)}catch(e){modal("Ошибка",e.message)}};
@@ -349,7 +351,7 @@ renderStockCard=function(stock){
   return `<button class="corp-stock-row" type="button" onclick="openStock('${stock.id}')">
     <div class="corp-stock-icon">${String(stock.symbol||stock.name||"?").slice(0,2).toUpperCase()}</div>
     <div class="corp-stock-name"><strong>${stock.name}</strong><span>${owned>0?`В портфеле · ${owned} шт.`:"Доступно"}</span></div>
-    <div class="corp-stock-quote"><strong>${fmt(stock.current_price)}</strong><span class="${change>=0?"positive":"negative"}">${change>=0?"+":"−"} ${Math.abs(change).toFixed(2)}%</span></div>
+    <div class="corp-stock-quote"><strong>${fmt(stock.current_price)}</strong><span class="${change>=0?"positive":"negative"}">${change>=0?"+":"−"} ${Math.abs(change).toFixed(2)}%</span><small class="quote-period">к предыдущей котировке</small></div>
     <span class="corp-stock-arrow">›</span>
   </button>`;
 };
@@ -410,7 +412,7 @@ openTrade=async function(id,side){
   if(max<=0){modal("Сделка",side==="buy"?"Недостаточно средств для покупки.":"У тебя нет этих акций.");return}
   const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");
   if(raw===null)return;
-  const qty=parseInt(raw,10);
+  const qty=parseTradeQuantity(raw,max);
   if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}
   try{
     const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});

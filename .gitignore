@@ -16,3 +16,9 @@ README_UPDATE_V*.txt
 
 # Admin panel backups
 admin_backups/
+
+# Security-sensitive/runtime files
+.env
+.env.*
+!.env.example
+security_backup_*/

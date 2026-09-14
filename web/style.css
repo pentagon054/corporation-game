@@ -414,3 +414,19 @@ img[src*="/static/news/"]{
     border-radius:14px;
   }
 }
+
+/* v23 UX-005: same readable labels; three columns on compact screens. */
+.tabs{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:calc(100% - 16px)!important;max-width:760px!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;}
+.tabs .nav-label,.tabs .tab[data-page="realestate"] .nav-label{font-size:11px!important;line-height:15px!important;letter-spacing:0!important;white-space:normal!important;overflow:visible!important;}
+.tabs .tab,.tabs .tab[data-page="realestate"]{height:auto!important;min-height:58px!important;}
+.app{padding-bottom:110px!important;}
+.quote-period{display:block;color:var(--hint);font-size:10px;line-height:1.4;white-space:normal;max-width:135px;}
+.corp-stock-quote{min-width:0;}
+.v20-capital-grid,.stats-card{min-width:0;max-width:100%;}
+.v20-capital-grid b{overflow-wrap:anywhere;}
+@media(max-width:600px){
+  .tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2px!important;padding:4px!important;}
+  .tabs .tab,.tabs .tab[data-page="realestate"]{min-height:48px!important;}
+  .app{padding-bottom:calc(145px + env(safe-area-inset-bottom))!important;}
+  .v20-capital-grid{grid-template-columns:minmax(0,1fr);}
+}

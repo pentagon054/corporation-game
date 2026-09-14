@@ -14,7 +14,7 @@ openPlayerProfile=async function(id){const c=document.querySelector('#content');
 async function tradeAllStock(id,side){const s=stocksCache.find(x=>String(x.id)===String(id));if(!s)return;const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price||0);const qty=side==='buy'?Math.floor(Number(state.player.money||0)/price):owned;if(qty<=0){modal('Сделка',side==='buy'?'Недостаточно денег.':'У тебя нет этих акций.');return}if(!confirm(`${side==='buy'?'Купить на все свободные деньги':'Продать все'}: ${qty} шт. ${s.name}?`))return;try{const r=await api(`/api/stocks/${id}/${side}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quantity:qty})});state=r.state;renderHeader();await Promise.all([loadStocks(),loadBrokerage()]);await openStock(id,true);modal('Готово',`Количество: ${qty} шт.\nСумма: ${fmt(side==='buy'?r.total_cost:r.total_income)}`)}catch(e){modal('Сделка не выполнена',e.message)}}
 window.tradeAllStock=tradeAllStock;
 
-openStock=async function(id,keepScroll=false){const c=document.querySelector('#content');if(!keepScroll)corporationStockReturnScroll=window.scrollY||0;corporationActiveStockId=String(id);investmentView='stocks';c.innerHTML='<div class="empty">Загружаем акцию...</div>';try{const s=await api(`/api/stocks/${id}`),h=getHolding(id),owned=Number(h?.quantity||0),change=Number(s.change_percent||0);stocksCache=stocksCache.map(x=>String(x.id)===String(s.id)?{...x,...s}:x);const canAll=Math.floor(Number(state.player.money||0)/Number(s.current_price||1));c.innerHTML=`<section class="corp-stock-page"><div class="corp-stock-page-top"><button class="corp-stock-back" onclick="corporationCloseStock()">←</button></div><div class="corp-stock-company"><div class="corp-stock-logo-large">${String(s.symbol||s.name||'?').slice(0,2).toUpperCase()}</div><div class="corp-stock-symbol">${s.symbol||''}</div><h2>${s.name}</h2></div><article class="corp-stock-chart-card"><div class="corp-stock-chart-head"><div><span>Текущая цена</span><strong>${fmt(s.current_price)}</strong><small class="${change>=0?'positive':'negative'}">${change>=0?'+':'−'} ${Math.abs(change).toFixed(2)}%</small></div><button class="corp-chart-switch" onclick="corporationToggleStockChart('${s.id}')">${corporationStockViewMode==='candles'?'〽 Линия':'🕯 Свечи'}</button></div>${corporationRenderChart(s.history||[],corporationStockViewMode)}<div class="corp-extreme-note">MAX и MIN — максимум и минимум видимой истории графика.</div></article><div class="v20-action-grid"><button class="corp-stock-buy-main" onclick="openTrade('${s.id}','buy')">Купить</button><button class="v20-secondary" ${canAll>0?'':'disabled'} onclick="tradeAllStock('${s.id}','buy')">Купить на все · ${canAll} шт.</button>${owned>0?`<button class="corp-stock-sell-main" onclick="openTrade('${s.id}','sell')">Продать</button><button class="v20-sell-all" onclick="tradeAllStock('${s.id}','sell')">Продать все · ${owned} шт.</button>`:''}</div><section class="corp-stock-info"><h2>Сведения</h2><div class="corp-stock-info-row"><span>Стоимость одной акции</span><strong>${fmt(s.current_price)}</strong></div><div class="corp-stock-info-row"><span>В портфеле</span><strong>${owned} шт.</strong></div><div class="corp-stock-info-row"><span>Дивиденды</span><strong>${Number(s.dividend_rate_percent||0).toFixed(2)}% / ч</strong></div><div class="corp-stock-description"><span>О компании</span><p>${s.description||'Описание компании пока отсутствует.'}</p></div></section></section>`;window.scrollTo({top:0,left:0,behavior:'auto'})}catch(e){corporationActiveStockId=null;modal('Ошибка',e.message);await renderInvestments()}};
+openStock=async function(id,keepScroll=false){const c=document.querySelector('#content');if(!keepScroll)corporationStockReturnScroll=window.scrollY||0;corporationActiveStockId=String(id);investmentView='stocks';c.innerHTML='<div class="empty">Загружаем акцию...</div>';try{const s=await api(`/api/stocks/${id}`),h=getHolding(id),owned=Number(h?.quantity||0),change=Number(s.change_percent||0);if(page!=='investments'||corporationActiveStockId!==String(id))return;stocksCache=stocksCache.map(x=>String(x.id)===String(s.id)?{...x,...s}:x);const canAll=Math.floor(Number(state.player.money||0)/Number(s.current_price||1));c.innerHTML=`<section class="corp-stock-page"><div class="corp-stock-page-top"><button class="corp-stock-back" onclick="corporationCloseStock()">←</button></div><div class="corp-stock-company"><div class="corp-stock-logo-large">${String(s.symbol||s.name||'?').slice(0,2).toUpperCase()}</div><div class="corp-stock-symbol">${s.symbol||''}</div><h2>${s.name}</h2></div><article class="corp-stock-chart-card"><div class="corp-stock-chart-head"><div><span>Текущая цена</span><strong>${fmt(s.current_price)}</strong><small class="${change>=0?'positive':'negative'}">${change>=0?'+':'−'} ${Math.abs(change).toFixed(2)}%</small><small class="quote-period">к предыдущей котировке</small></div><button class="corp-chart-switch" onclick="corporationToggleStockChart('${s.id}')">${corporationStockViewMode==='candles'?'〽 Линия':'🕯 Свечи'}</button></div>${corporationRenderChart(s.history||[],corporationStockViewMode)}<div class="corp-extreme-note">MAX и MIN — максимум и минимум видимой истории графика.</div></article><div class="v20-action-grid"><button class="corp-stock-buy-main" onclick="openTrade('${s.id}','buy')">Купить</button><button class="v20-secondary" ${canAll>0?'':'disabled'} onclick="tradeAllStock('${s.id}','buy')">Купить на все · ${canAll} шт.</button>${owned>0?`<button class="corp-stock-sell-main" onclick="openTrade('${s.id}','sell')">Продать</button><button class="v20-sell-all" onclick="tradeAllStock('${s.id}','sell')">Продать все · ${owned} шт.</button>`:''}</div><section class="corp-stock-info"><h2>Сведения</h2><div class="corp-stock-info-row"><span>Стоимость одной акции</span><strong>${fmt(s.current_price)}</strong></div><div class="corp-stock-info-row"><span>В портфеле</span><strong>${owned} шт.</strong></div><div class="corp-stock-info-row"><span>Дивиденды</span><strong>${Number(s.dividend_rate_percent||0).toFixed(2)}% / ч</strong></div><div class="corp-stock-description"><span>О компании</span><p>${s.description||'Описание компании пока отсутствует.'}</p></div></section></section>`;window.scrollTo({top:0,left:0,behavior:'auto'})}catch(e){corporationActiveStockId=null;modal('Ошибка',e.message);await renderInvestments()}};
 window.openStock=openStock;
 
 renderBondCard=function(b){const owned=Number(b.quantity||0),max=Math.floor(Number(state?.player?.money||0)/Number(b.price||1));return `<article class="card bond-card"><div class="business-head"><div><div class="stock-symbol">${b.symbol}</div><h3>${b.name}</h3><p>${b.description}</p></div><b>${fmt(b.price)}</b></div><div class="bond-yield">💰 Доходность: <b>${b.yield_rate_percent}% в час</b></div><div class="holding-row"><span>У тебя</span><b>${owned} шт.</b></div><div class="holding-row"><span>Доход</span><b>${fmt(b.income_hour)}/ч</b></div><div class="v20-action-grid"><button class="buy" onclick="openBondTrade('${b.id}','buy')">Купить</button><button class="v20-secondary" ${max>0?'':'disabled'} onclick="tradeAllBond('${b.id}','buy')">Купить на все · ${max}</button><button class="stock-sell" ${owned>0?'':'disabled'} onclick="openBondTrade('${b.id}','sell')">Продать</button><button class="v20-sell-all" ${owned>0?'':'disabled'} onclick="tradeAllBond('${b.id}','sell')">Продать все · ${owned}</button></div></article>`};
@@ -38,6 +38,8 @@ async function renderMarketNews(){
   c.innerHTML='<div class="empty">Загружаем новости рынка...</div>';
   try{
     const d=await api('/api/market-news');
+    if(page!=='investments'||investmentView!=='news')return;
+    const clockOffset=Number(d.server_time)*1000-Date.now();
     const now=Number(d.server_time||Math.floor(Date.now()/1000));
     const next=Math.max(0,Number(d.next_news_at||0)-now);
     const cards=(d.news||[]).map(n=>{
@@ -48,26 +50,41 @@ async function renderMarketNews(){
         : `<div class="v21-news-reaction ${cls}"><b>${label}</b> · переоценка рынка через <span data-impact-at="${n.impact_at}">${v21Countdown(n.seconds_to_impact)}</span></div>`;
       return `<article class="v21-news-card"><img class="v21-news-photo" src="${n.photo}" alt="${n.company}" loading="lazy"><div class="v21-news-body"><div class="v21-news-kicker"><span>CORPORATION JOURNAL · ${n.symbol}</span><span>${v21Date(n.published_at)}</span></div><h3>${n.title}</h3><p>${n.article}</p>${reaction}</div></article>`;
     }).join('');
-    c.innerHTML=`<section class="v21-news-page"><div class="v21-news-head"><div><div class="eyebrow">MARKET NEWS</div><h2>📰 Новости рынка</h2></div><button class="back-button" onclick="v21BackInvestments()">← Назад</button></div><div class="v21-news-next">Следующая публикация примерно через ${v21Countdown(next)}. После каждой новости рынок реагирует через 2 минуты.</div>${cards||'<div class="empty">Новостей пока нет.</div>'}</section>`;
+    c.innerHTML=`<section class="v21-news-page"><div class="v21-news-head"><div><div class="eyebrow">MARKET NEWS</div><h2>📰 Новости рынка</h2></div><button class="back-button" onclick="v21BackInvestments()">← Назад</button></div><div class="v21-news-next">Следующая публикация примерно через <span data-news-at="${d.next_news_at}">${v21Countdown(next)}</span>. После каждой новости рынок реагирует через 2 минуты.</div>${cards||'<div class="empty">Новостей пока нет.</div>'}</section>`;
     clearInterval(v21NewsTimer);
-    v21NewsTimer=setInterval(()=>{
-      document.querySelectorAll('[data-impact-at]').forEach(el=>{const left=Math.max(0,Number(el.dataset.impactAt)-Math.floor(Date.now()/1000));el.textContent=v21Countdown(left);if(left===0){clearInterval(v21NewsTimer);setTimeout(()=>renderMarketNews(),1500)}})
-    },1000);
+    let refreshPending=false;
+    const tick=()=>{
+      if(page!=='investments'||investmentView!=='news'){clearInterval(v21NewsTimer);return;}
+      const now=Math.floor((Date.now()+clockOffset)/1000);
+      let due=false;
+      document.querySelectorAll('[data-impact-at],[data-news-at]').forEach(el=>{
+        const at=Number(el.dataset.impactAt||el.dataset.newsAt);
+        const left=Math.max(0,at-now);
+        el.textContent=left===0?'ожидаем обновление':v21Countdown(left);
+        if(at>0&&left===0)due=true;
+      });
+      if(due&&!refreshPending){
+        refreshPending=true;
+        setTimeout(()=>{if(page==='investments'&&investmentView==='news')renderMarketNews();},2000);
+      }
+    };
+    tick();v21NewsTimer=setInterval(tick,1000);
   }catch(e){modal('Ошибка',e.message)}
 }
-function openInvestmentNews(){investmentView='news';renderMarketNews()}
-function v21BackInvestments(){investmentView='home';clearInterval(v21NewsTimer);renderInvestments()}
+function openInvestmentNews(){corporationActiveStockId=null;investmentView='news';return renderMarketNews()}
+function v21BackInvestments(){investmentView='home';clearInterval(v21NewsTimer);return renderInvestments()}
 window.openInvestmentNews=openInvestmentNews;window.renderMarketNews=renderMarketNews;window.v21BackInvestments=v21BackInvestments;
 
 const v21BaseRenderInvestments=renderInvestments;
 renderInvestments=async function(){
+  if(corporationActiveStockId){await Promise.all([loadStocks(),loadBrokerage()]);if(page==='investments'&&corporationActiveStockId)return openStock(corporationActiveStockId,true);return;}
   if(investmentView==='news')return renderMarketNews();
   clearInterval(v21NewsTimer);
   await v21BaseRenderInvestments();
   const c=document.querySelector('#content');
-  if(!c||c.querySelector('.v21-news-entry')||corporationActiveStockId)return;
-  const page=c.querySelector('.investment-page')||c.firstElementChild;
-  if(page){const b=document.createElement('button');b.type='button';b.className='v21-news-entry';b.innerHTML='📰 Новости рынка <span style="float:right">›</span>';b.onclick=openInvestmentNews;page.insertBefore(b,page.children[1]||page.firstChild)}
+  if(page!=='investments'||!c||c.querySelector('.v21-news-entry')||corporationActiveStockId)return;
+  const container=c.querySelector('.investment-page')||c.firstElementChild;
+  if(container){const b=document.createElement('button');b.type='button';b.className='v21-news-entry';b.innerHTML='📰 Новости рынка <span style="float:right">›</span>';b.onclick=openInvestmentNews;container.insertBefore(b,container.children[1]||container.firstChild)}
 };
 window.renderInvestments=renderInvestments;
 // ============================================================================

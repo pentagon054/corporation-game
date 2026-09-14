@@ -94,12 +94,7 @@
 
     }catch(error){
       console.error("[Corporation v22.1] refresh failed:", error);
-      try{
-        const url = new URL(window.location.href);
-        url.searchParams.set("_refresh", String(Date.now()));
-        window.location.replace(url.toString());
-        return;
-      }catch(_){}
+      modal("Не удалось обновить", error.message || "Проверь соединение и попробуй снова.");
     }finally{
       if(button){
         setTimeout(()=>{

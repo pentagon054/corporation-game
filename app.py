@@ -3,6 +3,7 @@ import hmac
 import json
 import os
 import random
+import re
 import shutil
 import sqlite3
 import time
@@ -14,11 +15,24 @@ from urllib.parse import parse_qsl
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, conint
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_BOT_TOKEN_HERE")
+# === CORPORATION SECURITY V22 ================================================
+BOT_TOKEN = (os.getenv("BOT_TOKEN") or "").strip()
 ADMIN_IDS = {int(x.strip()) for x in (os.getenv("ADMIN_IDS") or "").split(",") if x.strip().isdigit()}
 STARTING_MONEY = 20000.0
+
+# Telegram Mini App initData is short-lived. A stolen signed payload must not work forever.
+TELEGRAM_AUTH_MAX_AGE = max(60, min(int(os.getenv("TELEGRAM_AUTH_MAX_AGE", "3600")), 86400))
+MAX_INIT_DATA_BYTES = 8192
+MAX_API_BODY_BYTES = max(4096, min(int(os.getenv("MAX_API_BODY_BYTES", "65536")), 1048576))
+
+# Developer auth is deliberately impossible on Railway even if ALLOW_DEV_AUTH=1 was
+# accidentally left in environment variables.
+def _dev_auth_enabled():
+    return os.getenv("ALLOW_DEV_AUTH") == "1" and not _is_railway_runtime()
+
+# ============================================================================
 
 # === CORPORATION_PERSISTENT_DB_V14_1 ==========================================
 def _is_railway_runtime():
@@ -84,11 +98,19 @@ else:
     print(f"[Corporation] Local SQLite database: {DB_PATH}")
 # ============================================================================
 
+if _is_railway_runtime():
+    if not BOT_TOKEN or BOT_TOKEN == "PASTE_YOUR_BOT_TOKEN_HERE":
+        raise RuntimeError("BOT_TOKEN must be configured in Railway")
+    if os.getenv("ALLOW_DEV_AUTH") == "1":
+        print("[SECURITY] ALLOW_DEV_AUTH ignored on Railway; Telegram auth is mandatory.")
+
 TAX_RATE = 0.05
 TAX_GRACE_SECONDS = 12 * 60 * 60
 STOCK_UPDATE_INTERVAL = 60
 MAX_STOCK_HISTORY_POINTS = 720
-REAL_ESTATE_DAILY_GROWTH = 0.00015
+REAL_ESTATE_GROWTH_INTERVAL = 12 * 60 * 60
+REAL_ESTATE_GROWTH_STEP = 0.01
+REAL_ESTATE_DAILY_GROWTH = (1 + REAL_ESTATE_GROWTH_STEP) ** 2 - 1
 
 BUSINESSES = {
     "coffee": {"name": "☕ Кофейня", "desc": "Небольшая, но стабильная точка.", "base_cost": 5000, "base_income": 350},
@@ -580,31 +602,123 @@ REAL_ESTATE = {
 }
 
 
-# === CORPORATION V20.1: REAL ESTATE BALANCE ================================
-# Game-balance yield is hourly, like other Corporation assets.
-# More expensive properties are progressively more profitable: ~1.0% to 2.2%/h
-# before upgrades, while retaining 100% resale capitalization.
-def _rebalance_real_estate_v20():
+# === CORPORATION V22: FINAL ALPHA REAL ESTATE BALANCE ========================
+# Недвижимость — премиальный актив для состоятельных игроков.
+# Базовая доходность растёт от ~3.2%/ч до ~4.8%/ч в зависимости от стоимости.
+def _rebalance_real_estate_v22():
     prices = [float(p["price"]) for p in REAL_ESTATE.values()]
     if not prices:
         return
-    lo, hi = min(prices), max(prices)
     import math
+    lo, hi = min(prices), max(prices)
     log_lo, log_hi = math.log(max(lo, 1.0)), math.log(max(hi, 1.0))
     span = max(log_hi - log_lo, 1e-9)
     for prop in REAL_ESTATE.values():
-        new_price = round(float(prop["price"]) * 0.90, 2)
-        score = (math.log(max(new_price, 1.0)) - math.log(max(lo * 0.90, 1.0))) / span
+        price = float(prop["price"])
+        score = (math.log(max(price, 1.0)) - log_lo) / span
         score = min(1.0, max(0.0, score))
-        hourly_yield = 0.010 + 0.012 * score
-        prop["price"] = new_price
-        prop["base_rent_hour"] = round(new_price * hourly_yield, 2)
+        hourly_yield = 0.032 + 0.016 * score
+        prop["base_rent_hour"] = round(price * hourly_yield, 2)
         prop["target_hourly_yield"] = hourly_yield
 
-_rebalance_real_estate_v20()
+_rebalance_real_estate_v22()
 # ============================================================================
 
 api = FastAPI(title="Corporation")
+# === CORPORATION SECURITY V22 MIDDLEWARE ====================================
+# Per-process defensive rate limiting. Railway/proxy-level rate limiting is still
+# recommended for DDoS protection; this layer protects application resources.
+from collections import defaultdict, deque
+
+_rate_buckets = defaultdict(deque)
+_rate_lock = threading.Lock()
+
+
+def _client_key(request: Request):
+    # Do not trust a client-supplied Telegram ID for rate-limit identity.
+    host = request.client.host if request.client else "unknown"
+    return str(host)[:128]
+
+
+def _rate_limited(key: str, limit: int, window: int = 60):
+    now = time.monotonic()
+    with _rate_lock:
+        q = _rate_buckets[key]
+        cutoff = now - window
+        while q and q[0] < cutoff:
+            q.popleft()
+        if len(q) >= limit:
+            return True
+        q.append(now)
+        # Opportunistic cleanup prevents an unbounded dictionary under scans.
+        if len(_rate_buckets) > 10000:
+            for old_key in list(_rate_buckets.keys())[:1000]:
+                if not _rate_buckets[old_key] or _rate_buckets[old_key][-1] < cutoff:
+                    _rate_buckets.pop(old_key, None)
+        return False
+
+
+@api.middleware("http")
+async def corporation_security_guard(request: Request, call_next):
+    path = request.url.path
+    method = request.method.upper()
+
+    if path.startswith("/api/"):
+        # Explicitly reject the vulnerable identity header on Railway. Even if an
+        # old endpoint accidentally reads it, the request never reaches the route.
+        if _is_railway_runtime() and request.headers.get("X-User-Id"):
+            return JSONResponse(status_code=400, content={"detail": "Legacy authentication header is disabled"})
+
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > MAX_API_BODY_BYTES:
+                    return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+            except ValueError:
+                return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length"})
+
+        client = _client_key(request)
+        limit = 180
+        if method in {"POST", "PUT", "PATCH", "DELETE"}:
+            limit = 90
+        if path.startswith("/api/admin/"):
+            limit = 45
+        if _rate_limited(f"{client}:{'admin' if path.startswith('/api/admin/') else method}", limit):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"}, headers={"Retry-After": "60"})
+
+        # Defense in depth: every API endpoint is authenticated centrally, in
+        # addition to the existing per-route auth() / require_admin() checks.
+        init_data = request.headers.get("X-Telegram-Init-Data", "")
+        if not init_data and _dev_auth_enabled():
+            # Local-only compatibility. This branch can never execute on Railway.
+            if not request.headers.get("X-User-Id"):
+                return JSONResponse(status_code=401, content={"detail": "Local developer authentication required"})
+        else:
+            try:
+                verify_init_data(init_data)
+            except HTTPException as exc:
+                return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    response = await call_next(request)
+
+    # Browser hardening. CSP intentionally allows Telegram SDK and HTTPS images.
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; "
+        "script-src 'self' 'unsafe-inline' https://telegram.org https://*.telegram.org https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; "
+        "connect-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org"
+    )
+    if path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    if _is_railway_runtime():
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+# ============================================================================
+
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 api.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
@@ -920,31 +1034,82 @@ async def corporation_freeze_guard(request: Request, call_next):
 
 
 def verify_init_data(init_data: str):
+    """Validate Telegram Mini App initData exactly as required by Telegram.
+
+    Security properties:
+    - HMAC-SHA256 signature bound to BOT_TOKEN;
+    - mandatory user + auth_date;
+    - freshness window to limit replay of stolen initData;
+    - bounded input size;
+    - fail-closed in production.
+    """
     if not init_data:
-        if os.getenv("ALLOW_DEV_AUTH") == "1":
+        if _dev_auth_enabled():
             return None
         raise HTTPException(401, "Open this game from Telegram.")
-    data = dict(parse_qsl(init_data, keep_blank_values=True))
-    received_hash = data.pop("hash", None)
-    if not received_hash:
-        raise HTTPException(401, "Missing Telegram hash")
-    data_check = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
-    secret = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
-    calculated = hmac.new(secret, data_check.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calculated, received_hash):
-        raise HTTPException(401, "Invalid Telegram authentication")
+
+    if not BOT_TOKEN or BOT_TOKEN == "PASTE_YOUR_BOT_TOKEN_HERE":
+        raise HTTPException(503, "Server authentication is not configured")
+    if len(init_data.encode("utf-8", errors="ignore")) > MAX_INIT_DATA_BYTES:
+        raise HTTPException(400, "Telegram authentication payload is too large")
+
     try:
-        return json.loads(data["user"])
-    except Exception:
+        pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
+    except ValueError:
+        raise HTTPException(401, "Invalid Telegram authentication payload")
+
+    # Duplicate fields are ambiguous and are rejected rather than interpreted.
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise HTTPException(401, "Invalid Telegram authentication payload")
+
+    data = dict(pairs)
+    received_hash = data.pop("hash", None)
+    if not received_hash or not re.fullmatch(r"[0-9a-fA-F]{64}", received_hash):
+        raise HTTPException(401, "Missing or invalid Telegram hash")
+
+    data_check = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    secret = hmac.new(b"WebAppData", BOT_TOKEN.encode("utf-8"), hashlib.sha256).digest()
+    calculated = hmac.new(secret, data_check.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calculated.lower(), received_hash.lower()):
+        raise HTTPException(401, "Invalid Telegram authentication")
+
+    try:
+        auth_date = int(data.get("auth_date", "0"))
+    except (TypeError, ValueError):
+        raise HTTPException(401, "Invalid Telegram auth_date")
+    now = int(time.time())
+    if auth_date <= 0 or auth_date > now + 30 or now - auth_date > TELEGRAM_AUTH_MAX_AGE:
+        raise HTTPException(401, "Telegram authentication expired")
+
+    try:
+        user = json.loads(data["user"])
+        uid = int(user["id"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        raise HTTPException(401, "Invalid Telegram user")
+    if uid <= 0:
         raise HTTPException(401, "Invalid Telegram user")
 
+    user["id"] = uid
+    return user
 
-def user_from_request(x_telegram_init_data, x_user_id):
+
+def user_from_request(x_telegram_init_data, x_user_id=None):
+    # In production X-User-Id is NEVER an identity source. It exists only to keep
+    # local localhost development compatible with old routes.
     tg_user = verify_init_data(x_telegram_init_data or "")
     if tg_user:
-        return int(tg_user["id"]), tg_user.get("username", ""), tg_user.get("first_name", "Игрок")
-    if os.getenv("ALLOW_DEV_AUTH") == "1" and x_user_id:
-        return int(x_user_id), "developer", "Разработчик"
+        return int(tg_user["id"]), str(tg_user.get("username") or "")[:64], str(tg_user.get("first_name") or "Игрок")[:128]
+
+    if _dev_auth_enabled() and x_user_id:
+        try:
+            uid = int(x_user_id)
+        except (TypeError, ValueError):
+            raise HTTPException(401, "Invalid local developer user")
+        if uid <= 0:
+            raise HTTPException(401, "Invalid local developer user")
+        return uid, "developer", "Разработчик"
+
     raise HTTPException(401, "Authentication required")
 
 
@@ -1064,24 +1229,29 @@ def _publish_market_news_conn(conn, published_at):
     sentiment = "good" if random.random() < 0.5 else "bad"
     eligible = _eligible_news_stocks(conn, sentiment)
     stock_ids = eligible or [sid for sid in MARKET_NEWS_TEMPLATES if sid in STOCKS]
+    last = conn.execute("SELECT stock_id,title FROM market_news ORDER BY published_at DESC,id DESC LIMIT 1").fetchone()
+    last_stock_id = str(last["stock_id"]) if last else ""
+    candidates = [sid for sid in stock_ids if sid != last_stock_id]
+    if candidates:
+        stock_ids = candidates
     stock_id = random.choice(stock_ids)
-    template = random.choice(MARKET_NEWS_TEMPLATES[stock_id][sentiment])
+    recent_titles = {str(r["title"]) for r in conn.execute("SELECT title FROM market_news WHERE stock_id=? ORDER BY published_at DESC,id DESC LIMIT 6", (stock_id,)).fetchall()}
+    templates = MARKET_NEWS_TEMPLATES[stock_id][sentiment]
+    fresh_templates = [tpl for tpl in templates if tpl[0] not in recent_titles]
+    template = random.choice(fresh_templates or templates)
     stock = conn.execute("SELECT current_price,min_price,max_price FROM stocks WHERE id=?", (stock_id,)).fetchone()
     current=float(stock["current_price"])
     if sentiment=="good":
-        max_room=max(0.0, float(stock["max_price"])/current-1.0)
+        max_room=max(0.0,float(stock["max_price"])/current-1.0)
     else:
-        max_room=max(0.0, 1.0-float(stock["min_price"])/current)
-    upper=min(MARKET_NEWS_MAX_IMPACT, max_room)
-    lower=min(MARKET_NEWS_MIN_IMPACT, upper)
-    impact=random.uniform(lower, upper) if upper>0 else 0.0
+        max_room=max(0.0,1.0-float(stock["min_price"])/current)
+    upper=min(MARKET_NEWS_MAX_IMPACT,max_room)
+    lower=min(MARKET_NEWS_MIN_IMPACT,upper)
+    impact=random.uniform(lower,upper) if upper>0 else 0.0
     if impact < MARKET_NEWS_MIN_IMPACT and eligible:
         impact=MARKET_NEWS_MIN_IMPACT
-    signed = impact if sentiment=="good" else -impact
-    conn.execute(
-        "INSERT INTO market_news(stock_id,sentiment,title,article,photo,published_at,impact_at,impact_percent) VALUES(?,?,?,?,?,?,?,?)",
-        (stock_id,sentiment,template[0],template[1],MARKET_NEWS_TEMPLATES[stock_id]["photo"],int(published_at),int(published_at)+MARKET_NEWS_REACTION_DELAY,float(signed)),
-    )
+    signed=impact if sentiment=="good" else -impact
+    conn.execute("INSERT INTO market_news(stock_id,sentiment,title,article,photo,published_at,impact_at,impact_percent) VALUES(?,?,?,?,?,?,?,?)", (stock_id,sentiment,template[0],template[1],MARKET_NEWS_TEMPLATES[stock_id]["photo"],int(published_at),int(published_at)+MARKET_NEWS_REACTION_DELAY,float(signed)))
 
 
 def process_market_news(now=None):
@@ -1400,8 +1570,9 @@ def property_capitalization_from_row(row, now=None):
         return 0.0
     now = int(now or time.time())
     purchase_price = float(row["purchase_price"])
-    days = max(0.0, (now - int(row["purchased_at"])) / 86400)
-    market_value = purchase_price * (1 + REAL_ESTATE_DAILY_GROWTH * days)
+    elapsed = max(0, now - int(row["purchased_at"]))
+    growth_steps = int(elapsed // REAL_ESTATE_GROWTH_INTERVAL)
+    market_value = purchase_price * ((1 + REAL_ESTATE_GROWTH_STEP) ** growth_steps)
     upgrades_value = 0.0
     for key, cfg in REAL_ESTATE_UPGRADES.items():
         if int(row[key] or 0) > 0:
@@ -1516,29 +1687,25 @@ def property_payload(uid):
         row = owned_rows.get(pid)
         owned = row is not None
         if owned:
-            days = max(0, (now - int(row["purchased_at"])) / 86400)
-            current_value = float(row["purchase_price"]) * (1 + REAL_ESTATE_DAILY_GROWTH * days)
-            rent = prop["base_rent_hour"] * property_upgrade_multiplier(row)
-            upgrades = {key: bool(int(row[key] or 0)) for key in REAL_ESTATE_UPGRADES}
-            purchase_price = float(row["purchase_price"])
+            purchase_price=float(row["purchase_price"])
+            elapsed=max(0,now-int(row["purchased_at"]))
+            growth_steps=int(elapsed//REAL_ESTATE_GROWTH_INTERVAL)
+            current_value=purchase_price*((1+REAL_ESTATE_GROWTH_STEP)**growth_steps)
+            rent=prop["base_rent_hour"]*property_upgrade_multiplier(row)
+            upgrades={key:bool(int(row[key] or 0)) for key in REAL_ESTATE_UPGRADES}
+            next_growth_in=REAL_ESTATE_GROWTH_INTERVAL-(elapsed%REAL_ESTATE_GROWTH_INTERVAL)
         else:
-            current_value = prop["price"]
-            rent = prop["base_rent_hour"]
-            upgrades = {key: False for key in REAL_ESTATE_UPGRADES}
-            purchase_price = prop["price"]
-        upgrade_info = []
-        for key, cfg in REAL_ESTATE_UPGRADES.items():
-            upgrade_info.append({
-                "id": key,
-                "name": cfg["name"],
-                "owned": upgrades[key],
-                "cost": round(purchase_price * cfg["cost_rate"], 2),
-                "income_bonus_percent": round(cfg["income_bonus"] * 100),
-            })
-        hourly_yield_percent = (rent / purchase_price * 100) if purchase_price > 0 else 0
-        annual_yield_percent = hourly_yield_percent * 8760
-        capitalization = property_capitalization_from_row(row, now) if owned else float(prop["price"])
-        result.append({"id": pid, **prop, "owned": owned, "purchase_price": round(purchase_price, 2), "current_value": round(current_value, 2), "capitalization": round(capitalization,2), "sell_price": round(capitalization,2) if owned else 0, "rent_hour": round(rent, 2), "hourly_yield_percent": round(hourly_yield_percent, 3), "annual_yield_percent": round(annual_yield_percent, 2), "growth_daily_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3), "upgrades": upgrade_info})
+            purchase_price=float(prop["price"]); current_value=float(prop["price"])
+            rent=float(prop["base_rent_hour"])
+            upgrades={key:False for key in REAL_ESTATE_UPGRADES}
+            growth_steps=0; next_growth_in=REAL_ESTATE_GROWTH_INTERVAL
+        upgrade_info=[]
+        for key,cfg in REAL_ESTATE_UPGRADES.items():
+            upgrade_info.append({"id":key,"name":cfg["name"],"owned":upgrades[key],"cost":round(purchase_price*cfg["cost_rate"],2),"income_bonus_percent":round(cfg["income_bonus"]*100)})
+        hourly_yield_percent=(rent/purchase_price*100) if purchase_price>0 else 0
+        annual_yield_percent=hourly_yield_percent*8760
+        capitalization=property_capitalization_from_row(row,now) if owned else float(prop["price"])
+        result.append({"id":pid,**prop,"owned":owned,"purchase_price":round(purchase_price,2),"current_value":round(current_value,2),"capitalization":round(capitalization,2),"sell_price":round(capitalization,2) if owned else 0,"rent_hour":round(rent,2),"hourly_yield_percent":round(hourly_yield_percent,3),"annual_yield_percent":round(annual_yield_percent,2),"growth_12h_percent":round(REAL_ESTATE_GROWTH_STEP*100,2),"growth_steps":growth_steps,"next_growth_in_seconds":int(next_growth_in),"upgrades":upgrade_info})
     return result
 
 
@@ -1573,6 +1740,8 @@ def snapshot(uid):
                 "owned": installed,
                 "cost": business_upgrade_cost(bid, upgrade_id),
                 "income_bonus_percent": round(cfg["income_bonus"] * 100),
+                "income_delta": round(business["base_income"] * level * cfg["income_bonus"], 2) if not installed else 0,
+                "income_after_upgrade": round(business["base_income"] * level * (multiplier + (0 if installed else cfg["income_bonus"])), 2),
             })
         businesses.append({
             "id": bid, **business, "level": level, "owned": owned,
@@ -1700,7 +1869,19 @@ class NameBody(BaseModel):
 
 
 class QuantityBody(BaseModel):
-    quantity: int
+    # Match JavaScript's exact integer range; never coerce floats, bools or strings.
+    quantity: conint(strict=True, gt=0, le=9007199254740991)
+    expected_price: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+
+
+def check_trade_price(body, price):
+    if body.expected_price is not None and round(price, 2) != round(body.expected_price, 2):
+        raise HTTPException(409, "Цена изменилась. Обнови котировку и подтверди сделку заново.")
+
+
+def money_ru(value):
+    return f"{value:,.2f}".replace(",", " ").replace(".", ",") + " ₽"
+
 
 
 @api.get("/")
@@ -1708,14 +1889,11 @@ def index():
     path = os.path.join(WEB_DIR, "index.html")
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
-    tags = [
-        '<script src="/static/v20.js?v=210"></script>',
-        '<script src="/static/v22_performance.js?v=221"></script>',
-    ]
-    for tag in tags:
+    scripts = []  # Script order is explicit in index.html (v23).
+    for tag in scripts:
         if tag not in html:
             html = html.replace("</body>", tag + "\n</body>")
-    return HTMLResponse(html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
+    return HTMLResponse(html, headers={"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0","Pragma":"no-cache","Expires":"0"})
 
 
 def _html_with_optional_script(filename, script_src):
@@ -1936,7 +2114,7 @@ def buy_stock(stock_id: str, body: QuantityBody, x_telegram_init_data: str | Non
         conn.execute("BEGIN IMMEDIATE")
         stock = conn.execute("SELECT current_price FROM stocks WHERE id=?", (stock_id,)).fetchone()
         if not stock: conn.rollback(); raise HTTPException(404, "Акция не найдена")
-        price = float(stock["current_price"]); total = price * body.quantity
+        price = float(stock["current_price"]); check_trade_price(body, price); total = price * body.quantity
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
         if float(player["money"]) < total: conn.rollback(); raise HTTPException(400, f"Недостаточно денег. Нужно {total:.2f} ₽")
         h = conn.execute("SELECT quantity,avg_buy_price FROM stock_holdings WHERE user_id=? AND stock_id=?", (uid, stock_id)).fetchone()
@@ -1958,7 +2136,7 @@ def sell_stock(stock_id: str, body: QuantityBody, x_telegram_init_data: str | No
         h = conn.execute("SELECT quantity,avg_buy_price FROM stock_holdings WHERE user_id=? AND stock_id=?", (uid, stock_id)).fetchone()
         if not stock: conn.rollback(); raise HTTPException(404, "Акция не найдена")
         if not h or int(h["quantity"]) < body.quantity: conn.rollback(); raise HTTPException(400, "Недостаточно акций для продажи")
-        price = float(stock["current_price"]); avg = float(h["avg_buy_price"]); total = price * body.quantity; remaining = int(h["quantity"]) - body.quantity
+        price = float(stock["current_price"]); check_trade_price(body, price); avg = float(h["avg_buy_price"]); total = price * body.quantity; remaining = int(h["quantity"]) - body.quantity
         realized_profit = max(0.0, (price - avg) * body.quantity)
         if remaining == 0: conn.execute("DELETE FROM stock_holdings WHERE user_id=? AND stock_id=?", (uid, stock_id))
         else: conn.execute("UPDATE stock_holdings SET quantity=? WHERE user_id=? AND stock_id=?", (remaining, uid, stock_id))
@@ -2001,6 +2179,7 @@ def buy_bond(bond_id: str, body: QuantityBody, x_telegram_init_data: str | None 
     uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
     bond = BONDS.get(bond_id)
     if not bond: raise HTTPException(404, "Облигация не найдена")
+    check_trade_price(body, float(bond["price"]))
     total = float(bond["price"]) * body.quantity
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -2022,6 +2201,7 @@ def sell_bond(bond_id: str, body: QuantityBody, x_telegram_init_data: str | None
     uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid)
     bond = BONDS.get(bond_id)
     if not bond: raise HTTPException(404, "Облигация не найдена")
+    check_trade_price(body, float(bond["price"]))
     total = float(bond["price"]) * body.quantity
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -2040,7 +2220,7 @@ def sell_bond(bond_id: str, body: QuantityBody, x_telegram_init_data: str | None
 
 @api.get("/api/real-estate")
 def real_estate(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
-    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid); return {"properties": property_payload(uid), "daily_growth_percent": round(REAL_ESTATE_DAILY_GROWTH * 100, 3)}
+    uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid); return {"properties": property_payload(uid), "growth_12h_percent": round(REAL_ESTATE_GROWTH_STEP * 100, 2), "growth_interval_seconds": REAL_ESTATE_GROWTH_INTERVAL}
 
 
 @api.post("/api/real-estate/{property_id}/buy")
@@ -2054,7 +2234,7 @@ def buy_property(property_id: str, x_telegram_init_data: str | None = Header(Non
         exists = conn.execute("SELECT 1 FROM real_estate_holdings WHERE user_id=? AND property_id=?", (uid, property_id)).fetchone()
         if exists: conn.rollback(); raise HTTPException(400, "Эта недвижимость уже куплена")
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
-        if float(player["money"]) < prop["price"]: conn.rollback(); raise HTTPException(400, f"Недостаточно денег. Нужно {prop['price']:.2f} ₽")
+        if float(player["money"]) < prop["price"]: conn.rollback(); raise HTTPException(400, f"Нужно {money_ru(prop['price'])}; не хватает {money_ru(prop['price'] - float(player['money']))}")
         conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (prop["price"], uid))
         conn.execute("INSERT INTO real_estate_holdings(user_id,property_id,purchase_price,purchased_at) VALUES(?,?,?,?)", (uid, property_id, prop["price"], now))
         conn.execute("UPDATE stats SET total_spent=total_spent+?,properties_bought=properties_bought+1 WHERE user_id=?", (prop["price"], uid))
@@ -2175,7 +2355,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         files = [os.path.join(backup_dir, x) for x in os.listdir(backup_dir) if x.endswith('.db')]
         if files:
             f = max(files, key=os.path.getmtime)
-            last_backup = {"name": os.path.basename(f), "created_at": int(os.path.getmtime(f)), "size": os.path.getsize(f)}
+            last_backup = {"created_at": int(os.path.getmtime(f)), "size": os.path.getsize(f)}
     return {
         "admin_id": admin_id,
         "server_time": now,

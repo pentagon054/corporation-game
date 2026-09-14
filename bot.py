@@ -10,7 +10,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "221"
+WEBAPP_VERSION = "230"
 ADMIN_IDS = {
     int(x.strip())
     for x in (os.getenv("ADMIN_IDS") or "").split(",")
@@ -106,7 +106,7 @@ async def main():
     me = await bot.get_me()
     print(
         f"[Corporation Bot] starting polling | bot_id={me.id} | "
-        f"version={WEBAPP_VERSION} | admin_ids={sorted(ADMIN_IDS)}"
+        f"version={WEBAPP_VERSION} | admins={len(ADMIN_IDS)}"
     )
 
     # На случай, если раньше использовался webhook.
