@@ -16,7 +16,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
  w.prompt=()=>raw;w.confirm=()=>confirmed;
  w.addEventListener('error',e=>errors.push(e.message));
  const evaluate=s=>vm.runInContext(s,ctx);
- for(const file of ['app.js','v22_1.js','v20.js','v22.js','v22_performance.js','audit_v23.js','premium_v24.js'])new vm.Script(fs.readFileSync(root+'/'+file,'utf8'),{filename:file}).runInContext(ctx);
+ for(const file of ['app.js','v22_1.js','v20.js','v22.js','v22_performance.js','audit_v23.js','interactive_map.js','premium_v24.js'])new vm.Script(fs.readFileSync(root+'/'+file,'utf8'),{filename:file}).runInContext(ctx);
  async function settled(test){for(let i=0;i<100;i++){if(test())return;await delay(20)}throw new Error('Timeout waiting for UI');}
  await settled(()=>w.document.querySelector('.business-card'));
  assert.equal(w.document.querySelector('.balance-label').textContent,'СВОБОДНЫЕ ДЕНЬГИ');

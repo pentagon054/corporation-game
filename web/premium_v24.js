@@ -53,25 +53,28 @@ renderRating=async function(){
 function jumpRating24(index,smooth=true){document.querySelector(`#rank-${index}`)?.scrollIntoView({block:'center',behavior:smooth&&!reducedMotion()?'smooth':'instant'});}
 window.renderRating=renderRating;window.jumpRating24=jumpRating24;
 
-// Local map: no remote map tiles, credentials, or overlapping clickable labels.
-let mapScale24=1;
+// Interactive offline atlas; preserve camera when returning from a city.
+let mapView241=null,atlas241=null;
+function disposeAtlas241(){if(atlas241){mapView241=atlas241.snapshot();atlas241.destroy();atlas241=null;}}
 renderRealEstate=async function(){
-  const c=document.querySelector('#content');c.innerHTML='<div class="empty">Загружаем объекты…</div>';
+  disposeAtlas241();const c=document.querySelector('#content');c.innerHTML='<div class="empty">Загружаем объекты…</div>';
   try{
     const d=await api('/api/real-estate');if(page!=='realestate')return;
     realEstateCache=d.properties||[];
     const cities=[...new Map(realEstateCache.map(p=>[p.city_id,p])).values()];
-    c.innerHTML=`<section class="realestate-page"><div class="eyebrow">ЧАСТНЫЙ ПОРТФЕЛЬ</div><h2>Недвижимость мира</h2><p class="section-note">От первого дома до частной резиденции.</p><div class="world-map atlas"><div class="atlas-stage"><img src="/static/world.svg" alt="Карта расположения городов">${cities.map(p=>`<span class="atlas-dot" style="left:${(Number(p.lng)+180)/360*100}%;top:${(90-Number(p.lat))/180*100}%" title="${escapeHTML(p.city)}"></span>`).join('')}</div><div class="atlas-caption">GLOBAL REAL ESTATE <span>06 РЕГИОНОВ</span></div><div class="atlas-controls"><button onclick="zoomMap24(-1)" aria-label="Уменьшить карту">−</button><button onclick="zoomMap24(0)" aria-label="Исходный масштаб">◎</button><button onclick="zoomMap24(1)" aria-label="Увеличить карту">+</button></div></div><p class="section-note">Выбери город</p><div class="city-selector">${cities.map(p=>`<button data-city="${p.city_id}" onclick="openCity('${p.city_id}')"><span>${escapeHTML(p.country)}</span><strong>${escapeHTML(p.city)}</strong><b>↗</b></button>`).join('')}</div><div class="realestate-summary"><span>В портфеле</span><b>${state.real_estate_count||0} объектов</b><span>Рост стоимости</span><b>+1% каждые 12 ч</b></div></section>`;
-    mapScale24=1;
+    c.innerHTML=`<section class="realestate-page"><div class="eyebrow">ЧАСТНЫЙ ПОРТФЕЛЬ</div><h2>Недвижимость мира</h2><p class="section-note">Найди место для следующей инвестиции.</p><div class="interactive-atlas"></div><p class="map-gesture-note">Перетаскивай карту • Приближай двумя пальцами или колёсиком<br>Нажми на метку, чтобы открыть город. Число на метке — группа городов.</p><p class="section-note map-catalog-heading">Все города</p><div class="city-selector">${cities.map(p=>`<button data-city="${p.city_id}" onclick="openCity('${p.city_id}')"><span>${escapeHTML(p.country)}</span><strong>${escapeHTML(p.city)}</strong><b>↗</b></button>`).join('')}</div><div class="realestate-summary"><span>В портфеле</span><b>${state.real_estate_count||0} объектов</b><span>Рост стоимости</span><b>+1% каждые 12 ч</b></div></section>`;
+    atlas241=new CorporationAtlas(c.querySelector('.interactive-atlas'),cities,{saved:mapView241,onSelect:id=>openCity(id),onChange:view=>mapView241=view});
   }catch(e){modal('Недвижимость',e.message);}
 };
-function zoomMap24(delta){mapScale24=delta===0?1:Math.max(1,Math.min(3,mapScale24+delta*.5));const el=document.querySelector('.atlas-stage');if(el)el.style.transform=`scale(${mapScale24})`;}
-window.renderRealEstate=renderRealEstate;window.zoomMap24=zoomMap24;
+const originalOpenCity241=openCity;
+openCity=function(id){disposeAtlas241();originalOpenCity241(id);};
+function zoomMap24(delta){if(atlas241){if(delta===0)atlas241.reset();else atlas241.zoom(atlas241.scale*(delta>0?1.5:1/1.5));}}
+window.renderRealEstate=renderRealEstate;window.openCity=openCity;window.zoomMap24=zoomMap24;
 // Animate actual navigation once, not every background balance update.
 for(const button of document.querySelectorAll('.tab')){
   const previous=button.onclick;
   button.onclick=()=>{
-    previous();button.scrollIntoView({block:'nearest',inline:'nearest'});
+    disposeAtlas241();previous();button.scrollIntoView({block:'nearest',inline:'nearest'});
     if(!reducedMotion())document.querySelector('#content').animate([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'});
   };
 }
