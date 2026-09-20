@@ -22,6 +22,8 @@ from security_v24 import BodyLimitMiddleware
 # === CORPORATION SECURITY V22 ================================================
 BOT_TOKEN = (os.getenv("BOT_TOKEN") or "").strip()
 ADMIN_IDS = {int(x.strip()) for x in (os.getenv("ADMIN_IDS") or "").split(",") if x.strip().isdigit()}
+_owner_raw = (os.getenv("OWNER_ID") or "").strip()
+OWNER_ID = int(_owner_raw) if _owner_raw.isdigit() else (next(iter(ADMIN_IDS)) if len(ADMIN_IDS) == 1 else None)
 STARTING_MONEY = 20000.0
 
 # Telegram Mini App initData is short-lived. A stolen signed payload must not work forever.
@@ -1064,6 +1066,15 @@ def require_admin(x_telegram_init_data, x_user_id):
     return uid
 
 
+def require_owner(x_telegram_init_data, x_user_id):
+    uid = require_admin(x_telegram_init_data, x_user_id)
+    # Private owner-only controls fail closed. Returning 404 for every other
+    # administrator avoids exposing the existence of the endpoint through UI/API probing.
+    if OWNER_ID is None or uid != OWNER_ID:
+        raise HTTPException(404, "Не найдено")
+    return uid
+
+
 def create_database_backup(reason="manual"):
     now = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "admin_backups")
@@ -1896,6 +1907,8 @@ def snapshot(uid):
         })
     capital = player_capital(uid)
     return {
+        "server_time": int(time.time()),
+        "server_time_ms": int(time.time() * 1000),
         "player": dict(p),
         "capital": capital["total"],
         "capital_breakdown": capital,
@@ -2054,7 +2067,7 @@ def seasons_page():
 
 @api.get("/admin")
 def admin_page():
-    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=221")
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=261")
 
 
 def auth(x_telegram_init_data, x_user_id):
@@ -2589,7 +2602,8 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         leader = capital_rows[0] if capital_rows else None
         popular_business = conn.execute("SELECT business_id,COUNT(*) c FROM businesses WHERE level>0 GROUP BY business_id ORDER BY c DESC LIMIT 1").fetchone()
         popular_stock = conn.execute("SELECT stock_id,SUM(quantity) q FROM stock_holdings WHERE quantity>0 GROUP BY stock_id ORDER BY q DESC LIMIT 1").fetchone()
-        logs = [dict(r) for r in conn.execute("SELECT * FROM admin_logs ORDER BY id DESC LIMIT 20").fetchall()]
+        log_sql = "SELECT * FROM admin_logs ORDER BY id DESC LIMIT 20" if OWNER_ID is not None and admin_id == OWNER_ID else "SELECT * FROM admin_logs WHERE action != 'grant_money' ORDER BY id DESC LIMIT 20"
+        logs = [dict(r) for r in conn.execute(log_sql).fetchall()]
     backup_dir = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), "admin_backups")
     last_backup = None
     if os.path.isdir(backup_dir):
@@ -2597,7 +2611,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         if files:
             f = max(files, key=os.path.getmtime)
             last_backup = {"created_at": int(os.path.getmtime(f)), "size": os.path.getsize(f)}
-    return {
+    payload = {
         "admin_id": admin_id,
         "server_time": now,
         "game": state,
@@ -2607,8 +2621,11 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v26.0",
+        "version": "v26.1",
     }
+    if OWNER_ID is not None and admin_id == OWNER_ID:
+        payload["private_capabilities"] = {"grant_money": True}
+    return payload
 
 
 @api.get("/api/admin/players")
@@ -2645,9 +2662,9 @@ def admin_player_detail(player_id: int, x_telegram_init_data: str | None = Heade
     return {"state": snap, "stocks": stock_rows, "bonds": bond_rows, "properties": properties}
 
 
-@api.post("/api/admin/player/{player_id}/grant")
+@api.post("/api/admin/player/{player_id}/grant", include_in_schema=False)
 def admin_player_grant(player_id: int, body: AdminGrantBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
-    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    admin_id = require_owner(x_telegram_init_data, x_user_id)
     if not get_player(player_id):
         raise HTTPException(404, "Игрок не найден")
     amount = round(float(body.amount), 2)
@@ -2659,7 +2676,14 @@ def admin_player_grant(player_id: int, body: AdminGrantBody, x_telegram_init_dat
     now = int(time.time())
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (amount, player_id))
+        # Repair legacy/incomplete rows before the private credit operation so the
+        # balance and selected statistics category are always updated atomically.
+        conn.execute("INSERT OR IGNORE INTO stats(user_id) VALUES(?)", (player_id,))
+        conn.execute("INSERT OR IGNORE INTO taxes(user_id) VALUES(?)", (player_id,))
+        changed = conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (amount, player_id)).rowcount
+        if changed != 1:
+            conn.rollback()
+            raise HTTPException(404, "Игрок не найден")
         if count_income:
             conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (amount, player_id))
             add_daily_profit_conn(conn, player_id, amount)

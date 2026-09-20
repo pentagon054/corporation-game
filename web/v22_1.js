@@ -144,6 +144,4 @@
     if(installRefreshButton() || attempts>40) clearInterval(timer);
   },250);
 
-  const observer=new MutationObserver(()=>installRefreshButton());
-  observer.observe(document.documentElement,{childList:true,subtree:true});
 })();

@@ -11,7 +11,7 @@
     *,*::before,*::after{box-sizing:border-box}
     html,body{max-width:100%;overflow-x:hidden}
     img { content-visibility:auto; }
-    .card,.stats-card,.property-card,.corp-stock-row,article,section { contain:layout paint style; }
+    .card,.stats-card,.property-card,.corp-stock-row { contain:layout paint style; }
 
     /* Statistics must never make Telegram WebView wider than the screen. */
     #content,.stats-page,.stats-page>*{min-width:0;max-width:100%;}
@@ -174,7 +174,8 @@
       requestAnimationFrame(() => { queued = false; tuneStatistics(document); });
     }
   });
-  observer.observe(document.documentElement, {childList:true, subtree:true});
+  const contentRoot = document.querySelector('#content') || document.body;
+  observer.observe(contentRoot, {childList:true, subtree:true});
 
   // Stop hidden Telegram WebViews from wasting CPU on animation frames.
   const nativeRAF = window.requestAnimationFrame.bind(window);

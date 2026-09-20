@@ -75,7 +75,7 @@ for(const button of document.querySelectorAll('.tab')){
   const previous=button.onclick;
   button.onclick=()=>{
     disposeAtlas241();previous();button.scrollIntoView({block:'nearest',inline:'nearest'});
-    if(!reducedMotion())document.querySelector('#content').animate([{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'});
+    if(!reducedMotion())document.querySelector('#content').animate([{opacity:.72},{opacity:1}],{duration:150,easing:'ease-out'});
   };
 }
 
@@ -89,7 +89,7 @@ async function liveRefresh24(){
     else if(page==='taxes')await renderTaxes();
   }catch{}finally{refreshing24=false;}
 }
-setInterval(liveRefresh24,15000);
+setInterval(liveRefresh24,30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveRefresh24();});
 function businessIcon24(id){
  const paths={coffee:'M5 7h12v7a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V7ZM17 8h2a3 3 0 0 1 0 6h-2M8 3v1M12 3v1M4 22h15',delivery:'M3 6h11v12H3ZM14 10h4l3 4v4h-7M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',factory:'M3 21V10l6 3V8l6 4V3h4l2 18H3ZM7 17h1M12 17h1M17 17h1',it:'M3 4h18v13H3ZM8 21h8M12 17v4M9 8l-3 3 3 3M15 8l3 3-3 3',finance:'M3 9l9-6 9 6H3ZM5 11v8M10 11v8M14 11v8M19 11v8M3 22h18',conglomerate:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3c-6 6-6 12 0 18M12 3c6 6 6 12 0 18'};

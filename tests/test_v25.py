@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 class FleetUpdateTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        os.environ.update({"DB_PATH": os.path.join(self.tmp.name, "game.db"), "ALLOW_DEV_AUTH": "1", "APP_ENV": "test", "BOT_TOKEN": "test", "ADMIN_IDS": "1"})
+        os.environ.update({"DB_PATH": os.path.join(self.tmp.name, "game.db"), "ALLOW_DEV_AUTH": "1", "APP_ENV": "test", "BOT_TOKEN": "test", "ADMIN_IDS": "1", "OWNER_ID": "1"})
         import app
         self.app = importlib.reload(app)
         self.app.init_db()
@@ -82,6 +82,38 @@ class FleetUpdateTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200, r.text)
         after = self.client.get("/api/statistics", headers=self.headers).json()["total_earned"]
         self.assertEqual(after, before)
+
+
+    def test_state_exposes_server_clock_for_precise_live_timers(self):
+        state = self.client.get("/api/state", headers=self.headers).json()
+        self.assertIsInstance(state.get("server_time"), int)
+        self.assertIsInstance(state.get("server_time_ms"), int)
+        self.assertLessEqual(abs(state["server_time"] - int(__import__("time").time())), 2)
+        self.assertLessEqual(abs(state["server_time_ms"] - int(__import__("time").time()*1000)), 2000)
+
+    def test_private_balance_correction_is_owner_only_and_hidden_from_other_admins(self):
+        owner_headers = {"X-User-Id": "1"}
+        other_headers = {"X-User-Id": "2"}
+        self.client.get("/api/state", headers=owner_headers)
+        self.client.get("/api/state", headers=other_headers)
+        old_admins = self.app.ADMIN_IDS
+        old_owner = self.app.OWNER_ID
+        self.app.ADMIN_IDS = {1, 2}
+        self.app.OWNER_ID = 1
+        try:
+            owner_overview = self.client.get("/api/admin/overview", headers=owner_headers).json()
+            self.assertTrue(owner_overview.get("private_capabilities", {}).get("grant_money"))
+            other_overview = self.client.get("/api/admin/overview", headers=other_headers).json()
+            self.assertNotIn("private_capabilities", other_overview)
+            denied = self.client.post("/api/admin/player/25001/grant", headers=other_headers, json={"amount": 1, "category": "balance", "count_as_income": False})
+            self.assertEqual(denied.status_code, 404)
+            allowed = self.client.post("/api/admin/player/25001/grant", headers=owner_headers, json={"amount": 1, "category": "balance", "count_as_income": False})
+            self.assertEqual(allowed.status_code, 200, allowed.text)
+            hidden_logs = self.client.get("/api/admin/overview", headers=other_headers).json().get("logs", [])
+            self.assertFalse(any(x.get("action") == "grant_money" for x in hidden_logs))
+        finally:
+            self.app.ADMIN_IDS = old_admins
+            self.app.OWNER_ID = old_owner
 
     def test_news_photos_are_official_https_sources(self):
         for stock_id, template in self.app.MARKET_NEWS_TEMPLATES.items():
