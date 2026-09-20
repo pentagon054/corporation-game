@@ -1,5 +1,7 @@
 import asyncio
 import os
+import time
+from aiogram import BaseMiddleware
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -10,7 +12,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "230"
+WEBAPP_VERSION = "240"
 ADMIN_IDS = {
     int(x.strip())
     for x in (os.getenv("ADMIN_IDS") or "").split(",")
@@ -36,12 +38,28 @@ def admin_keyboard():
     return kb.as_markup()
 
 
+class CommandThrottle(BaseMiddleware):
+    def __init__(self):
+        self.last={}
+    async def __call__(self, handler, event, data):
+        uid=getattr(getattr(event,"from_user",None),"id",None)
+        now=time.monotonic()
+        if uid is not None:
+            if now-self.last.get(uid,-10)<1.5:
+                return
+            self.last[uid]=now
+            if len(self.last)>10000:
+                self.last={k:v for k,v in self.last.items() if now-v<60}
+        return await handler(event,data)
+
+
 async def main():
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher()
+    dp.message.middleware(CommandThrottle())
 
     @dp.message(CommandStart())
     async def start(message: Message):

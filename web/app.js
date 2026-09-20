@@ -20,7 +20,7 @@ async function api(url, options={}) {
   if(!res.ok){let d;try{d=await res.json()}catch{d={detail:"Ошибка сервера"}}throw new Error(d.detail||"Ошибка")}
   return res.json();
 }
-function modal(title,text){document.querySelector("#modalTitle").textContent=title;document.querySelector("#modalText").innerHTML=String(text).replace(/\n/g,"<br>");document.querySelector("#modal").classList.remove("hidden")}
+function modal(title,text){document.querySelector("#modalTitle").textContent=title;document.querySelector("#modalText").textContent=String(text);document.querySelector("#modal").classList.remove("hidden")}
 document.querySelector("#modalClose").onclick=()=>document.querySelector("#modal").classList.add("hidden");
 function businessCount(){return (state?.businesses||[]).filter(x=>Number(x.level)>0).length}
 function renderHeader(){if(!state)return;document.querySelector("#corpName").textContent=state.player.corp_name;document.querySelector("#money").textContent=fmt(state.player.money);document.querySelector("#income").textContent=fmt(state.hourly_income)+"/ч";document.querySelector("#businessCount").textContent=businessCount();document.querySelector("#propertyCount").textContent=state.real_estate_count||0}
@@ -31,8 +31,8 @@ function renderBusinesses(){
     const canBuy=Number(state.player.money)>=Number(b.purchase_cost||b.next_cost||0);
     return `<article class="card business-card">
       <div class="business-head">
-        <div><h3>${b.name}</h3><p>${b.desc}</p></div>
-        ${owned?`<b class="owned-badge">✅ Куплено</b>`:`<b>Новый</b>`}
+        <div>${businessIcon24(b.id)}<h3>${escapeHTML(b.name.replace(/^[^\p{L}\p{N}]+/u,""))}</h3><p>${b.desc}</p></div>
+        ${owned?`<b class="owned-badge">✅ Куплено</b>`:`<b class="new-badge24">Доступен</b>`}
       </div>
       <div class="business-income-box">
         <span>${owned?"Текущий доход":"После покупки"}</span>
@@ -62,8 +62,8 @@ function renderBusinesses(){
 
 function renderProfitChart(data){if(!data?.length)return `<div class="empty">Пока нет прибыли.</div>`;const max=Math.max(...data.map(x=>Number(x.earned||0)),1);return `<div class="profit-chart">${data.map(x=>{const h=Math.max(6,Math.round(Number(x.earned||0)/max*100));const date=String(x.day||"").split("-").slice(1).reverse().join(".");return `<div class="chart-column"><div class="chart-value">${fmt(x.earned)}</div><div class="chart-bar" style="height:${h}%"></div><div class="chart-date">${date}</div></div>`}).join("")}</div>`}
 async function renderStatistics(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем статистику...</div>`;try{const s=await api("/api/statistics");c.innerHTML=`<section class="stats-page"><article class="stats-card"><span>💰 Общая прибыль</span><b>${fmt(s.total_earned)}</b></article><article class="stats-card"><span>💸 Общие расходы</span><b>${fmt(s.total_spent)}</b></article><article class="stats-card"><span>🏢 Куплено бизнесов</span><b>${s.companies_bought}</b></article><article class="stats-card"><span>🏠 Куплено недвижимости</span><b>${s.properties_bought}</b></article><section class="chart-card"><h2>📊 Прибыль по дням</h2>${renderProfitChart(s.daily_profit||[])}</section></section>`}catch(e){modal("Ошибка",e.message)}}
-async function renderRating(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем рейтинг...</div>`;try{const rows=await api("/api/rating");c.innerHTML=`<div class="grid">${rows.map((p,i)=>`<button class="card rank-button" onclick="openPlayerProfile(${p.user_id})"><div class="rank-num">#${i+1}</div><div><h3>${p.corp_name}</h3><p>💰 ${fmt(p.money)}</p></div></button>`).join("")}</div>`}catch(e){modal("Ошибка",e.message)}}
-async function openPlayerProfile(id){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем профиль...</div>`;try{const p=await api(`/api/player/${id}`);const businesses=p.businesses?.length?p.businesses.map(b=>`<article class="profile-business"><div><h3>${b.name}</h3><p>${b.description}</p></div><b>ур. ${b.level}</b></article>`).join(""):`<div class="empty">Бизнесов пока нет.</div>`;c.innerHTML=`<section class="profile-page"><button class="back-button" onclick="backToRating()">← Назад к рейтингу</button><article class="profile-header"><div class="eyebrow">ПРОФИЛЬ ИГРОКА</div><h2>${p.player.corp_name}</h2><p>💰 Капитал: ${fmt(p.player.money)}</p><p>📈 Автодоход: ${fmt(p.hourly_income)}/ч</p></article><section class="profile-stats"><div><span>💰 Общая прибыль</span><b>${fmt(p.stats.total_earned)}</b></div><div><span>🏢 Бизнесы</span><b>${p.stats.companies_bought}</b></div><div><span>🏠 Недвижимость</span><b>${p.properties_bought}</b></div></section><section class="profile-businesses"><h2>🏢 Бизнесы</h2>${businesses}</section></section>`}catch(e){modal("Ошибка",e.message)}}
+async function renderRating(){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем рейтинг...</div>`;try{const rows=await api("/api/rating");c.innerHTML=`<div class="grid">${rows.map((p,i)=>`<button class="card rank-button" onclick="openPlayerProfile(${p.user_id})"><div class="rank-num">#${i+1}</div><div><h3>${escapeHTML(p.corp_name)}</h3><p>💰 ${fmt(p.money)}</p></div></button>`).join("")}</div>`}catch(e){modal("Ошибка",e.message)}}
+async function openPlayerProfile(id){const c=document.querySelector("#content");c.innerHTML=`<div class="empty">Загружаем профиль...</div>`;try{const p=await api(`/api/player/${id}`);const businesses=p.businesses?.length?p.businesses.map(b=>`<article class="profile-business"><div><h3>${b.name}</h3><p>${b.description}</p></div><b>ур. ${b.level}</b></article>`).join(""):`<div class="empty">Бизнесов пока нет.</div>`;c.innerHTML=`<section class="profile-page"><button class="back-button" onclick="backToRating()">← Назад к рейтингу</button><article class="profile-header"><div class="eyebrow">ПРОФИЛЬ ИГРОКА</div><h2>${escapeHTML(p.player.corp_name)}</h2><p>💰 Капитал: ${fmt(p.player.money)}</p><p>📈 Автодоход: ${fmt(p.hourly_income)}/ч</p></article><section class="profile-stats"><div><span>💰 Общая прибыль</span><b>${fmt(p.stats.total_earned)}</b></div><div><span>🏢 Бизнесы</span><b>${p.stats.companies_bought}</b></div><div><span>🏠 Недвижимость</span><b>${p.properties_bought}</b></div></section><section class="profile-businesses"><h2>🏢 Бизнесы</h2>${businesses}</section></section>`}catch(e){modal("Ошибка",e.message)}}
 function backToRating(){page="rating";updateActiveTab();renderRating()}
 
 async function loadStocks(){stocksCache=await api("/api/stocks");return stocksCache}
@@ -271,7 +271,7 @@ document.querySelector("#renameBtn").onclick=async()=>{if(!state)return;const na
 Object.assign(window,{openPlayerProfile,backToRating,openStock,openTrade,openBondTrade,refreshInvestments,openInvestmentHome,openInvestmentStocks,openInvestmentBonds,payTaxes,renderRealEstate,openCity,buyProperty,upgradeProperty});
 async function refresh(){try{state=await api("/api/state");updateActiveTab();render()}catch(e){console.error(e);modal("Ошибка запуска",e.message)}}
 refresh();
-setInterval(async()=>{try{state=await api("/api/state");renderHeader();if(page==="taxes")renderTaxes()}catch{}},60000);
+
 
 /* === CORPORATION_STOCK_MARKET_V17 === */
 let corporationStockViewMode="line";
@@ -279,13 +279,13 @@ let corporationStockReturnScroll=0;
 let corporationActiveStockId=null;
 
 function corporationBuildCandles(history,size=5){
-  const points=(history||[]).map(x=>({price:Number(x.price||0),created_at:Number(x.created_at||0)})).filter(x=>Number.isFinite(x.price));
-  const out=[];
-  for(let i=0;i<points.length;i+=size){
-    const c=points.slice(i,i+size);
-    if(!c.length)continue;
-    const p=c.map(x=>x.price);
-    out.push({open:p[0],close:p[p.length-1],high:Math.max(...p),low:Math.min(...p),created_at:c[c.length-1].created_at});
+  const points=(history||[]).filter(p=>Number.isFinite(Number(p.price))&&Number(p.price)>0).slice().sort((a,b)=>a.created_at-b.created_at);
+  const out=[];let previous=null;
+  for(const p of points){
+    const bucket=Math.floor(Number(p.created_at)/(size*60))*size*60,price=Number(p.price);
+    let c=out.at(-1);
+    if(!c||c.created_at!==bucket){c={created_at:bucket,open:previous??price,close:price,high:Math.max(previous??price,price),low:Math.min(previous??price,price)};out.push(c);}
+    c.close=price;c.high=Math.max(c.high,price);c.low=Math.min(c.low,price);previous=price;
   }
   return out;
 }
@@ -307,7 +307,7 @@ function corporationRenderChart(history,mode=corporationStockViewMode){
   if(mode==="candles"){
     const candles=corporationBuildCandles(rows,5),slot=PW/Math.max(candles.length,1),bw=Math.max(4,Math.min(15,slot*.52));
     series=candles.map((c,i)=>{
-      const cx=L+(i+.5)*slot,yo=y(c.open),yc=y(c.close),yh=y(c.high),yl=y(c.low),up=c.close>=c.open;
+      const cx=L+((c.created_at+150-rows[0].created_at)/Math.max(300,rows.at(-1).created_at-rows[0].created_at+300))*PW,yo=y(c.open),yc=y(c.close),yh=y(c.high),yl=y(c.low),up=c.close>=c.open;
       return `<line x1="${cx}" y1="${yh}" x2="${cx}" y2="${yl}" class="corp-candle-wick ${up?"up":"down"}"/>
       <rect x="${cx-bw/2}" y="${Math.min(yo,yc)}" width="${bw}" height="${Math.max(2,Math.abs(yc-yo))}" rx="2" class="corp-candle-body ${up?"up":"down"}"/>`;
     }).join("");

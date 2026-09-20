@@ -16,6 +16,8 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, conint
+import market_v24
+from security_v24 import BodyLimitMiddleware
 
 # === CORPORATION SECURITY V22 ================================================
 BOT_TOKEN = (os.getenv("BOT_TOKEN") or "").strip()
@@ -30,7 +32,7 @@ MAX_API_BODY_BYTES = max(4096, min(int(os.getenv("MAX_API_BODY_BYTES", "65536"))
 # Developer auth is deliberately impossible on Railway even if ALLOW_DEV_AUTH=1 was
 # accidentally left in environment variables.
 def _dev_auth_enabled():
-    return os.getenv("ALLOW_DEV_AUTH") == "1" and not _is_railway_runtime()
+    return os.getenv("ALLOW_DEV_AUTH") == "1" and os.getenv("APP_ENV") == "test" and not _is_railway_runtime()
 
 # ============================================================================
 
@@ -165,6 +167,12 @@ STOCKS = {
         "volatility": 0.011, "drift": 0.0011, "dividend_rate": 0.012,
     },
 }
+
+STOCKS.update({
+    "apple": {"symbol":"AAPL","name":"Apple","description":"Устройства, программные платформы и цифровые сервисы.","min_price":180.0,"max_price":650.0,"initial_price":350.0,"volatility":.014,"drift":.0012,"dividend_rate":.005},
+    "google": {"symbol":"GOOGL","name":"Google","description":"Поиск, реклама, облачные сервисы и искусственный интеллект.","min_price":250.0,"max_price":900.0,"initial_price":480.0,"volatility":.018,"drift":.0015,"dividend_rate":.004},
+    "intel": {"symbol":"INTC","name":"Intel","description":"Процессоры, полупроводники и собственные производственные мощности.","min_price":60.0,"max_price":260.0,"initial_price":130.0,"volatility":.024,"drift":.001,"dividend_rate":.009},
+})
 
 # === CORPORATION V21: MARKET NEWS ===========================================
 MARKET_NEWS_INTERVAL = 60 * 60
@@ -305,6 +313,12 @@ BUSINESS_UPGRADE_PROFILES = {
     "finance": {"marketing": {"name": "💼 Премиум-клиенты", "cost_rate": .22, "income_bonus": .20}, "equipment": {"name": "🔐 Финтех-инфраструктура", "cost_rate": .31, "income_bonus": .27}, "staff": {"name": "📊 Команда аналитиков", "cost_rate": .30, "income_bonus": .28}, "automation": {"name": "🤖 Алгоритмический дилинг", "cost_rate": .46, "income_bonus": .42}},
     "conglomerate": {"marketing": {"name": "🌍 Глобальный бренд", "cost_rate": .24, "income_bonus": .22}, "equipment": {"name": "🏙 Корпоративные активы", "cost_rate": .34, "income_bonus": .30}, "staff": {"name": "🧠 Топ-менеджмент", "cost_rate": .33, "income_bonus": .31}, "automation": {"name": "🛰 Единый центр управления", "cost_rate": .50, "income_bonus": .46}},
 }
+
+
+# Fictional events for the game, not real financial news.
+MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.svg', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.svg', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.svg', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
 
 def get_business_upgrade_cfg(bid, upgrade_id):
     return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
@@ -605,6 +619,12 @@ REAL_ESTATE = {
 # === CORPORATION V22: FINAL ALPHA REAL ESTATE BALANCE ========================
 # Недвижимость — премиальный актив для состоятельных игроков.
 # Базовая доходность растёт от ~3.2%/ч до ~4.8%/ч в зависимости от стоимости.
+for _pid, _prop in REAL_ESTATE.items():
+    if _prop.get("segment")=="vip" and _prop.get("property_type")=="house":
+        _prop["photo"]="/static/properties/estate.jpg" if _prop["city_id"] in {"moscow","london","paris"} else "/static/properties/villa-pool.jpg"
+        _prop["name"]="Частная VIP-резиденция" if _prop["city_id"] in {"moscow","london","paris"} else "VIP-вилла с бассейном"
+        _prop["description"]="Приватная резиденция: просторная территория, премиальная архитектура и высокий арендный доход. Фото иллюстрирует класс объекта."
+
 def _rebalance_real_estate_v22():
     prices = [float(p["price"]) for p in REAL_ESTATE.values()]
     if not prices:
@@ -624,7 +644,7 @@ def _rebalance_real_estate_v22():
 _rebalance_real_estate_v22()
 # ============================================================================
 
-api = FastAPI(title="Corporation")
+api = FastAPI(title="Corporation", docs_url=None, redoc_url=None, openapi_url=None)
 # === CORPORATION SECURITY V22 MIDDLEWARE ====================================
 # Per-process defensive rate limiting. Railway/proxy-level rate limiting is still
 # recommended for DDoS protection; this layer protects application resources.
@@ -666,7 +686,7 @@ async def corporation_security_guard(request: Request, call_next):
     if path.startswith("/api/"):
         # Explicitly reject the vulnerable identity header on Railway. Even if an
         # old endpoint accidentally reads it, the request never reaches the route.
-        if _is_railway_runtime() and request.headers.get("X-User-Id"):
+        if not _dev_auth_enabled() and request.headers.get("X-User-Id"):
             return JSONResponse(status_code=400, content={"detail": "Legacy authentication header is disabled"})
 
         content_length = request.headers.get("content-length")
@@ -678,11 +698,11 @@ async def corporation_security_guard(request: Request, call_next):
                 return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length"})
 
         client = _client_key(request)
-        limit = 180
+        limit = 6000
         if method in {"POST", "PUT", "PATCH", "DELETE"}:
-            limit = 90
+            limit = 3000
         if path.startswith("/api/admin/"):
-            limit = 45
+            limit = 300
         if _rate_limited(f"{client}:{'admin' if path.startswith('/api/admin/') else method}", limit):
             return JSONResponse(status_code=429, content={"detail": "Too many requests"}, headers={"Retry-After": "60"})
 
@@ -695,7 +715,11 @@ async def corporation_security_guard(request: Request, call_next):
                 return JSONResponse(status_code=401, content={"detail": "Local developer authentication required"})
         else:
             try:
-                verify_init_data(init_data)
+                verified_user = verify_init_data(init_data)
+                if path.startswith("/api/admin/") and verified_user["id"] not in ADMIN_IDS:
+                    raise HTTPException(403, "Admin access denied")
+                if _rate_limited(f"user:{verified_user['id']}:{method}", 90 if method != "GET" else 240):
+                    raise HTTPException(429, "Too many requests")
             except HTTPException as exc:
                 return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
@@ -718,6 +742,8 @@ async def corporation_security_guard(request: Request, call_next):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 # ============================================================================
+
+api.add_middleware(BodyLimitMiddleware, limit=MAX_API_BODY_BYTES)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 api.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
@@ -747,6 +773,7 @@ def ensure_column(conn, table, column, definition):
 def init_db():
     now = int(time.time())
     with closing(db()) as conn:
+        market_v24.initialize(conn, now)
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS players (
             user_id INTEGER PRIMARY KEY,
@@ -985,6 +1012,8 @@ def create_database_backup(reason="manual"):
 
 
 def reset_stock_market_conn(conn, now):
+    conn.execute("DELETE FROM market_patterns")
+    conn.execute("UPDATE market_clock SET next_pattern_at=? WHERE id=1", ((now//3600+1)*3600,))
     conn.execute("DELETE FROM stock_history")
     conn.execute("DELETE FROM market_news")
     conn.execute("INSERT OR REPLACE INTO market_news_state(id,next_news_at) VALUES(1,?)", (now,))
@@ -1090,6 +1119,8 @@ def verify_init_data(init_data: str):
     if uid <= 0:
         raise HTTPException(401, "Invalid Telegram user")
 
+    if isinstance(user.get("id"), bool) or not isinstance(user.get("id"), int):
+        raise HTTPException(401, "Invalid Telegram user")
     user["id"] = uid
     return user
 
@@ -1255,38 +1286,12 @@ def _publish_market_news_conn(conn, published_at):
 
 
 def process_market_news(now=None):
-    now=int(now or time.time())
     if game_is_frozen():
         return
+    now=int(time.time() if now is None else now)
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        st=conn.execute("SELECT next_news_at FROM market_news_state WHERE id=1").fetchone()
-        next_at=int(st["next_news_at"] if st else now)
-        # First update post is created immediately; overdue hourly posts are caught up safely.
-        generated=0
-        while next_at <= now and generated < 48:
-            _publish_market_news_conn(conn, next_at)
-            next_at += MARKET_NEWS_INTERVAL
-            generated += 1
-        conn.execute("INSERT OR REPLACE INTO market_news_state(id,next_news_at) VALUES(1,?)", (next_at,))
-
-        pending=conn.execute("SELECT * FROM market_news WHERE applied_at=0 AND impact_at<=? ORDER BY impact_at ASC,id ASC", (now,)).fetchall()
-        for news in pending:
-            row=conn.execute("SELECT current_price,min_price,max_price FROM stocks WHERE id=?", (news["stock_id"],)).fetchone()
-            if not row:
-                conn.execute("UPDATE market_news SET applied_at=? WHERE id=?", (now,news["id"]))
-                continue
-            before=float(row["current_price"])
-            pct=float(news["impact_percent"])
-            after=before*(1.0+pct)
-            after=min(float(row["max_price"]),max(float(row["min_price"]),after))
-            after=round(after,2)
-            actual_pct=(after/before-1.0) if before else 0.0
-            trend="up" if actual_pct>=0 else "down"
-            impact_time=int(news["impact_at"])
-            conn.execute("UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?", (after,trend,impact_time,news["stock_id"]))
-            conn.execute("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", (news["stock_id"],after,impact_time))
-            conn.execute("UPDATE market_news SET impact_percent=?,price_before=?,price_after=?,applied_at=? WHERE id=?", (actual_pct,before,after,now,news["id"]))
+        market_v24.advance(conn, now, STOCKS, _publish_market_news_conn)
         conn.commit()
 
 
@@ -1310,7 +1315,7 @@ def get_market_news(limit=50):
             "price_before":round(float(d["price_before"]),2) if applied else None,"price_after":round(float(d["price_after"]),2) if applied else None,
             "seconds_to_impact":max(0,int(d["impact_at"])-now) if not applied else 0,
         })
-    return {"news":items,"next_news_at":int(next_row["next_news_at"] if next_row else 0),"server_time":now}
+    return {"news":items,"server_time":now}
 
 
 _market_news_worker_started=False
@@ -1334,81 +1339,15 @@ def start_market_news_worker():
 
 
 def update_stock_market():
-    """Минутная игровая модель с дешёвым throttle для большого числа параллельных запросов."""
     global _market_update_last_check
-    if game_is_frozen():
-        return
-    monotonic_now = time.monotonic()
-    if monotonic_now - _market_update_last_check < 1.0:
-        return
-    if not _market_update_lock.acquire(blocking=False):
+    if time.monotonic()-_market_update_last_check<1 or not _market_update_lock.acquire(blocking=False):
         return
     try:
-        monotonic_now = time.monotonic()
-        if monotonic_now - _market_update_last_check < 1.0:
-            return
         process_market_news()
-        now = int(time.time())
-        with closing(db()) as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            rows = conn.execute("SELECT * FROM stocks").fetchall()
-            for stock in rows:
-                config = STOCKS.get(stock["id"])
-                if not config:
-                    continue
-
-                elapsed = now - int(stock["last_update"])
-                if elapsed < STOCK_UPDATE_INTERVAL:
-                    safe = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
-                    if safe != float(stock["current_price"]):
-                        conn.execute("UPDATE stocks SET current_price=? WHERE id=?", (safe, stock["id"]))
-                    continue
-
-                steps = min(int(elapsed // STOCK_UPDATE_INTERVAL), MAX_STOCK_HISTORY_POINTS)
-                price = min(config["max_price"], max(config["min_price"], float(stock["current_price"])))
-                trend = stock["trend"] if stock["trend"] in ("up", "down") else "up"
-                last_update = int(stock["last_update"])
-                floor = float(config["min_price"])
-                ceiling = float(config["max_price"])
-                midpoint = (floor + ceiling) / 2
-                span = max(ceiling - floor, 1.0)
-
-                history_batch = []
-                for _ in range(steps):
-                    position = (price - floor) / span
-                    direction = 1 if trend == "up" else -1
-                    move = random.gauss(direction * config["drift"], config["volatility"])
-                    move += ((midpoint - price) / span) * 0.006
-                    if random.random() < 0.035:
-                        move += random.uniform(-config["volatility"] * 2.2, config["volatility"] * 2.2)
-                    next_price = price * (1 + move)
-                    if next_price <= floor:
-                        next_price = floor; trend = "up"
-                    elif next_price >= ceiling:
-                        next_price = ceiling; trend = "down"
-                    else:
-                        if position < 0.12 and random.random() < 0.42:
-                            trend = "up"
-                        elif position > 0.88 and random.random() < 0.42:
-                            trend = "down"
-                        elif random.random() < 0.055:
-                            trend = "down" if trend == "up" else "up"
-                    price = round(min(ceiling, max(floor, next_price)), 2)
-                    last_update += STOCK_UPDATE_INTERVAL
-                    history_batch.append((stock["id"], price, last_update))
-                if history_batch:
-                    conn.executemany("INSERT INTO stock_history(stock_id,price,created_at) VALUES(?,?,?)", history_batch)
-                conn.execute("UPDATE stocks SET current_price=?,trend=?,last_update=? WHERE id=?", (price, trend, last_update, stock["id"]))
-            # Keep history bounded globally instead of letting SQLite grow forever.
-            conn.execute("""DELETE FROM stock_history WHERE id IN (
-                SELECT h.id FROM stock_history h
-                JOIN (SELECT stock_id, MAX(id) max_id FROM stock_history GROUP BY stock_id) m ON m.stock_id=h.stock_id
-                WHERE h.id < m.max_id - ?
-            )""", (MAX_STOCK_HISTORY_POINTS * 2,))
-            conn.commit()
-        _market_update_last_check = monotonic_now
+        _market_update_last_check=time.monotonic()
     finally:
         _market_update_lock.release()
+
 
 def dividend_hourly_income(uid, conn=None):
     own = conn is None
@@ -1786,7 +1725,7 @@ def public_profile(uid):
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
     businesses = [{"id": bid, "name": BUSINESSES[bid]["name"], "description": BUSINESSES[bid]["desc"], "level": level} for bid, level in levels.items() if level > 0 and bid in BUSINESSES]
     return {
-        "player": {"user_id": player["user_id"], "username": player["username"], "corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]},
+        "player": {"user_id": player["user_id"], "corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]},
         "capital": player_capital(uid)["total"],
         "capital_breakdown": player_capital(uid),
         "hourly_income": snapshot(uid)["hourly_income"],
@@ -1865,7 +1804,7 @@ def get_brokerage_account(uid):
 
 
 class NameBody(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=64)
 
 
 class QuantityBody(BaseModel):
@@ -1937,10 +1876,12 @@ def rename(body: NameBody, x_telegram_init_data: str | None = Header(None), x_us
     if len(name) < 2:
         raise HTTPException(400, "Название должно содержать минимум 2 символа")
     with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
         duplicate = conn.execute(
             "SELECT user_id FROM players WHERE user_id<>? AND lower(trim(corp_name))=lower(trim(?)) LIMIT 1",
             (uid, name),
         ).fetchone()
+        duplicate = duplicate or any(str(r["corp_name"]).strip().casefold() == name.casefold() for r in conn.execute("SELECT corp_name FROM players WHERE user_id<>?", (uid,)))
         if duplicate:
             raise HTTPException(409, "Компания с таким названием уже существует. Выбери другое название.")
         conn.execute("UPDATE players SET corp_name=? WHERE user_id=?", (name, uid))
@@ -2016,15 +1957,13 @@ def sell_business(bid: str, x_telegram_init_data: str | None = Header(None), x_u
     if bid not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     sync_passive_income(uid)
-    with closing(db()) as read_conn:
-        row = read_conn.execute("SELECT * FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
-    level = int(row["level"] if row else 0)
-    if level <= 0:
-        raise HTTPException(400, "У тебя нет этого бизнеса")
-    cap = business_capitalization(bid, level, row)
-    price = round(cap * 0.30, 2)
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+        level = int(row["level"] if row else 0)
+        if level <= 0:
+            raise HTTPException(400, "У тебя нет этого бизнеса")
+        price = round(business_capitalization(bid, level, row) * .30, 2)
         conn.execute("DELETE FROM businesses WHERE user_id=? AND business_id=?", (uid, bid))
         conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (price, uid))
         conn.commit()
@@ -2067,7 +2006,7 @@ def statistics(x_telegram_init_data: str | None = Header(None), x_user_id: str |
 @api.get("/api/rating")
 def rating(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     auth(x_telegram_init_data, x_user_id)
-    return all_ranked_players(20)
+    return [{"user_id": p["user_id"], "corp_name": p["corp_name"], "money": p["money"], "capital": p["capital"]} for p in all_ranked_players()]
 
 
 @api.get("/api/player/{player_id}")
@@ -2366,7 +2305,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v22.0",
+        "version": "v24.0",
     }
 
 
@@ -2530,6 +2469,8 @@ def admin_freeze(body: AdminFreezeBody, x_telegram_init_data: str | None = Heade
             conn.execute("UPDATE players SET last_income_sync=?", (now,))
             conn.execute("UPDATE stocks SET last_update=?", (now,))
             if pause>0:
+                conn.execute("UPDATE market_patterns SET started_at=started_at+?", (pause,))
+                conn.execute("UPDATE market_clock SET next_pattern_at=next_pattern_at+?", (pause,))
                 conn.execute("UPDATE market_news_state SET next_news_at=next_news_at+? WHERE id=1", (pause,))
                 conn.execute("UPDATE market_news SET impact_at=impact_at+? WHERE applied_at=0", (pause,))
             conn.execute("UPDATE game_state SET is_frozen=0,frozen_at=0,maintenance_message='' WHERE id=1")

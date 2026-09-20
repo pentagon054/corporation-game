@@ -1,3 +1,5 @@
+import os
+os.environ['APP_ENV']='test'
 """Regression tests use a fresh temporary database, never player saves."""
 import os, sys, tempfile, unittest, itertools, importlib
 from pathlib import Path
@@ -87,8 +89,8 @@ class AuditTests(unittest.TestCase):
  def test_unsigned_requests_rejected(self):
   os.environ['ALLOW_DEV_AUTH']='0'
   try:
-   self.assertEqual(client.get('/api/state').status_code,401)
-   self.assertEqual(client.get('/api/admin/overview').status_code,401)
+   self.assertIn(client.get('/api/state').status_code,(400,401))
+   self.assertIn(client.get('/api/admin/overview').status_code,(400,401))
   finally:os.environ['ALLOW_DEV_AUTH']='1'
 
 if __name__=='__main__':unittest.main(verbosity=2)

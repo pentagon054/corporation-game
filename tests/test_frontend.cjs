@@ -8,7 +8,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
  const dom=new JSDOM(fs.readFileSync(root+'/index.html','utf8'),{url:origin,runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window,ctx=dom.getInternalVMContext(),errors=[],posts=[];
- w.scrollTo=()=>{};
+ w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLElement.prototype.animate=()=>{};
  const observers=[],NativeObserver=w.MutationObserver;
  w.MutationObserver=class extends NativeObserver{constructor(cb){super(cb);observers.push(this)}};
  w.fetch=async(url,opts)=>{if(opts?.method==='POST')posts.push({url,body:opts.body});return fetch(new URL(url,origin),opts)};
@@ -16,7 +16,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
  w.prompt=()=>raw;w.confirm=()=>confirmed;
  w.addEventListener('error',e=>errors.push(e.message));
  const evaluate=s=>vm.runInContext(s,ctx);
- for(const file of ['app.js','v22_1.js','v20.js','v22.js','v22_performance.js','audit_v23.js'])new vm.Script(fs.readFileSync(root+'/'+file,'utf8'),{filename:file}).runInContext(ctx);
+ for(const file of ['app.js','v22_1.js','v20.js','v22.js','v22_performance.js','audit_v23.js','premium_v24.js'])new vm.Script(fs.readFileSync(root+'/'+file,'utf8'),{filename:file}).runInContext(ctx);
  async function settled(test){for(let i=0;i<100;i++){if(test())return;await delay(20)}throw new Error('Timeout waiting for UI');}
  await settled(()=>w.document.querySelector('.business-card'));
  assert.equal(w.document.querySelector('.balance-label').textContent,'СВОБОДНЫЕ ДЕНЬГИ');
@@ -62,17 +62,13 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
  const expensive=catalog.properties.reduce((a,b)=>a.purchase_price>b.purchase_price?a:b);
  const before=posts.length;await evaluate(`buyProperty('${expensive.id}')`);
  assert.equal(confirms,0);assert.equal(posts.length,before);
- // Advance the clock without waiting fifty seconds: countdown must use elapsed time.
+ // News publication schedule must not be exposed in UI or API.
  await evaluate('openInvestmentNews()');
- const span=w.document.querySelector('[data-news-at]');assert(span);
- const parse=t=>t.split(':').reduce((a,v)=>60*a+Number(v),0);
- const first=parse(span.textContent),realNow=w.Date.now;
- w.Date.now=()=>realNow()+50000;
- await delay(1100);
- const second=parse(span.textContent);assert(first-second>=50&&first-second<=52,`${first} -> ${second}`);
- w.Date.now=realNow;
+ assert.equal(w.document.querySelector('[data-news-at]'),null);
+ const news=await fetch(origin+'/api/market-news',{headers:{'X-User-Id':'999001'}}).then(r=>r.json());
+ assert.equal(news.next_news_at,undefined);
  await evaluate('v21BackInvestments()');assert(w.document.querySelector('.v21-news-entry'));
  assert.deepEqual(errors,[]);
  observers.forEach(o=>o.disconnect());dom.window.close();
- console.log('PASS: navigation, detail refresh/candles, 36 invalid trade cases, cancellation, double click, property precheck, elapsed news countdown.');
+ console.log('PASS: navigation, detail refresh/candles, 36 invalid trade cases, cancellation, double click, property precheck, hidden news schedule.');
 })().catch(e=>{console.error(e);process.exit(1)});
