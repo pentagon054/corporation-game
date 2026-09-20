@@ -82,12 +82,13 @@ for(const button of document.querySelectorAll('.tab')){
 let refreshing24=false;
 async function liveRefresh24(){
   if(document.hidden||refreshing24||corporationTradeBusy)return;
+  const savedScroll=window.scrollY||0;
   refreshing24=true;
   try{
     state=await api('/api/state');renderHeader();
     if(page==='investments'&&corporationActiveStockId)await openStock(corporationActiveStockId,true);
     else if(page==='taxes')await renderTaxes();
-  }catch{}finally{refreshing24=false;}
+  }catch{}finally{requestAnimationFrame(()=>window.scrollTo({top:savedScroll,left:0,behavior:'instant'}));refreshing24=false;}
 }
 setInterval(liveRefresh24,15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveRefresh24();});

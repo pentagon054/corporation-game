@@ -1,0 +1,23 @@
+/* Corporation v27: viewport-pinned ranking controls */
+.rank-jump25.rank-jump27{
+  position:fixed!important;
+  top:50vh!important;
+  top:50dvh!important;
+  right:max(10px,env(safe-area-inset-right))!important;
+  bottom:auto!important;
+  left:auto!important;
+  transform:translateY(-50%)!important;
+  z-index:4200!important;
+  margin:0!important;
+  isolation:isolate;
+  pointer-events:auto!important;
+}
+.rank-jump25.rank-jump27 button{
+  pointer-events:auto!important;
+  touch-action:manipulation;
+}
+@media(max-width:520px){
+  .rank-jump25.rank-jump27{right:8px!important}
+  .rank-jump25.rank-jump27 button{width:48px!important;height:48px!important}
+  .rank-jump25.rank-jump27 button span{display:block!important;font-size:8px!important}
+}

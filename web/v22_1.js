@@ -21,9 +21,9 @@
       .corp-v22-1-refresh{
         width:42px;
         height:42px;
-        border:1px solid rgba(221,194,139,.34);
-        background:radial-gradient(circle at 35% 25%,rgba(221,194,139,.12),transparent 48%),#151517;
-        color:#ddc28b;
+        border:1px solid rgba(217,191,133,.34);
+        background:radial-gradient(circle at 35% 25%,rgba(217,191,133,.12),transparent 48%),#151517;
+        color:#d9bf85;
         border-radius:50%;
         display:grid;
         place-items:center;
@@ -57,6 +57,7 @@
 
   async function refreshCurrentData(button){
     if(button?.classList.contains("loading")) return;
+    const savedScroll = window.scrollY || 0;
 
     try{
       if(button){
@@ -87,6 +88,7 @@
       }else if(activePage === "rating" && typeof renderRating === "function"){
         await renderRating();
       }
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:savedScroll,left:0,behavior:"instant"})));
 
       try{
         window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");

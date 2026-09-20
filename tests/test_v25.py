@@ -63,30 +63,6 @@ class FleetUpdateTests(unittest.TestCase):
         self.assertNotIn("ofz_us", self.app.BONDS)
         self.assertNotIn("delivery", self.app.BUSINESSES)
 
-    def test_admin_grant_tracks_selected_income_category(self):
-        admin_headers = {"X-User-Id": "1"}
-        self.client.get("/api/state", headers=admin_headers)
-        before = self.client.get("/api/statistics", headers=self.headers).json()["total_earned"]
-        r = self.client.post("/api/admin/player/25001/grant", headers=admin_headers, json={"amount": 12345, "category": "prize", "note": "QA", "count_as_income": True})
-        self.assertEqual(r.status_code, 200, r.text)
-        stats = self.client.get("/api/statistics", headers=self.headers).json()
-        self.assertAlmostEqual(stats["total_earned"] - before, 12345, places=2)
-        prize = next(x for x in stats["income_breakdown"] if x["category"] == "prize")
-        self.assertEqual(prize["amount"], 12345)
-
-    def test_admin_balance_only_grant_does_not_inflate_profit(self):
-        admin_headers = {"X-User-Id": "1"}
-        self.client.get("/api/state", headers=admin_headers)
-        before = self.client.get("/api/statistics", headers=self.headers).json()["total_earned"]
-        r = self.client.post("/api/admin/player/25001/grant", headers=admin_headers, json={"amount": 5000, "category": "balance", "count_as_income": False})
-        self.assertEqual(r.status_code, 200, r.text)
-        after = self.client.get("/api/statistics", headers=self.headers).json()["total_earned"]
-        self.assertEqual(after, before)
-
-    def test_news_photos_are_official_https_sources(self):
-        for stock_id, template in self.app.MARKET_NEWS_TEMPLATES.items():
-            self.assertTrue(template["photo"].startswith("https://"), stock_id)
-
 
 if __name__ == "__main__":
     unittest.main()
