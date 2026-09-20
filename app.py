@@ -115,70 +115,92 @@ REAL_ESTATE_GROWTH_STEP = 0.01
 REAL_ESTATE_DAILY_GROWTH = (1 + REAL_ESTATE_GROWTH_STEP) ** 2 - 1
 
 BUSINESSES = {
-    "coffee": {"name": "☕ Кофейня", "desc": "Небольшая, но стабильная точка.", "base_cost": 5000, "base_income": 350},
-    "delivery": {"name": "🚚 Доставка", "desc": "Курьеры доставляют еду и товары.", "base_cost": 35000, "base_income": 2100},
-    "factory": {"name": "🏭 Фабрика", "desc": "Массовое производство.", "base_cost": 150000, "base_income": 9000},
-    "it": {"name": "💻 IT-студия", "desc": "Разработка цифровых продуктов.", "base_cost": 650000, "base_income": 42000},
-    "finance": {"name": "🏦 Финансовая компания", "desc": "Кредиты, инвестиции и комиссии.", "base_cost": 2500000, "base_income": 180000},
-    "conglomerate": {"name": "🌐 Конгломерат", "desc": "Империя из разных отраслей.", "base_cost": 10000000, "base_income": 850000},
+    "coffee": {"name": "Кофейня", "desc": "Городская точка с понятной экономикой и стабильным спросом.", "base_cost": 5000, "base_income": 300},
+    "taxi": {"name": "Такси", "desc": "Пассажирские перевозки. Доход зависит от состава автопарка.", "base_cost": 35000, "base_income": 0, "transport": True},
+    "logistics": {"name": "Логистика", "desc": "Грузовые перевозки. Покупай транспорт и расширяй базу до 100 мест.", "base_cost": 90000, "base_income": 0, "transport": True},
+    "factory": {"name": "Фабрика", "desc": "Серийное производство с управляемой себестоимостью.", "base_cost": 150000, "base_income": 7650},
+    "it": {"name": "IT-студия", "desc": "Разработка и сопровождение цифровых продуктов.", "base_cost": 650000, "base_income": 35700},
+    "finance": {"name": "Финансовая компания", "desc": "Комиссионные продукты, управление капиталом и аналитика.", "base_cost": 2500000, "base_income": 153000},
+    "conglomerate": {"name": "Конгломерат", "desc": "Диверсифицированная группа компаний с единым управлением.", "base_cost": 10000000, "base_income": 722500},
+}
+
+TRANSPORT_VEHICLES = {
+    "taxi": {
+        "city": {"name": "Городской седан", "kind": "sedan", "cost": 12000, "income": 240},
+        "comfort": {"name": "Комфорт-седан", "kind": "comfort", "cost": 35000, "income": 590},
+        "business": {"name": "Бизнес-класс", "kind": "business", "cost": 90000, "income": 1280},
+        "electric": {"name": "Премиум-электромобиль", "kind": "electric", "cost": 220000, "income": 2720},
+    },
+    "logistics": {
+        "van": {"name": "Грузовой фургон", "kind": "van", "cost": 65000, "income": 1020},
+        "truck": {"name": "Средний грузовик", "kind": "truck", "cost": 180000, "income": 2550},
+        "refrigerated": {"name": "Рефрижератор", "kind": "refrigerated", "cost": 450000, "income": 5780},
+        "semi": {"name": "Магистральная фура", "kind": "semi", "cost": 1200000, "income": 13600},
+    },
+}
+GARAGE_CAPACITIES = (5, 10, 20, 35, 55, 75, 100)
+GARAGE_DURATIONS = (0, 5 * 60, 20 * 60, 60 * 60, 3 * 60 * 60, 8 * 60 * 60, 18 * 60 * 60)
+GARAGE_COSTS = {
+    "taxi": (0, 20000, 60000, 180000, 500000, 1200000, 2500000),
+    "logistics": (0, 75000, 220000, 650000, 1800000, 4500000, 9000000),
 }
 
 STOCKS = {
     "bmw": {
         "symbol": "BMW", "name": "BMW",
-        "description": "Немецкая компания, производящая автомобили премиального сегмента.",
+        "description": "BMW Group: премиальные автомобили BMW, MINI и Rolls-Royce, а также мотоциклы BMW Motorrad.",
         "min_price": 200.0, "max_price": 450.0, "initial_price": 325.0,
         "volatility": 0.012, "drift": 0.0015, "dividend_rate": 0.03,
     },
     "kfc": {
         "symbol": "KFC", "name": "KFC",
-        "description": "Международная сеть ресторанов быстрого питания.",
+        "description": "KFC — глобальный ресторанный бренд Yum! Brands с франчайзинговой моделью и специализацией на блюдах из курицы.",
         "min_price": 90.0, "max_price": 235.0, "initial_price": 162.5,
         "volatility": 0.015, "drift": 0.0012, "dividend_rate": 0.011,
     },
     "spotify": {
         "symbol": "SPOT", "name": "Spotify",
-        "description": "Стриминговый сервис для музыки, подкастов и другого аудиоконтента.",
+        "description": "Spotify — аудиоплатформа с подпиской и рекламной моделью: музыка, подкасты и аудиокниги.",
         "min_price": 110.0, "max_price": 210.0, "initial_price": 160.0,
         "volatility": 0.013, "drift": 0.0010, "dividend_rate": 0.005,
     },
     "nvidia": {
         "symbol": "NVDA", "name": "NVIDIA",
-        "description": "Разработчик графических процессоров, ускорителей вычислений и ИИ-платформ.",
+        "description": "NVIDIA создаёт ускоренные вычислительные платформы: GPU, сетевые решения и программный стек для ИИ и дата-центров.",
         "min_price": 350.0, "max_price": 1200.0, "initial_price": 720.0,
         "volatility": 0.022, "drift": 0.0022, "dividend_rate": 0.004,
     },
     "tesla": {
         "symbol": "TSLA", "name": "Tesla",
-        "description": "Производитель электромобилей, энергетических систем и технологий хранения энергии.",
+        "description": "Tesla производит электромобили и развивает генерацию, хранение энергии, зарядную сеть и программные сервисы.",
         "min_price": 150.0, "max_price": 600.0, "initial_price": 315.0,
         "volatility": 0.026, "drift": 0.0017, "dividend_rate": 0.003,
     },
     "mcdonalds": {
         "symbol": "MCD", "name": "McDonald's",
-        "description": "Глобальная сеть ресторанов быстрого обслуживания.",
+        "description": "McDonald’s — глобальная ресторанная система, где основную часть сети составляют франчайзинговые рестораны.",
         "min_price": 150.0, "max_price": 400.0, "initial_price": 275.0,
         "volatility": 0.010, "drift": 0.0010, "dividend_rate": 0.008,
     },
     "toyota": {
         "symbol": "TM", "name": "Toyota",
-        "description": "Один из крупнейших мировых производителей автомобилей и транспортных технологий.",
+        "description": "Toyota выпускает автомобили и развивает гибридные, аккумуляторные, водородные и связанные транспортные технологии.",
         "min_price": 120.0, "max_price": 320.0, "initial_price": 205.0,
         "volatility": 0.011, "drift": 0.0011, "dividend_rate": 0.012,
     },
 }
 
 STOCKS.update({
-    "apple": {"symbol":"AAPL","name":"Apple","description":"Устройства, программные платформы и цифровые сервисы.","min_price":180.0,"max_price":650.0,"initial_price":350.0,"volatility":.014,"drift":.0012,"dividend_rate":.005},
-    "google": {"symbol":"GOOGL","name":"Google","description":"Поиск, реклама, облачные сервисы и искусственный интеллект.","min_price":250.0,"max_price":900.0,"initial_price":480.0,"volatility":.018,"drift":.0015,"dividend_rate":.004},
-    "intel": {"symbol":"INTC","name":"Intel","description":"Процессоры, полупроводники и собственные производственные мощности.","min_price":60.0,"max_price":260.0,"initial_price":130.0,"volatility":.024,"drift":.001,"dividend_rate":.009},
+    "apple": {"symbol":"AAPL","name":"Apple","description":"Apple объединяет iPhone, Mac, iPad, носимые устройства, операционные системы и сервисы в единую экосистему.","min_price":180.0,"max_price":650.0,"initial_price":350.0,"volatility":.014,"drift":.0012,"dividend_rate":.005},
+    "google": {"symbol":"GOOGL","name":"Alphabet (Google)","description":"Alphabet владеет Google: поиск и реклама, YouTube, Android, Google Cloud и продукты на базе искусственного интеллекта.","min_price":250.0,"max_price":900.0,"initial_price":480.0,"volatility":.018,"drift":.0015,"dividend_rate":.004},
+    "intel": {"symbol":"INTC","name":"Intel","description":"Intel проектирует процессоры и платформы для ПК и серверов, а также развивает собственное контрактное производство чипов.","min_price":60.0,"max_price":260.0,"initial_price":130.0,"volatility":.024,"drift":.001,"dividend_rate":.009},
 })
 
 # === CORPORATION V21: MARKET NEWS ===========================================
 MARKET_NEWS_INTERVAL = 60 * 60
 MARKET_NEWS_REACTION_DELAY = 2 * 60
-MARKET_NEWS_MIN_IMPACT = 0.20
-MARKET_NEWS_MAX_IMPACT = 0.60
+MARKET_NEWS_MIN_IMPACT = 0.10
+MARKET_NEWS_MAX_IMPACT = 0.10
 
 MARKET_NEWS_TEMPLATES = {
     "bmw": {
@@ -283,42 +305,34 @@ BONDS = {
         "price": 1000.0,
         "yield_rate": 0.025,
     },
-    "ofz_us": {
-        "symbol": "ОФЗ США",
-        "name": "Государственная облигация США",
-        "description": "Игровая государственная облигация США с фиксированной стоимостью и автоматической доходностью.",
-        "price": 2000.0,
-        "yield_rate": 0.015,
-    },
 }
 
 REAL_ESTATE_UPGRADES = {
-    "furniture": {"name": "🛋 Мебель", "cost_rate": 0.06, "income_bonus": 0.12},
-    "interior": {"name": "🎨 Интерьер", "cost_rate": 0.08, "income_bonus": 0.16},
-    "wifi": {"name": "📶 Wi‑Fi", "cost_rate": 0.03, "income_bonus": 0.08},
-    "appliances": {"name": "🔌 Бытовые приборы", "cost_rate": 0.07, "income_bonus": 0.14},
+    "furniture": {"name": "Мебель", "cost_rate": 0.06, "income_bonus": 0.12},
+    "interior": {"name": "Интерьер", "cost_rate": 0.08, "income_bonus": 0.16},
+    "wifi": {"name": "Wi‑Fi", "cost_rate": 0.03, "income_bonus": 0.08},
+    "appliances": {"name": "Оснащение", "cost_rate": 0.07, "income_bonus": 0.14},
 }
 BUSINESS_UPGRADES = {
-    "marketing": {"name": "📣 Маркетинг", "column": "marketing", "cost_rate": 0.20, "income_bonus": 0.18},
-    "equipment": {"name": "⚙️ Оборудование", "column": "equipment", "cost_rate": 0.30, "income_bonus": 0.25},
-    "staff": {"name": "👥 Персонал", "column": "staff", "cost_rate": 0.25, "income_bonus": 0.22},
-    "automation": {"name": "🤖 Автоматизация", "column": "automation", "cost_rate": 0.40, "income_bonus": 0.35},
+    "marketing": {"name": "Маркетинг", "column": "marketing", "cost_rate": 0.20, "income_bonus": 0.18},
+    "equipment": {"name": "Оборудование", "column": "equipment", "cost_rate": 0.30, "income_bonus": 0.25},
+    "staff": {"name": "Команда", "column": "staff", "cost_rate": 0.25, "income_bonus": 0.22},
+    "automation": {"name": "Автоматизация", "column": "automation", "cost_rate": 0.40, "income_bonus": 0.35},
 }
 
 BUSINESS_UPGRADE_PROFILES = {
-    "coffee": {"marketing": {"name": "🎟 Программа лояльности", "cost_rate": .16, "income_bonus": .14}, "equipment": {"name": "☕ Профессиональная кофемашина", "cost_rate": .28, "income_bonus": .24}, "staff": {"name": "👨‍🍳 Бариста-чемпионы", "cost_rate": .22, "income_bonus": .20}, "automation": {"name": "📱 Мобильный предзаказ", "cost_rate": .34, "income_bonus": .30}},
-    "delivery": {"marketing": {"name": "📍 Геореклама", "cost_rate": .18, "income_bonus": .16}, "equipment": {"name": "🛵 Парк электроскутеров", "cost_rate": .32, "income_bonus": .27}, "staff": {"name": "🚴 Усиленный штат курьеров", "cost_rate": .25, "income_bonus": .22}, "automation": {"name": "🗺 Умная маршрутизация", "cost_rate": .38, "income_bonus": .34}},
-    "factory": {"marketing": {"name": "🤝 Контракты с торговыми сетями", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "🏗 Новая производственная линия", "cost_rate": .35, "income_bonus": .30}, "staff": {"name": "👷 Инженерная смена", "cost_rate": .27, "income_bonus": .24}, "automation": {"name": "🦾 Роботизация цеха", "cost_rate": .44, "income_bonus": .39}},
-    "it": {"marketing": {"name": "🚀 Продвижение цифровых продуктов", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "🖥 Серверная инфраструктура", "cost_rate": .30, "income_bonus": .26}, "staff": {"name": "🧑‍💻 Senior-команда", "cost_rate": .32, "income_bonus": .29}, "automation": {"name": "⚙️ CI/CD и автотесты", "cost_rate": .38, "income_bonus": .35}},
-    "finance": {"marketing": {"name": "💼 Премиум-клиенты", "cost_rate": .22, "income_bonus": .20}, "equipment": {"name": "🔐 Финтех-инфраструктура", "cost_rate": .31, "income_bonus": .27}, "staff": {"name": "📊 Команда аналитиков", "cost_rate": .30, "income_bonus": .28}, "automation": {"name": "🤖 Алгоритмический дилинг", "cost_rate": .46, "income_bonus": .42}},
-    "conglomerate": {"marketing": {"name": "🌍 Глобальный бренд", "cost_rate": .24, "income_bonus": .22}, "equipment": {"name": "🏙 Корпоративные активы", "cost_rate": .34, "income_bonus": .30}, "staff": {"name": "🧠 Топ-менеджмент", "cost_rate": .33, "income_bonus": .31}, "automation": {"name": "🛰 Единый центр управления", "cost_rate": .50, "income_bonus": .46}},
+    "coffee": {"marketing": {"name": "Программа лояльности", "cost_rate": .16, "income_bonus": .14}, "equipment": {"name": "Профессиональная кофемашина", "cost_rate": .28, "income_bonus": .24}, "staff": {"name": "Сильная команда бариста", "cost_rate": .22, "income_bonus": .20}, "automation": {"name": "Мобильный предзаказ", "cost_rate": .34, "income_bonus": .30}},
+    "factory": {"marketing": {"name": "Контракты с сетями", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "Новая производственная линия", "cost_rate": .35, "income_bonus": .30}, "staff": {"name": "Инженерная смена", "cost_rate": .27, "income_bonus": .24}, "automation": {"name": "Роботизация цеха", "cost_rate": .44, "income_bonus": .39}},
+    "it": {"marketing": {"name": "Продвижение продуктов", "cost_rate": .20, "income_bonus": .18}, "equipment": {"name": "Серверная инфраструктура", "cost_rate": .30, "income_bonus": .26}, "staff": {"name": "Senior-команда", "cost_rate": .32, "income_bonus": .29}, "automation": {"name": "CI/CD и автотесты", "cost_rate": .38, "income_bonus": .35}},
+    "finance": {"marketing": {"name": "Премиум-клиенты", "cost_rate": .22, "income_bonus": .20}, "equipment": {"name": "Финтех-инфраструктура", "cost_rate": .31, "income_bonus": .27}, "staff": {"name": "Команда аналитиков", "cost_rate": .30, "income_bonus": .28}, "automation": {"name": "Алгоритмический дилинг", "cost_rate": .46, "income_bonus": .42}},
+    "conglomerate": {"marketing": {"name": "Глобальный бренд", "cost_rate": .24, "income_bonus": .22}, "equipment": {"name": "Корпоративные активы", "cost_rate": .34, "income_bonus": .30}, "staff": {"name": "Топ-менеджмент", "cost_rate": .33, "income_bonus": .31}, "automation": {"name": "Единый центр управления", "cost_rate": .50, "income_bonus": .46}},
 }
 
 
 # Fictional events for the game, not real financial news.
-MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.svg', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.svg', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.svg', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.webp', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.webp', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
 
 def get_business_upgrade_cfg(bid, upgrade_id):
     return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
@@ -622,8 +636,14 @@ REAL_ESTATE = {
 for _pid, _prop in REAL_ESTATE.items():
     if _prop.get("segment")=="vip" and _prop.get("property_type")=="house":
         _prop["photo"]="/static/properties/estate.jpg" if _prop["city_id"] in {"moscow","london","paris"} else "/static/properties/villa-pool.jpg"
-        _prop["name"]="Частная VIP-резиденция" if _prop["city_id"] in {"moscow","london","paris"} else "VIP-вилла с бассейном"
-        _prop["description"]="Приватная резиденция: просторная территория, премиальная архитектура и высокий арендный доход. Фото иллюстрирует класс объекта."
+        _prop["name"]="Коллекционная VIP-резиденция" if _prop["city_id"] in {"moscow","london","paris"} else "Панорамная VIP-вилла"
+        _prop["description"]="Редкий объект с приватной территорией, премиальной архитектурой и усиленной доходностью. Стоимость и все улучшения полностью входят в капитализацию."
+        _prop["prestige"]="COLLECTOR"
+        _prop["benefits"]=["Редкий актив", "Усиленная аренда", "Продажа за 100% капитализации"]
+    elif _prop.get("segment")=="vip":
+        _prop["description"]="Премиальная квартира с дизайнерским интерьером, статусной локацией и повышенным арендным спросом. Стоимость улучшений сохраняется в капитализации."
+        _prop["prestige"]="SIGNATURE"
+        _prop["benefits"]=["Премиальный спрос", "Рост стоимости", "Полная ликвидность"]
 
 def _rebalance_real_estate_v22():
     prices = [float(p["price"]) for p in REAL_ESTATE.values()]
@@ -637,7 +657,8 @@ def _rebalance_real_estate_v22():
         price = float(prop["price"])
         score = (math.log(max(price, 1.0)) - log_lo) / span
         score = min(1.0, max(0.0, score))
-        hourly_yield = 0.032 + 0.016 * score
+        segment_bonus = {"economy": 0.0, "business": 0.004, "vip": 0.012}.get(prop.get("segment"), 0.0)
+        hourly_yield = 0.030 + 0.014 * score + segment_bonus
         prop["base_rent_hour"] = round(price * hourly_yield, 2)
         prop["target_hourly_yield"] = hourly_yield
 
@@ -832,6 +853,23 @@ def init_db():
             quantity INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY(user_id, bond_id)
         );
+        CREATE TABLE IF NOT EXISTS transport_fleets (
+            user_id INTEGER NOT NULL,
+            business_id TEXT NOT NULL,
+            garage_level INTEGER NOT NULL DEFAULT 0,
+            target_level INTEGER NOT NULL DEFAULT 0,
+            upgrade_started_at INTEGER NOT NULL DEFAULT 0,
+            upgrade_finishes_at INTEGER NOT NULL DEFAULT 0,
+            garage_invested REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY(user_id, business_id)
+        );
+        CREATE TABLE IF NOT EXISTS transport_vehicles (
+            user_id INTEGER NOT NULL,
+            business_id TEXT NOT NULL,
+            vehicle_id TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY(user_id, business_id, vehicle_id)
+        );
         CREATE TABLE IF NOT EXISTS taxes (
             user_id INTEGER PRIMARY KEY,
             unpaid REAL NOT NULL DEFAULT 0,
@@ -918,11 +956,21 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_businesses_user ON businesses(user_id);
         CREATE INDEX IF NOT EXISTS idx_stock_holdings_user ON stock_holdings(user_id);
         CREATE INDEX IF NOT EXISTS idx_bond_holdings_user ON bond_holdings(user_id);
+        CREATE INDEX IF NOT EXISTS idx_transport_fleets_user ON transport_fleets(user_id);
+        CREATE INDEX IF NOT EXISTS idx_transport_vehicles_user ON transport_vehicles(user_id);
         CREATE INDEX IF NOT EXISTS idx_real_estate_user ON real_estate_holdings(user_id);
         CREATE INDEX IF NOT EXISTS idx_daily_profit_user_day ON daily_profit(user_id, day);
         CREATE INDEX IF NOT EXISTS idx_season_results_season_place ON season_results(season_id, place);
         """)
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
+        # V25 migrations preserve the value of retired assets.
+        conn.execute("UPDATE businesses SET business_id='taxi' WHERE business_id='delivery' AND NOT EXISTS (SELECT 1 FROM businesses b2 WHERE b2.user_id=businesses.user_id AND b2.business_id='taxi')")
+        conn.execute("DELETE FROM businesses WHERE business_id='delivery'")
+        conn.execute("INSERT OR IGNORE INTO transport_fleets(user_id,business_id) SELECT user_id,business_id FROM businesses WHERE business_id IN ('taxi','logistics')")
+        retired_bonds = conn.execute("SELECT user_id,quantity FROM bond_holdings WHERE bond_id='ofz_us' AND quantity>0").fetchall()
+        for retired in retired_bonds:
+            conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (2000.0 * int(retired["quantity"]), int(retired["user_id"])))
+        conn.execute("DELETE FROM bond_holdings WHERE bond_id='ofz_us'")
         conn.execute(
             "INSERT OR IGNORE INTO game_state(id,is_frozen,frozen_at,current_season,season_started_at,season_ended_at,maintenance_message) VALUES(1,0,0,1,?,0,'')",
             (now,),
@@ -1026,7 +1074,7 @@ def reset_stock_market_conn(conn, now):
 
 
 def reset_all_progress_conn(conn, now):
-    for table in ("businesses", "daily_profit", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
+    for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
         conn.execute(f"DELETE FROM {table}")
     conn.execute(
         "UPDATE players SET money=?,last_collect=0,last_income_sync=?",
@@ -1199,6 +1247,86 @@ def get_business_rows(uid, conn=None):
             conn.close()
 
 
+def _finalize_transport_fleet_conn(conn, uid, bid, now=None):
+    now = int(now or time.time())
+    row = conn.execute("SELECT * FROM transport_fleets WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+    if row and int(row["upgrade_finishes_at"] or 0) and int(row["upgrade_finishes_at"]) <= now:
+        conn.execute(
+            "UPDATE transport_fleets SET garage_level=target_level,upgrade_started_at=0,upgrade_finishes_at=0 WHERE user_id=? AND business_id=?",
+            (uid, bid),
+        )
+        row = conn.execute("SELECT * FROM transport_fleets WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+    return row
+
+
+def _transport_values_conn(conn, uid, bid):
+    vehicles = {r["vehicle_id"]: int(r["quantity"] or 0) for r in conn.execute(
+        "SELECT vehicle_id,quantity FROM transport_vehicles WHERE user_id=? AND business_id=? AND quantity>0",
+        (uid, bid),
+    ).fetchall()}
+    income = sum(TRANSPORT_VEHICLES.get(bid, {}).get(vid, {}).get("income", 0) * qty for vid, qty in vehicles.items())
+    value = sum(TRANSPORT_VEHICLES.get(bid, {}).get(vid, {}).get("cost", 0) * qty for vid, qty in vehicles.items())
+    return vehicles, float(income), float(value)
+
+
+def transport_hourly_income(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        total = 0.0
+        for bid in TRANSPORT_VEHICLES:
+            owned = conn.execute("SELECT 1 FROM businesses WHERE user_id=? AND business_id=? AND level>0", (uid, bid)).fetchone()
+            if owned:
+                total += _transport_values_conn(conn, uid, bid)[1]
+        return total
+    finally:
+        if own:
+            conn.close()
+
+
+def transport_payload(uid, bid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        now = int(time.time())
+        fleet = _finalize_transport_fleet_conn(conn, uid, bid, now)
+        if own:
+            conn.commit()
+        level = int(fleet["garage_level"] or 0) if fleet else 0
+        target = int(fleet["target_level"] or level) if fleet else level
+        finishes = int(fleet["upgrade_finishes_at"] or 0) if fleet else 0
+        vehicles, income, vehicle_value = _transport_values_conn(conn, uid, bid)
+        occupied = sum(vehicles.values())
+        capacity = GARAGE_CAPACITIES[level]
+        maxed = level >= len(GARAGE_CAPACITIES) - 1
+        next_level = min(level + 1, len(GARAGE_CAPACITIES) - 1)
+        items = []
+        for vehicle_id, cfg in TRANSPORT_VEHICLES.get(bid, {}).items():
+            quantity = vehicles.get(vehicle_id, 0)
+            items.append({
+                "id": vehicle_id, **cfg, "quantity": quantity,
+                "capitalization": round(quantity * cfg["cost"], 2),
+                "total_income": round(quantity * cfg["income"], 2),
+                "sell_price": round(cfg["cost"] * 0.60, 2),
+            })
+        return {
+            "garage_level": level, "target_level": target, "capacity": capacity,
+            "occupied": occupied, "available": max(0, capacity - occupied), "max_capacity": 100,
+            "upgrading": bool(finishes > now), "upgrade_finishes_at": finishes,
+            "upgrade_seconds_left": max(0, finishes - now), "maxed": maxed,
+            "next_capacity": GARAGE_CAPACITIES[next_level],
+            "next_upgrade_cost": 0 if maxed else GARAGE_COSTS[bid][next_level],
+            "next_upgrade_duration": 0 if maxed else GARAGE_DURATIONS[next_level],
+            "garage_invested": round(float(fleet["garage_invested"] or 0) if fleet else 0, 2),
+            "vehicle_value": round(vehicle_value, 2), "income": round(income, 2), "vehicles": items,
+        }
+    finally:
+        if own:
+            conn.close()
+
+
 def business_upgrade_multiplier(row, bid=None):
     if not row:
         return 1.0
@@ -1216,6 +1344,7 @@ def business_hourly_income(uid):
     for bid, row in rows.items():
         if bid in BUSINESSES and int(row["level"] or 0) > 0:
             total += BUSINESSES[bid]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row, bid)
+    total += transport_hourly_income(uid)
     return total
 
 
@@ -1230,16 +1359,27 @@ def business_upgrade_cost(bid, upgrade_id):
     return round(BUSINESSES[bid]["base_cost"] * cfg["cost_rate"], 2)
 
 
-def business_capitalization(bid, level, row=None):
+def business_capitalization(bid, level, row=None, uid=None, conn=None):
     if bid not in BUSINESSES or level <= 0:
         return 0
     legacy_cost = sum(next_business_cost(bid, lvl) for lvl in range(max(0, level)))
     upgrade_costs = 0
-    if row:
+    if row and bid not in TRANSPORT_VEHICLES:
         for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
             if int(row[base_cfg["column"]] or 0) > 0:
                 upgrade_costs += business_upgrade_cost(bid, upgrade_id)
-    return round(legacy_cost + upgrade_costs, 2)
+    transport_value = 0.0
+    if uid is not None and bid in TRANSPORT_VEHICLES:
+        own = conn is None
+        if own:
+            conn = db()
+        try:
+            fleet = conn.execute("SELECT garage_invested FROM transport_fleets WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
+            transport_value = _transport_values_conn(conn, uid, bid)[2] + float(fleet["garage_invested"] or 0 if fleet else 0)
+        finally:
+            if own:
+                conn.close()
+    return round(legacy_cost + upgrade_costs + transport_value, 2)
 
 
 def _eligible_news_stocks(conn, sentiment):
@@ -1532,7 +1672,7 @@ def player_capital(uid, conn=None):
             bid = row["business_id"]
             lvl = int(row["level"] or 0)
             if bid in BUSINESSES and lvl > 0:
-                business_value += business_capitalization(bid, lvl, row)
+                business_value += business_capitalization(bid, lvl, row, uid, conn)
         stock_value = sum(float(r["current_price"]) * int(r["quantity"]) for r in conn.execute(
             "SELECT h.quantity,s.current_price FROM stock_holdings h JOIN stocks s ON s.id=h.stock_id WHERE h.user_id=? AND h.quantity>0", (uid,)
         ).fetchall())
@@ -1559,6 +1699,8 @@ def _bulk_ranked_players(limit=None):
     with closing(db()) as conn:
         players = [dict(r) for r in conn.execute("SELECT user_id,corp_name,username,money,last_income_sync,is_frozen,frozen_at,is_blocked,blocked_at FROM players").fetchall()]
         businesses = conn.execute("SELECT * FROM businesses WHERE level>0").fetchall()
+        transport_fleets = conn.execute("SELECT * FROM transport_fleets").fetchall()
+        transport_vehicles = conn.execute("SELECT * FROM transport_vehicles WHERE quantity>0").fetchall()
         stocks = conn.execute("SELECT h.user_id,h.stock_id,h.quantity,s.current_price FROM stock_holdings h JOIN stocks s ON s.id=h.stock_id WHERE h.quantity>0").fetchall()
         bonds = conn.execute("SELECT user_id,bond_id,quantity FROM bond_holdings WHERE quantity>0").fetchall()
         properties = conn.execute("SELECT * FROM real_estate_holdings").fetchall()
@@ -1566,11 +1708,24 @@ def _bulk_ranked_players(limit=None):
 
     breakdown = {int(p["user_id"]): {"cash": float(p["money"] or 0), "businesses": 0.0, "stocks": 0.0, "bonds": 0.0, "real_estate": 0.0} for p in players}
     hourly = {uid: 0.0 for uid in breakdown}
+    fleet_invested = {(int(r["user_id"]), r["business_id"]): float(r["garage_invested"] or 0) for r in transport_fleets}
+    fleet_income = {}
+    fleet_value = {}
+    for r in transport_vehicles:
+        key = (int(r["user_id"]), r["business_id"]); cfg = TRANSPORT_VEHICLES.get(r["business_id"], {}).get(r["vehicle_id"])
+        if not cfg:
+            continue
+        qty = int(r["quantity"] or 0)
+        fleet_income[key] = fleet_income.get(key, 0.0) + cfg["income"] * qty
+        fleet_value[key] = fleet_value.get(key, 0.0) + cfg["cost"] * qty
     for r in businesses:
         uid=int(r["user_id"]); bid=r["business_id"]; lvl=int(r["level"] or 0)
         if uid in breakdown and bid in BUSINESSES:
             breakdown[uid]["businesses"] += business_capitalization(bid,lvl,r)
+            if bid in TRANSPORT_VEHICLES:
+                breakdown[uid]["businesses"] += fleet_invested.get((uid,bid),0) + fleet_value.get((uid,bid),0)
             hourly[uid] += BUSINESSES[bid]["base_income"] * lvl * business_upgrade_multiplier(r,bid)
+            hourly[uid] += fleet_income.get((uid,bid),0)
     for r in stocks:
         uid=int(r["user_id"]); sid=r["stock_id"]; qty=int(r["quantity"] or 0); value=float(r["current_price"])*qty
         if uid in breakdown:
@@ -1668,9 +1823,10 @@ def snapshot(uid):
         level = int(row["level"] if row else 0)
         owned = level > 0
         multiplier = business_upgrade_multiplier(row, bid)
-        cap = business_capitalization(bid, level, row)
+        cap = business_capitalization(bid, level, row, uid)
+        transport = transport_payload(uid, bid) if bid in TRANSPORT_VEHICLES and owned else None
         upgrades = []
-        for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
+        for upgrade_id, base_cfg in (() if bid in TRANSPORT_VEHICLES else BUSINESS_UPGRADES.items()):
             cfg = get_business_upgrade_cfg(bid, upgrade_id)
             installed = bool(row and int(row[base_cfg["column"]] or 0) > 0)
             upgrades.append({
@@ -1686,11 +1842,12 @@ def snapshot(uid):
             "id": bid, **business, "level": level, "owned": owned,
             "purchase_cost": business["base_cost"],
             "next_cost": business["base_cost"],
-            "current_income": round(business["base_income"] * level * multiplier, 2),
+            "current_income": round(business["base_income"] * level * multiplier + (transport["income"] if transport else 0), 2),
             "income_after_purchase": business["base_income"],
             "capitalization": cap,
             "sell_price": round(cap * 0.30, 2),
             "upgrades": upgrades,
+            "transport": transport,
         })
     capital = player_capital(uid)
     return {
@@ -1912,6 +2069,8 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
             "ON CONFLICT(user_id,business_id) DO UPDATE SET level=1",
             (uid, bid),
         )
+        if bid in TRANSPORT_VEHICLES:
+            conn.execute("INSERT OR IGNORE INTO transport_fleets(user_id,business_id) VALUES(?,?)", (uid, bid))
         conn.execute(
             "UPDATE stats SET total_spent=total_spent+?,companies_bought=companies_bought+1 WHERE user_id=?",
             (cost, uid),
@@ -1927,6 +2086,8 @@ def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None
         raise HTTPException(404, "Бизнес не найден")
     if upgrade_id not in BUSINESS_UPGRADES:
         raise HTTPException(404, "Прокачка не найдена")
+    if bid in TRANSPORT_VEHICLES:
+        raise HTTPException(400, "Этот бизнес развивается через автопарк и расширение гаража")
     sync_passive_income(uid)
     base_cfg = BUSINESS_UPGRADES[upgrade_id]
     cfg = get_business_upgrade_cfg(bid, upgrade_id)
@@ -1963,11 +2124,99 @@ def sell_business(bid: str, x_telegram_init_data: str | None = Header(None), x_u
         level = int(row["level"] if row else 0)
         if level <= 0:
             raise HTTPException(400, "У тебя нет этого бизнеса")
-        price = round(business_capitalization(bid, level, row) * .30, 2)
+        price = round(business_capitalization(bid, level, row, uid, conn) * .30, 2)
+        conn.execute("DELETE FROM transport_vehicles WHERE user_id=? AND business_id=?", (uid, bid))
+        conn.execute("DELETE FROM transport_fleets WHERE user_id=? AND business_id=?", (uid, bid))
         conn.execute("DELETE FROM businesses WHERE user_id=? AND business_id=?", (uid, bid))
         conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (price, uid))
         conn.commit()
     return {"sell_price": price, "state": snapshot(uid)}
+
+
+@api.post("/api/fleet/{bid}/vehicle/{vehicle_id}/buy")
+def buy_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    cfg = TRANSPORT_VEHICLES.get(bid, {}).get(vehicle_id)
+    if not cfg:
+        raise HTTPException(404, "Транспорт не найден")
+    if body.quantity <= 0 or body.quantity > 100:
+        raise HTTPException(400, "Количество должно быть от 1 до 100")
+    sync_passive_income(uid)
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        owned = conn.execute("SELECT 1 FROM businesses WHERE user_id=? AND business_id=? AND level>0", (uid, bid)).fetchone()
+        if not owned:
+            conn.rollback(); raise HTTPException(400, "Сначала купи компанию")
+        conn.execute("INSERT OR IGNORE INTO transport_fleets(user_id,business_id) VALUES(?,?)", (uid, bid))
+        fleet = _finalize_transport_fleet_conn(conn, uid, bid)
+        occupied = conn.execute("SELECT COALESCE(SUM(quantity),0) q FROM transport_vehicles WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()["q"]
+        capacity = GARAGE_CAPACITIES[int(fleet["garage_level"] or 0)]
+        if int(occupied) + body.quantity > capacity:
+            conn.rollback(); raise HTTPException(400, f"В гараже свободно только {max(0, capacity-int(occupied))} мест")
+        total = float(cfg["cost"]) * body.quantity
+        money = float(conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()["money"])
+        if money < total:
+            conn.rollback(); raise HTTPException(400, f"Не хватает {total-money:.2f} ₽")
+        conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (total, uid))
+        conn.execute("INSERT INTO transport_vehicles(user_id,business_id,vehicle_id,quantity) VALUES(?,?,?,?) ON CONFLICT(user_id,business_id,vehicle_id) DO UPDATE SET quantity=quantity+excluded.quantity", (uid, bid, vehicle_id, body.quantity))
+        conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (total, uid))
+        conn.commit()
+    return {"quantity": body.quantity, "total_cost": round(total, 2), "state": snapshot(uid)}
+
+
+@api.post("/api/fleet/{bid}/vehicle/{vehicle_id}/sell")
+def sell_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    cfg = TRANSPORT_VEHICLES.get(bid, {}).get(vehicle_id)
+    if not cfg:
+        raise HTTPException(404, "Транспорт не найден")
+    if body.quantity <= 0:
+        raise HTTPException(400, "Количество должно быть больше нуля")
+    sync_passive_income(uid)
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT quantity FROM transport_vehicles WHERE user_id=? AND business_id=? AND vehicle_id=?", (uid, bid, vehicle_id)).fetchone()
+        if not row or int(row["quantity"]) < body.quantity:
+            conn.rollback(); raise HTTPException(400, "Недостаточно машин для продажи")
+        remaining = int(row["quantity"]) - body.quantity
+        income = round(float(cfg["cost"]) * 0.60 * body.quantity, 2)
+        if remaining:
+            conn.execute("UPDATE transport_vehicles SET quantity=? WHERE user_id=? AND business_id=? AND vehicle_id=?", (remaining, uid, bid, vehicle_id))
+        else:
+            conn.execute("DELETE FROM transport_vehicles WHERE user_id=? AND business_id=? AND vehicle_id=?", (uid, bid, vehicle_id))
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (income, uid))
+        conn.commit()
+    return {"quantity": body.quantity, "total_income": income, "state": snapshot(uid)}
+
+
+@api.post("/api/fleet/{bid}/garage/upgrade")
+def upgrade_fleet_garage(bid: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    if bid not in TRANSPORT_VEHICLES:
+        raise HTTPException(404, "Автопарк не найден")
+    sync_passive_income(uid)
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        owned = conn.execute("SELECT 1 FROM businesses WHERE user_id=? AND business_id=? AND level>0", (uid, bid)).fetchone()
+        if not owned:
+            conn.rollback(); raise HTTPException(400, "Сначала купи компанию")
+        conn.execute("INSERT OR IGNORE INTO transport_fleets(user_id,business_id) VALUES(?,?)", (uid, bid))
+        fleet = _finalize_transport_fleet_conn(conn, uid, bid, now)
+        if int(fleet["upgrade_finishes_at"] or 0) > now:
+            conn.rollback(); raise HTTPException(400, "Расширение уже строится")
+        current = int(fleet["garage_level"] or 0)
+        if current >= len(GARAGE_CAPACITIES)-1:
+            conn.rollback(); raise HTTPException(400, "Достигнут максимум: 100 мест")
+        target = current + 1; cost = float(GARAGE_COSTS[bid][target]); duration = int(GARAGE_DURATIONS[target])
+        money = float(conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()["money"])
+        if money < cost:
+            conn.rollback(); raise HTTPException(400, f"Не хватает {cost-money:.2f} ₽")
+        conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
+        conn.execute("UPDATE transport_fleets SET target_level=?,upgrade_started_at=?,upgrade_finishes_at=?,garage_invested=garage_invested+? WHERE user_id=? AND business_id=?", (target, now, now+duration, cost, uid, bid))
+        conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (cost, uid))
+        conn.commit()
+    return {"cost": cost, "finishes_at": now+duration, "state": snapshot(uid)}
 
 
 @api.get("/api/taxes")
@@ -2404,7 +2653,7 @@ def admin_delete_player(player_id: int, body: AdminPlayerDeleteBody, x_telegram_
     backup_path = create_database_backup(f"before_delete_{player_id}")
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        for table in ("businesses", "daily_profit", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
+        for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
             conn.execute(f"DELETE FROM {table} WHERE user_id=?", (player_id,))
         conn.execute("DELETE FROM players WHERE user_id=?", (player_id,))
         admin_log(admin_id, "delete_player", f"player={player_id}; backup={os.path.basename(backup_path)}", conn)

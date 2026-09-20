@@ -72,7 +72,7 @@ class AuditTests(unittest.TestCase):
   r=client.post('/api/business/coffee/upgrade/staff').json()
   b=next(x for x in r['businesses'] if x['id']=='coffee')
   u=next(x for x in b['upgrades'] if x['id']=='automation')
-  self.assertEqual((b['current_income'],u['income_delta'],u['income_after_upgrade']),(420,105,525))
+  self.assertEqual((b['current_income'],u['income_delta'],u['income_after_upgrade']),(360,90,450))
   self.assertEqual(r['capital'],sum(r['capital_breakdown'][k] for k in ['cash','businesses','stocks','bonds','real_estate']))
  def test_property_balance_boundaries(self):
   ident=next(iter(app.REAL_ESTATE));price=app.REAL_ESTATE[ident]['price']
