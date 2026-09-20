@@ -113,7 +113,7 @@ async function renderInvestments(){
 
     c.innerHTML=`<section class="investment-page">${summary}
       <div class="investment-market-menu">
-        <button class="investment-market-button" onclick="openInvestmentStocks()"><span class="investment-market-icon">↗</span><div><b>Акции</b><small>Котировки, графики, свечи и торговля</small></div><span class="investment-market-arrow">›</span></button>
+        <button class="investment-market-button" onclick="openInvestmentStocks()"><span class="investment-market-icon investment-stock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18 9 13l4 3 7-9"/><path d="M15 7h5v5"/></svg></span><div><b>Акции</b><small>Котировки, графики, свечи и торговля</small></div><span class="investment-market-arrow">›</span></button>
         <button class="investment-market-button" onclick="openInvestmentBonds()"><span class="investment-market-icon">₽</span><div><b>Облигации</b><small>Фиксированная доходность и портфель</small></div><span class="investment-market-arrow">›</span></button>
       </div>
     </section>`;

@@ -204,7 +204,7 @@ MARKET_NEWS_MAX_IMPACT = 0.10
 
 MARKET_NEWS_TEMPLATES = {
     "bmw": {
-        "photo": "/static/news/bmw.webp",
+        "photo": "https://mediapool.bmwgroup.com/download/edown/pressclub/publicq?actEvent=scaleBig&attachment=1&dokNo=P90639046&quality=90&square=0",
         "good": [
             ("BMW ускоряет выпуск нового поколения электромобилей после сильных предзаказов", "BMW сообщила о спросе на новую электрическую линейку выше внутренних ожиданий. Компания расширяет производственный план и рассчитывает быстрее загрузить европейские заводы, что участники рынка воспринимают как сигнал к росту выручки в премиальном сегменте."),
             ("Маржа BMW укрепилась на фоне устойчивого спроса на премиальные модели", "Немецкий автопроизводитель сообщил об улучшении рентабельности ключевого автомобильного подразделения. Более дорогие комплектации и дисциплина расходов помогли компенсировать давление логистики, усилив ожидания инвесторов по денежному потоку."),
@@ -217,7 +217,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "kfc": {
-        "photo": "/static/news/kfc.webp",
+        "photo": "https://cdn.sanity.io/images/kbqq3e0r/production/cba9f8f3f3cb15d0848b1cc834bb8f0444d10f44-1920x1080.png?q=90&w=1600",
         "good": [
             ("KFC фиксирует ускорение сопоставимых продаж после обновления меню", "Новые позиции меню и рост цифровых заказов поддержали трафик в ресторанах KFC. Сеть отмечает особенно сильную динамику доставки и заказов через приложение, что повышает ожидания по выручке франчайзинговой системы."),
             ("KFC расширяет сеть быстрее плана на растущих рынках", "Компания сообщила об ускорении открытия новых ресторанов в регионах с высоким спросом на быстрый сервис. Более активная франчайзинговая экспансия может увеличить комиссионные поступления без сопоставимого роста капитальных затрат."),
@@ -230,7 +230,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "spotify": {
-        "photo": "/static/news/spotify.webp",
+        "photo": "https://storage.googleapis.com/pr-newsroom-wp/1/2025/04/2208232753-1-1440x733.jpg",
         "good": [
             ("Spotify добавила подписчиков быстрее ожиданий и улучшила прогноз", "Музыкальный сервис сообщил о более сильном росте премиальной аудитории, чем ожидал рынок. Одновременно компания продолжила контролировать расходы, усилив ожидания по операционной прибыли и свободному денежному потоку."),
             ("Spotify расширяет рекламный бизнес с новой платформой для брендов", "Компания представила инструменты, которые упрощают покупку аудиорекламы и таргетинг кампаний. Рынок рассчитывает, что более эффективная монетизация бесплатной аудитории станет вторым заметным источником роста наряду с подписками."),
@@ -243,7 +243,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "nvidia": {
-        "photo": "/static/news/nvidia.webp",
+        "photo": "https://nvidianews.nvidia.com/_gallery/get_file/?file_id=677c4a633d63324b1c25f259",
         "good": [
             ("NVIDIA получила новую волну крупных заказов на ИИ-ускорители", "Крупные облачные провайдеры расширили заказы на вычислительные ускорители NVIDIA. Высокий спрос на инфраструктуру искусственного интеллекта усиливает ожидания по выручке дата-центров и загрузке будущих поколений чипов."),
             ("NVIDIA представила архитектуру с заметным приростом производительности", "Компания раскрыла новое поколение ускорителей, обещающее существенно более высокую эффективность в ИИ-нагрузках. Первые клиенты уже объявили планы внедрения, что снижает опасения о замедлении технологического цикла."),
@@ -256,7 +256,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "tesla": {
-        "photo": "/static/news/tesla.webp",
+        "photo": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1080,w_1920,c_fit,f_auto,q_auto:best/EN---Displays--Model-S-and-Model-X",
         "good": [
             ("Tesla отчиталась о рекордных поставках после ускорения производства", "Производитель электромобилей сообщил о сильном квартальном объеме поставок, превысившем ожидания рынка. Рост загрузки заводов улучшает перспективы операционного рычага и поддерживает прогноз по денежному потоку."),
             ("Tesla объявила о снижении себестоимости нового поколения батарей", "Компания заявила о технологическом прогрессе в производстве аккумуляторов, который должен уменьшить стоимость батарейного блока. Более низкая себестоимость дает Tesla пространство для маржи или более агрессивного ценообразования."),
@@ -269,7 +269,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "mcdonalds": {
-        "photo": "/static/news/mcdonalds.webp",
+        "photo": "https://s7d1.scene7.com/is/image/mcdonalds/restaurants-1%3A3-column-desktop?resmode=sharp2&wid=1600",
         "good": [
             ("McDonald's ускорила продажи благодаря росту цифровых заказов", "Сеть ресторанов сообщила о сильной динамике приложения и программы лояльности. Персональные предложения повышают частоту заказов, а цифровой канал помогает компании эффективнее управлять средним чеком."),
             ("McDonald's расширяет высокомаржинальную франчайзинговую сеть", "Компания ускоряет открытие ресторанов с участием франчайзи на нескольких ключевых рынках. Такой формат позволяет увеличивать системные продажи при более умеренной потребности в собственном капитале."),
@@ -282,7 +282,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "toyota": {
-        "photo": "/static/news/toyota.webp",
+        "photo": "https://global.toyota/pages/news/images/2026/05/12/1330_corolla/001.jpg",
         "good": [
             ("Toyota повышает прогноз производства после стабилизации поставок компонентов", "Автопроизводитель сообщил об улучшении доступности ключевых деталей и намерен увеличить выпуск автомобилей. Более высокая загрузка заводов способна поддержать продажи и распределение фиксированных затрат."),
             ("Гибриды Toyota демонстрируют сильный мировой спрос", "Продажи гибридных моделей продолжают расти на нескольких ключевых рынках. Компания выигрывает от широкой линейки и накопленного опыта, что помогает ей удерживать устойчивую прибыльность в переходный период отрасли."),
@@ -330,9 +330,9 @@ BUSINESS_UPGRADE_PROFILES = {
 
 
 # Fictional events for the game, not real financial news.
-MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.webp', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.webp', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['apple'] = {'photo': 'https://www.apple.com/newsroom/images/2026/06/apple-unveils-next-generation-of-apple-intelligence-siri-ai-and-more/article/Apple-OS-27-updates-260608_big.jpg.large.jpg', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['google'] = {'photo': 'https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Google_Images_25th_hero.width-1200.format-webp.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['intel'] = {'photo': 'https://intelcorp.scene7.com/is/image/intelcorp/newsroom-btd-research-facility-092026%3A1920-1080?dpr=off&fmt=png8-alpha&ts=1789649714133', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
 
 def get_business_upgrade_cfg(bid, upgrade_id):
     return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
@@ -822,6 +822,12 @@ def init_db():
             earned REAL NOT NULL DEFAULT 0,
             PRIMARY KEY(user_id, day)
         );
+        CREATE TABLE IF NOT EXISTS income_breakdown (
+            user_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            amount REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY(user_id, category)
+        );
         CREATE TABLE IF NOT EXISTS stocks (
             id TEXT PRIMARY KEY,
             symbol TEXT NOT NULL,
@@ -931,6 +937,16 @@ def init_db():
             id INTEGER PRIMARY KEY CHECK(id=1),
             next_news_at INTEGER NOT NULL DEFAULT 0
         );
+        CREATE TABLE IF NOT EXISTS admin_income_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            note TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_admin_income_events_user_time ON admin_income_events(user_id, created_at DESC);
         CREATE TABLE IF NOT EXISTS admin_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             admin_id INTEGER NOT NULL,
@@ -1074,7 +1090,7 @@ def reset_stock_market_conn(conn, now):
 
 
 def reset_all_progress_conn(conn, now):
-    for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
+    for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
         conn.execute(f"DELETE FROM {table}")
     conn.execute(
         "UPDATE players SET money=?,last_collect=0,last_income_sync=?",
@@ -1556,6 +1572,31 @@ def add_daily_profit_conn(conn, uid, amount):
     )
 
 
+def add_income_breakdown_conn(conn, uid, category, amount):
+    amount = float(amount or 0)
+    if amount <= 0:
+        return
+    conn.execute(
+        "INSERT INTO income_breakdown(user_id,category,amount) VALUES(?,?,?) ON CONFLICT(user_id,category) DO UPDATE SET amount=amount+excluded.amount",
+        (uid, str(category), amount),
+    )
+
+
+def get_income_breakdown(uid):
+    labels = {
+        "business": "Доход бизнеса",
+        "dividends": "Дивиденды",
+        "bonds": "Доход облигаций",
+        "rent": "Аренда недвижимости",
+        "stock_profit": "Прибыль от акций",
+        "prize": "Призы и бонусы",
+        "other": "Прочий доход",
+    }
+    with closing(db()) as conn:
+        rows = conn.execute("SELECT category,amount FROM income_breakdown WHERE user_id=? ORDER BY amount DESC", (uid,)).fetchall()
+    return [{"category": r["category"], "name": labels.get(r["category"], r["category"]), "amount": round(float(r["amount"]), 2)} for r in rows]
+
+
 def accrue_tax_conn(conn, uid, amount, due_since):
     if amount <= 0:
         return
@@ -1618,6 +1659,10 @@ def sync_passive_income(uid):
             conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (earned, uid))
             conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (earned, uid))
             add_daily_profit_conn(conn, uid, earned)
+            add_income_breakdown_conn(conn, uid, "business", business_earned)
+            add_income_breakdown_conn(conn, uid, "dividends", dividends_earned)
+            add_income_breakdown_conn(conn, uid, "bonds", bonds_earned)
+            add_income_breakdown_conn(conn, uid, "rent", rent_earned)
             accrue_tax_conn(conn, uid, earned, due_since if unpaid > 0 and due_since > 0 else last_sync)
 
         conn.execute("UPDATE players SET last_income_sync=? WHERE user_id=?", (now, uid))
@@ -2249,7 +2294,7 @@ def statistics(x_telegram_init_data: str | None = Header(None), x_user_id: str |
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
     cap = player_capital(uid)
-    return {"player": {"corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]}, "capital": cap["total"], "capital_breakdown": cap, "hourly_income": snapshot(uid)["hourly_income"], "total_spent": stats["total_spent"], "total_earned": stats["total_earned"], "companies_bought": stats["companies_bought"], "properties_bought": stats["properties_bought"], "daily_profit": get_daily_profit(uid)}
+    return {"player": {"corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]}, "capital": cap["total"], "capital_breakdown": cap, "hourly_income": snapshot(uid)["hourly_income"], "total_spent": stats["total_spent"], "total_earned": stats["total_earned"], "companies_bought": stats["companies_bought"], "properties_bought": stats["properties_bought"], "daily_profit": get_daily_profit(uid), "income_breakdown": get_income_breakdown(uid)}
 
 
 @api.get("/api/rating")
@@ -2332,6 +2377,7 @@ def sell_stock(stock_id: str, body: QuantityBody, x_telegram_init_data: str | No
         if realized_profit > 0:
             conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (realized_profit, uid))
             add_daily_profit_conn(conn, uid, realized_profit)
+            add_income_breakdown_conn(conn, uid, "stock_profit", realized_profit)
             accrue_tax_conn(conn, uid, realized_profit, now)
         conn.commit()
     return {"quantity": body.quantity, "price_per_stock": round(price,2), "total_income": round(total,2), "realized_profit": round(realized_profit,2), "profit_tax": round(realized_profit*TAX_RATE,2), "state": snapshot(uid), "brokerage_account": get_brokerage_account(uid)}
@@ -2518,6 +2564,13 @@ class AdminPlayerDeleteBody(BaseModel):
     confirmation: str
 
 
+class AdminGrantBody(BaseModel):
+    amount: float = Field(gt=0, le=1_000_000_000_000)
+    category: str = "other"
+    note: str = ""
+    count_as_income: bool = True
+
+
 @api.get("/api/admin/overview")
 def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     admin_id = require_admin(x_telegram_init_data, x_user_id)
@@ -2554,7 +2607,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v24.0",
+        "version": "v26.0",
     }
 
 
@@ -2590,6 +2643,31 @@ def admin_player_detail(player_id: int, x_telegram_init_data: str | None = Heade
         bond_rows = [dict(r) for r in conn.execute("SELECT bond_id,quantity FROM bond_holdings WHERE user_id=? AND quantity>0", (player_id,)).fetchall()]
         properties = [dict(r) for r in conn.execute("SELECT property_id,purchase_price,purchased_at FROM real_estate_holdings WHERE user_id=?", (player_id,)).fetchall()]
     return {"state": snap, "stocks": stock_rows, "bonds": bond_rows, "properties": properties}
+
+
+@api.post("/api/admin/player/{player_id}/grant")
+def admin_player_grant(player_id: int, body: AdminGrantBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    admin_id = require_admin(x_telegram_init_data, x_user_id)
+    if not get_player(player_id):
+        raise HTTPException(404, "Игрок не найден")
+    amount = round(float(body.amount), 2)
+    allowed = {"business": "Доход бизнеса", "dividends": "Дивиденды", "bonds": "Доход облигаций", "rent": "Аренда недвижимости", "stock_profit": "Прибыль от акций", "prize": "Приз / бонус", "other": "Прочий доход", "balance": "Только баланс"}
+    category = str(body.category or "other").strip().lower()
+    if category not in allowed:
+        raise HTTPException(400, "Неизвестная категория начисления")
+    count_income = bool(body.count_as_income) and category != "balance"
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (amount, player_id))
+        if count_income:
+            conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (amount, player_id))
+            add_daily_profit_conn(conn, player_id, amount)
+            add_income_breakdown_conn(conn, player_id, category, amount)
+        conn.execute("INSERT INTO admin_income_events(admin_id,user_id,amount,category,note,created_at) VALUES(?,?,?,?,?,?)", (admin_id, player_id, amount, category, str(body.note or "")[:300], now))
+        admin_log(admin_id, "grant_money", f"player={player_id}; amount={amount:.2f}; category={category}; income={int(count_income)}; note={str(body.note or '')[:120]}", conn)
+        conn.commit()
+    return {"ok": True, "player_id": player_id, "amount": amount, "category": category, "category_name": allowed[category], "count_as_income": count_income, "state": snapshot(player_id)}
 
 
 @api.post("/api/admin/player/{player_id}/freeze")
@@ -2653,7 +2731,7 @@ def admin_delete_player(player_id: int, body: AdminPlayerDeleteBody, x_telegram_
     backup_path = create_database_backup(f"before_delete_{player_id}")
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
+        for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
             conn.execute(f"DELETE FROM {table} WHERE user_id=?", (player_id,))
         conn.execute("DELETE FROM players WHERE user_id=?", (player_id,))
         admin_log(admin_id, "delete_player", f"player={player_id}; backup={os.path.basename(backup_path)}", conn)

@@ -21,9 +21,9 @@
       .corp-v22-1-refresh{
         width:42px;
         height:42px;
-        border:1px solid rgba(255,212,0,.34);
-        background:radial-gradient(circle at 35% 25%,rgba(255,212,0,.12),transparent 48%),#151517;
-        color:#ffd400;
+        border:1px solid rgba(221,194,139,.34);
+        background:radial-gradient(circle at 35% 25%,rgba(221,194,139,.12),transparent 48%),#151517;
+        color:#ddc28b;
         border-radius:50%;
         display:grid;
         place-items:center;
