@@ -58,7 +58,7 @@
     if(!rows.length){list.innerHTML='<div class="v22-empty">Игроки не найдены</div>';return;}
     list.innerHTML=rows.map(p=>{
       const frozen=!!Number(p.is_frozen||0),blocked=!!Number(p.is_blocked||0);
-      const grant=canPrivateCredit?`<button class="grant" data-act="grant" data-id="${p.user_id}" data-name="${esc(p.corp_name||'Игрок')}">Коррекция баланса</button>`:'';
+      const grant='';
       return `<article class="v22-player"><div class="v22-player-top"><div><h3>${esc(p.corp_name||"Без названия")}</h3><div class="v22-meta">ID: ${esc(p.user_id)} · ${p.username?"@"+esc(p.username):"без username"}</div></div><div class="v22-cap">${money(p.capital)}</div></div><div class="v22-flags">${frozen?'<span class="v22-badge freeze">Заморожен</span>':''}${blocked?'<span class="v22-badge block">Заблокирован</span>':''}${!frozen&&!blocked?'<span class="v22-badge">Активен</span>':''}</div><div class="v22-actions">${grant}<button class="freeze" data-act="freeze" data-id="${p.user_id}" data-enabled="${!frozen}">${frozen?"Разморозить":"Заморозить"}</button><button class="block" data-act="block" data-id="${p.user_id}" data-enabled="${!blocked}">${blocked?"Разблокировать":"Заблокировать"}</button><button class="delete" data-act="delete" data-id="${p.user_id}">Удалить игрока</button></div></article>`;
     }).join("");
   }
@@ -87,6 +87,34 @@
       setTimeout(()=>{amount.focus({preventScroll:true});amount.select();},0);
     });
   }
+
+  window.v262GrantMoney=async function(id){
+    try{
+      if(!canPrivateCredit){
+        const meta=await req('/api/admin/overview');
+        canPrivateCredit=Boolean(meta?.private_capabilities?.grant_money);
+      }
+      if(!canPrivateCredit)return;
+      let name=`Игрок ${id}`;
+      const cached=rows.find(x=>Number(x.user_id)===Number(id));
+      if(cached?.corp_name)name=cached.corp_name;
+      else{
+        try{const detail=await req(`/api/admin/player/${id}`);name=detail?.state?.player?.corp_name||name;}catch{}
+      }
+      const payload=await privateCreditDialog({id:Number(id),name});
+      if(!payload)return;
+      const result=await req(`/api/admin/player/${Number(id)}/grant`,{method:'POST',body:JSON.stringify(payload)});
+      const status=document.querySelector('#v22-status');
+      if(status){status.className='v22-status ok';status.textContent=`Начислено ${money(result.amount)} · новый баланс ${money(result.state?.player?.money)}`;}
+      if(typeof window.toast==='function')window.toast(`Начислено ${money(result.amount)}`);
+      if(typeof window.loadPlayers==='function')await window.loadPlayers();
+      await load();
+      return result;
+    }catch(err){
+      const status=document.querySelector('#v22-status');if(status)status.textContent=err.message;
+      alert(err.message);
+    }
+  };
 
   root.addEventListener("click",async e=>{
     const b=e.target.closest("button[data-act]"); if(!b)return;

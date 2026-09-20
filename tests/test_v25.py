@@ -115,9 +115,18 @@ class FleetUpdateTests(unittest.TestCase):
             self.app.ADMIN_IDS = old_admins
             self.app.OWNER_ID = old_owner
 
-    def test_news_photos_are_official_https_sources(self):
+    def test_news_photos_are_local_fast_assets_with_source_reference(self):
         for stock_id, template in self.app.MARKET_NEWS_TEMPLATES.items():
-            self.assertTrue(template["photo"].startswith("https://"), stock_id)
+            self.assertTrue(template["photo"].startswith(f"/static/news/{stock_id}.webp"), stock_id)
+            self.assertTrue(template.get("source_photo", "").startswith("https://"), stock_id)
+
+    def test_google_uses_canonical_game_name(self):
+        self.assertEqual(self.app.STOCKS["google"]["name"], "Google")
+
+    def test_news_static_assets_are_cacheable(self):
+        r = self.client.get("/static/news/google.webp?v=262")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("max-age=604800", r.headers.get("cache-control", ""))
 
 
 if __name__ == "__main__":
