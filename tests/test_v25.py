@@ -57,9 +57,9 @@ class FleetUpdateTests(unittest.TestCase):
         self.assertEqual(after - before, 6000)
         self.assertEqual(count, 0)
 
-    def test_news_impact_is_ten_percent(self):
-        self.assertEqual(self.app.MARKET_NEWS_MIN_IMPACT, .10)
-        self.assertEqual(self.app.MARKET_NEWS_MAX_IMPACT, .10)
+    def test_news_impact_is_eleven_to_thirty_five_percent(self):
+        self.assertEqual(self.app.MARKET_NEWS_MIN_IMPACT, .11)
+        self.assertEqual(self.app.MARKET_NEWS_MAX_IMPACT, .35)
         self.assertNotIn("ofz_us", self.app.BONDS)
         self.assertNotIn("delivery", self.app.BUSINESSES)
 
@@ -124,9 +124,26 @@ class FleetUpdateTests(unittest.TestCase):
         self.assertEqual(self.app.STOCKS["google"]["name"], "Google")
 
     def test_news_static_assets_are_cacheable(self):
-        r = self.client.get("/static/news/google.webp?v=262")
+        r = self.client.get("/static/news/google.webp?v=263")
         self.assertEqual(r.status_code, 200)
         self.assertIn("max-age=604800", r.headers.get("cache-control", ""))
+
+    def test_news_ui_has_no_fictional_banner_and_uses_contain(self):
+        js = open(os.path.join(os.path.dirname(self.app.__file__), "web", "premium_v25.js"), encoding="utf-8").read()
+        css = open(os.path.join(os.path.dirname(self.app.__file__), "web", "premium_v25.css"), encoding="utf-8").read()
+        self.assertNotIn("Вымышленные события появляются", js)
+        self.assertIn("object-fit:contain!important", css)
+
+    def test_published_news_impact_is_inside_requested_range(self):
+        with sqlite3.connect(self.app.DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("UPDATE stocks SET current_price=(min_price+max_price)/2")
+            self.app._publish_market_news_conn(conn, 1700000000)
+            row = conn.execute("SELECT sentiment,impact_percent FROM market_news ORDER BY id DESC LIMIT 1").fetchone()
+        impact = float(row["impact_percent"])
+        self.assertGreaterEqual(abs(impact), .11)
+        self.assertLessEqual(abs(impact), .35)
+        self.assertGreater(impact, 0) if row["sentiment"] == "good" else self.assertLess(impact, 0)
 
 
 if __name__ == "__main__":

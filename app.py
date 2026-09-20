@@ -205,12 +205,12 @@ STOCKS.update({
 # === CORPORATION V21: MARKET NEWS ===========================================
 MARKET_NEWS_INTERVAL = 60 * 60
 MARKET_NEWS_REACTION_DELAY = 2 * 60
-MARKET_NEWS_MIN_IMPACT = 0.10
-MARKET_NEWS_MAX_IMPACT = 0.10
+MARKET_NEWS_MIN_IMPACT = 0.11
+MARKET_NEWS_MAX_IMPACT = 0.35
 
 MARKET_NEWS_TEMPLATES = {
     "bmw": {
-        "photo": "/static/news/bmw.webp?v=262",
+        "photo": "/static/news/bmw.webp?v=263",
         "source_photo": "https://mediapool.bmwgroup.com/download/edown/pressclub/publicq?actEvent=scaleBig&attachment=1&dokNo=P90639046&quality=90&square=0",
         "good": [
             ("BMW ускоряет выпуск нового поколения электромобилей после сильных предзаказов", "BMW сообщила о спросе на новую электрическую линейку выше внутренних ожиданий. Компания расширяет производственный план и рассчитывает быстрее загрузить европейские заводы, что участники рынка воспринимают как сигнал к росту выручки в премиальном сегменте."),
@@ -224,7 +224,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "kfc": {
-        "photo": "/static/news/kfc.webp?v=262",
+        "photo": "/static/news/kfc.webp?v=263",
         "source_photo": "https://cdn.sanity.io/images/kbqq3e0r/production/cba9f8f3f3cb15d0848b1cc834bb8f0444d10f44-1920x1080.png?q=90&w=1600",
         "good": [
             ("KFC фиксирует ускорение сопоставимых продаж после обновления меню", "Новые позиции меню и рост цифровых заказов поддержали трафик в ресторанах KFC. Сеть отмечает особенно сильную динамику доставки и заказов через приложение, что повышает ожидания по выручке франчайзинговой системы."),
@@ -238,7 +238,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "spotify": {
-        "photo": "/static/news/spotify.webp?v=262",
+        "photo": "/static/news/spotify.webp?v=263",
         "source_photo": "https://storage.googleapis.com/pr-newsroom-wp/1/2025/04/2208232753-1-1440x733.jpg",
         "good": [
             ("Spotify добавила подписчиков быстрее ожиданий и улучшила прогноз", "Музыкальный сервис сообщил о более сильном росте премиальной аудитории, чем ожидал рынок. Одновременно компания продолжила контролировать расходы, усилив ожидания по операционной прибыли и свободному денежному потоку."),
@@ -252,7 +252,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "nvidia": {
-        "photo": "/static/news/nvidia.webp?v=262",
+        "photo": "/static/news/nvidia.webp?v=263",
         "source_photo": "https://nvidianews.nvidia.com/_gallery/get_file/?file_id=677c4a633d63324b1c25f259",
         "good": [
             ("NVIDIA получила новую волну крупных заказов на ИИ-ускорители", "Крупные облачные провайдеры расширили заказы на вычислительные ускорители NVIDIA. Высокий спрос на инфраструктуру искусственного интеллекта усиливает ожидания по выручке дата-центров и загрузке будущих поколений чипов."),
@@ -266,7 +266,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "tesla": {
-        "photo": "/static/news/tesla.webp?v=262",
+        "photo": "/static/news/tesla.webp?v=263",
         "source_photo": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1080,w_1920,c_fit,f_auto,q_auto:best/EN---Displays--Model-S-and-Model-X",
         "good": [
             ("Tesla отчиталась о рекордных поставках после ускорения производства", "Производитель электромобилей сообщил о сильном квартальном объеме поставок, превысившем ожидания рынка. Рост загрузки заводов улучшает перспективы операционного рычага и поддерживает прогноз по денежному потоку."),
@@ -280,7 +280,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "mcdonalds": {
-        "photo": "/static/news/mcdonalds.webp?v=262",
+        "photo": "/static/news/mcdonalds.webp?v=263",
         "source_photo": "https://s7d1.scene7.com/is/image/mcdonalds/restaurants-1%3A3-column-desktop?resmode=sharp2&wid=1600",
         "good": [
             ("McDonald's ускорила продажи благодаря росту цифровых заказов", "Сеть ресторанов сообщила о сильной динамике приложения и программы лояльности. Персональные предложения повышают частоту заказов, а цифровой канал помогает компании эффективнее управлять средним чеком."),
@@ -294,7 +294,7 @@ MARKET_NEWS_TEMPLATES = {
         ],
     },
     "toyota": {
-        "photo": "/static/news/toyota.webp?v=262",
+        "photo": "/static/news/toyota.webp?v=263",
         "source_photo": "https://global.toyota/pages/news/images/2026/05/12/1330_corolla/001.jpg",
         "good": [
             ("Toyota повышает прогноз производства после стабилизации поставок компонентов", "Автопроизводитель сообщил об улучшении доступности ключевых деталей и намерен увеличить выпуск автомобилей. Более высокая загрузка заводов способна поддержать продажи и распределение фиксированных затрат."),
@@ -343,9 +343,9 @@ BUSINESS_UPGRADE_PROFILES = {
 
 
 # Fictional events for the game, not real financial news.
-MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.webp?v=262', 'source_photo': 'https://www.apple.com/newsroom/images/2026/06/apple-unveils-next-generation-of-apple-intelligence-siri-ai-and-more/article/Apple-OS-27-updates-260608_big.jpg.large.jpg', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.webp?v=262', 'source_photo': 'https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Google_Images_25th_hero.width-1200.format-webp.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
-MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.webp?v=262', 'source_photo': 'https://intelcorp.scene7.com/is/image/intelcorp/newsroom-btd-research-facility-092026%3A1920-1080?dpr=off&fmt=png8-alpha&ts=1789649714133', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.webp?v=263', 'source_photo': 'https://www.apple.com/newsroom/images/2026/06/apple-unveils-next-generation-of-apple-intelligence-siri-ai-and-more/article/Apple-OS-27-updates-260608_big.jpg.large.jpg', 'good': [('Предзаказы на новую линейку превысили план', 'Игровое событие. Предзаказы на новую линейку превысили план. Участники рынка пересматривают ожидания в сторону роста.'), ('Сервисы показали рекордную игровую выручку', 'Игровое событие. Сервисы показали рекордную игровую выручку. Участники рынка пересматривают ожидания в сторону роста.'), ('Новые чипы снизили себестоимость устройств', 'Игровое событие. Новые чипы снизили себестоимость устройств. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Сбой поставок задерживает выпуск устройств', 'Игровое событие. Сбой поставок задерживает выпуск устройств. Участники рынка пересматривают ожидания в сторону снижения.'), ('Спрос на смартфоны оказался ниже ожиданий', 'Игровое событие. Спрос на смартфоны оказался ниже ожиданий. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на ремонт сократили маржу', 'Игровое событие. Расходы на ремонт сократили маржу. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.webp?v=263', 'source_photo': 'https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Google_Images_25th_hero.width-1200.format-webp.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
+MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.webp?v=263', 'source_photo': 'https://intelcorp.scene7.com/is/image/intelcorp/newsroom-btd-research-facility-092026%3A1920-1080?dpr=off&fmt=png8-alpha&ts=1789649714133', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
 
 def get_business_upgrade_cfg(bid, upgrade_id):
     return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
@@ -1424,7 +1424,8 @@ def business_capitalization(bid, level, row=None, uid=None, conn=None):
     return round(legacy_cost + upgrade_costs + transport_value, 2)
 
 
-def _eligible_news_stocks(conn, sentiment):
+def _eligible_news_stocks(conn, sentiment, min_room=None):
+    required = MARKET_NEWS_MIN_IMPACT if min_room is None else float(min_room)
     eligible=[]
     for row in conn.execute("SELECT id,current_price,min_price,max_price FROM stocks").fetchall():
         price=float(row["current_price"])
@@ -1433,14 +1434,22 @@ def _eligible_news_stocks(conn, sentiment):
             room=float(row["max_price"])/price-1.0
         else:
             room=1.0-float(row["min_price"])/price
-        if room >= MARKET_NEWS_MIN_IMPACT:
+        if room >= required:
             eligible.append(row["id"])
     return eligible
 
 
 def _publish_market_news_conn(conn, published_at):
     sentiment = "good" if random.random() < 0.5 else "bad"
-    eligible = _eligible_news_stocks(conn, sentiment)
+    # Prefer stocks that can absorb the whole 11–35% shock without hitting a price guardrail.
+    eligible = _eligible_news_stocks(conn, sentiment, MARKET_NEWS_MAX_IMPACT)
+    if not eligible:
+        opposite = "bad" if sentiment == "good" else "good"
+        opposite_eligible = _eligible_news_stocks(conn, opposite, MARKET_NEWS_MAX_IMPACT)
+        if opposite_eligible:
+            sentiment, eligible = opposite, opposite_eligible
+    if not eligible:
+        eligible = _eligible_news_stocks(conn, sentiment, MARKET_NEWS_MIN_IMPACT)
     stock_ids = eligible or [sid for sid in MARKET_NEWS_TEMPLATES if sid in STOCKS]
     last = conn.execute("SELECT stock_id,title FROM market_news ORDER BY published_at DESC,id DESC LIMIT 1").fetchone()
     last_stock_id = str(last["stock_id"]) if last else ""
@@ -1473,6 +1482,21 @@ def process_market_news(now=None):
     now=int(time.time() if now is None else now)
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        # Pending news created by an older release must also follow the current 11–35% rules.
+        pending = conn.execute("SELECT id,stock_id,sentiment,impact_percent FROM market_news WHERE applied_at=0").fetchall()
+        for row in pending:
+            current_impact = abs(float(row["impact_percent"] or 0.0))
+            if MARKET_NEWS_MIN_IMPACT <= current_impact <= MARKET_NEWS_MAX_IMPACT:
+                continue
+            stock = conn.execute("SELECT current_price,min_price,max_price FROM stocks WHERE id=?", (row["stock_id"],)).fetchone()
+            if not stock or float(stock["current_price"] or 0) <= 0:
+                continue
+            price = float(stock["current_price"]); sentiment = str(row["sentiment"])
+            room = (float(stock["max_price"])/price-1.0) if sentiment == "good" else (1.0-float(stock["min_price"])/price)
+            upper = min(MARKET_NEWS_MAX_IMPACT, max(0.0, room))
+            if upper >= MARKET_NEWS_MIN_IMPACT:
+                impact = random.uniform(MARKET_NEWS_MIN_IMPACT, upper)
+                conn.execute("UPDATE market_news SET impact_percent=? WHERE id=?", (impact if sentiment == "good" else -impact, row["id"]))
         market_v24.advance(conn, now, STOCKS, _publish_market_news_conn)
         conn.commit()
 
@@ -2083,7 +2107,7 @@ def seasons_page():
 
 @api.get("/admin")
 def admin_page():
-    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=262")
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=263")
 
 
 def auth(x_telegram_init_data, x_user_id):
