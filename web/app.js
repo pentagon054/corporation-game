@@ -75,7 +75,7 @@ function renderStockMiniChart(history){if(!history?.length)return `<div class="s
 async function renderInvestments(){
   const viewAtStart=investmentView;
   const c=document.querySelector("#content");
-  c.innerHTML=`<div class="empty">Загружаем инвестиции...</div>`;
+  if(!actionBusy28)c.innerHTML=`<div class="empty">Загружаем инвестиции...</div>`;
   try{
     const [stocks,broker,bonds]=await Promise.all([loadStocks(),loadBrokerage(),loadBonds()]);
     if(page!=="investments" || investmentView!==viewAtStart || corporationActiveStockId)return;
@@ -234,7 +234,7 @@ function initWorldMap(){
 
   setTimeout(()=>worldMap.invalidateSize(),150);
 }
-function openCity(cityId){const props=realEstateCache.filter(p=>p.city_id===cityId);if(!props.length)return;const city=props[0].city;document.querySelector("#content").innerHTML=`<section class="realestate-page"><button class="back-button" onclick="renderRealEstate()">← Назад к карте</button><div class="eyebrow">${props[0].country}</div><h2>🏙 ${city}</h2><div class="grid">${props.map(renderPropertyCard).join("")}</div></section>`}
+function openCity(cityId){const props=realEstateCache.filter(p=>p.city_id===cityId);if(!props.length)return;const city=props[0].city;renderStableContent28(document.querySelector("#content"),`<section class="realestate-page"><button class="back-button" onclick="renderRealEstate()">← Назад к карте</button><div class="eyebrow">${props[0].country}</div><h2>🏙 ${city}</h2><div class="grid">${props.map(renderPropertyCard).join("")}</div></section>`)}
 function propertyFallbackImage(p){
   const city=String(p.city||"Corporation").replace(/[<>&"']/g,"");
   const title=String(p.name||"Недвижимость").replace(/[<>&"']/g,"");

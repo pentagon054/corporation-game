@@ -8,6 +8,7 @@ import shutil
 import sqlite3
 import time
 import threading
+import uuid
 from contextlib import closing
 from datetime import datetime
 from urllib.parse import parse_qsl
@@ -347,8 +348,17 @@ MARKET_NEWS_TEMPLATES['apple'] = {'photo': '/static/news/apple.webp?v=263', 'sou
 MARKET_NEWS_TEMPLATES['google'] = {'photo': '/static/news/google.webp?v=263', 'source_photo': 'https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Google_Images_25th_hero.width-1200.format-webp.webp', 'good': [('Облачное подразделение получило крупный контракт', 'Игровое событие. Облачное подразделение получило крупный контракт. Участники рынка пересматривают ожидания в сторону роста.'), ('Рекламная платформа повысила эффективность', 'Игровое событие. Рекламная платформа повысила эффективность. Участники рынка пересматривают ожидания в сторону роста.'), ('Новая модель ИИ привлекла корпоративных клиентов', 'Игровое событие. Новая модель ИИ привлекла корпоративных клиентов. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Клиенты сократили рекламные бюджеты', 'Игровое событие. Клиенты сократили рекламные бюджеты. Участники рынка пересматривают ожидания в сторону снижения.'), ('Сбой облака вызвал компенсации клиентам', 'Игровое событие. Сбой облака вызвал компенсации клиентам. Участники рынка пересматривают ожидания в сторону снижения.'), ('Расходы на вычисления превысили прогноз', 'Игровое событие. Расходы на вычисления превысили прогноз. Участники рынка пересматривают ожидания в сторону снижения.')]}
 MARKET_NEWS_TEMPLATES['intel'] = {'photo': '/static/news/intel.webp?v=263', 'source_photo': 'https://intelcorp.scene7.com/is/image/intelcorp/newsroom-btd-research-facility-092026%3A1920-1080?dpr=off&fmt=png8-alpha&ts=1789649714133', 'good': [('Новый процессор успешно прошёл испытания', 'Игровое событие. Новый процессор успешно прошёл испытания. Участники рынка пересматривают ожидания в сторону роста.'), ('Завод заключил контракт на производство чипов', 'Игровое событие. Завод заключил контракт на производство чипов. Участники рынка пересматривают ожидания в сторону роста.'), ('Выход годных чипов превысил план', 'Игровое событие. Выход годных чипов превысил план. Участники рынка пересматривают ожидания в сторону роста.')], 'bad': [('Запуск техпроцесса отложен', 'Игровое событие. Запуск техпроцесса отложен. Участники рынка пересматривают ожидания в сторону снижения.'), ('Производители ПК сократили заказы', 'Игровое событие. Производители ПК сократили заказы. Участники рынка пересматривают ожидания в сторону снижения.'), ('Модернизация завода потребовала новых расходов', 'Игровое событие. Модернизация завода потребовала новых расходов. Участники рынка пересматривают ожидания в сторону снижения.')]}
 
+def business_type(bid):
+    """Legacy IDs remain valid. Additional instances use type~random UUID.
+
+    All SQL continues to use the full instance ID AND authenticated user ID.
+    Only immutable catalog lookups resolve the type. No save rewrite is needed.
+    """
+    return str(bid).split("~", 1)[0]
+
+
 def get_business_upgrade_cfg(bid, upgrade_id):
-    return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(bid, {}).get(upgrade_id, {})}
+    return {**BUSINESS_UPGRADES[upgrade_id], **BUSINESS_UPGRADE_PROFILES.get(business_type(bid), {}).get(upgrade_id, {})}
 
 
 REAL_ESTATE = {
@@ -1306,8 +1316,8 @@ def _transport_values_conn(conn, uid, bid):
         "SELECT vehicle_id,quantity FROM transport_vehicles WHERE user_id=? AND business_id=? AND quantity>0",
         (uid, bid),
     ).fetchall()}
-    income = sum(TRANSPORT_VEHICLES.get(bid, {}).get(vid, {}).get("income", 0) * qty for vid, qty in vehicles.items())
-    value = sum(TRANSPORT_VEHICLES.get(bid, {}).get(vid, {}).get("cost", 0) * qty for vid, qty in vehicles.items())
+    income = sum(TRANSPORT_VEHICLES.get(business_type(bid), {}).get(vid, {}).get("income", 0) * qty for vid, qty in vehicles.items())
+    value = sum(TRANSPORT_VEHICLES.get(business_type(bid), {}).get(vid, {}).get("cost", 0) * qty for vid, qty in vehicles.items())
     return vehicles, float(income), float(value)
 
 
@@ -1317,9 +1327,10 @@ def transport_hourly_income(uid, conn=None):
         conn = db()
     try:
         total = 0.0
-        for bid in TRANSPORT_VEHICLES:
-            owned = conn.execute("SELECT 1 FROM businesses WHERE user_id=? AND business_id=? AND level>0", (uid, bid)).fetchone()
-            if owned:
+        rows = conn.execute("SELECT business_id FROM businesses WHERE user_id=? AND level>0", (uid,)).fetchall()
+        for row in rows:
+            bid = row["business_id"]
+            if business_type(bid) in TRANSPORT_VEHICLES:
                 total += _transport_values_conn(conn, uid, bid)[1]
         return total
     finally:
@@ -1345,7 +1356,7 @@ def transport_payload(uid, bid, conn=None):
         maxed = level >= len(GARAGE_CAPACITIES) - 1
         next_level = min(level + 1, len(GARAGE_CAPACITIES) - 1)
         items = []
-        for vehicle_id, cfg in TRANSPORT_VEHICLES.get(bid, {}).items():
+        for vehicle_id, cfg in TRANSPORT_VEHICLES.get(business_type(bid), {}).items():
             quantity = vehicles.get(vehicle_id, 0)
             items.append({
                 "id": vehicle_id, **cfg, "quantity": quantity,
@@ -1359,7 +1370,7 @@ def transport_payload(uid, bid, conn=None):
             "upgrading": bool(finishes > now), "upgrade_finishes_at": finishes,
             "upgrade_seconds_left": max(0, finishes - now), "maxed": maxed,
             "next_capacity": GARAGE_CAPACITIES[next_level],
-            "next_upgrade_cost": 0 if maxed else GARAGE_COSTS[bid][next_level],
+            "next_upgrade_cost": 0 if maxed else GARAGE_COSTS[business_type(bid)][next_level],
             "next_upgrade_duration": 0 if maxed else GARAGE_DURATIONS[next_level],
             "garage_invested": round(float(fleet["garage_invested"] or 0) if fleet else 0, 2),
             "vehicle_value": round(vehicle_value, 2), "income": round(income, 2), "vehicles": items,
@@ -1384,34 +1395,34 @@ def business_hourly_income(uid):
     rows = get_business_rows(uid)
     total = 0.0
     for bid, row in rows.items():
-        if bid in BUSINESSES and int(row["level"] or 0) > 0:
-            total += BUSINESSES[bid]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row, bid)
+        if business_type(bid) in BUSINESSES and int(row["level"] or 0) > 0:
+            total += BUSINESSES[business_type(bid)]["base_income"] * int(row["level"]) * business_upgrade_multiplier(row, bid)
     total += transport_hourly_income(uid)
     return total
 
 
 def next_business_cost(bid, level):
-    # Покупка бизнеса происходит один раз. Формула оставлена для совместимости
-    # со старыми уровнями существующих игроков.
-    return int(BUSINESSES[bid]["base_cost"] * (1.45 ** max(0, level)))
+    # Каждый экземпляр покупается отдельно. Формула сохраняет капитализацию
+    # старых экземпляров, у которых уровень выше 1.
+    return int(BUSINESSES[business_type(bid)]["base_cost"] * (1.45 ** max(0, level)))
 
 
 def business_upgrade_cost(bid, upgrade_id):
     cfg = get_business_upgrade_cfg(bid, upgrade_id)
-    return round(BUSINESSES[bid]["base_cost"] * cfg["cost_rate"], 2)
+    return round(BUSINESSES[business_type(bid)]["base_cost"] * cfg["cost_rate"], 2)
 
 
 def business_capitalization(bid, level, row=None, uid=None, conn=None):
-    if bid not in BUSINESSES or level <= 0:
+    if business_type(bid) not in BUSINESSES or level <= 0:
         return 0
     legacy_cost = sum(next_business_cost(bid, lvl) for lvl in range(max(0, level)))
     upgrade_costs = 0
-    if row and bid not in TRANSPORT_VEHICLES:
+    if row and business_type(bid) not in TRANSPORT_VEHICLES:
         for upgrade_id, base_cfg in BUSINESS_UPGRADES.items():
             if int(row[base_cfg["column"]] or 0) > 0:
                 upgrade_costs += business_upgrade_cost(bid, upgrade_id)
     transport_value = 0.0
-    if uid is not None and bid in TRANSPORT_VEHICLES:
+    if uid is not None and business_type(bid) in TRANSPORT_VEHICLES:
         own = conn is None
         if own:
             conn = db()
@@ -1766,7 +1777,7 @@ def player_capital(uid, conn=None):
         for row in conn.execute("SELECT * FROM businesses WHERE user_id=?", (uid,)).fetchall():
             bid = row["business_id"]
             lvl = int(row["level"] or 0)
-            if bid in BUSINESSES and lvl > 0:
+            if business_type(bid) in BUSINESSES and lvl > 0:
                 business_value += business_capitalization(bid, lvl, row, uid, conn)
         stock_value = sum(float(r["current_price"]) * int(r["quantity"]) for r in conn.execute(
             "SELECT h.quantity,s.current_price FROM stock_holdings h JOIN stocks s ON s.id=h.stock_id WHERE h.user_id=? AND h.quantity>0", (uid,)
@@ -1807,7 +1818,7 @@ def _bulk_ranked_players(limit=None):
     fleet_income = {}
     fleet_value = {}
     for r in transport_vehicles:
-        key = (int(r["user_id"]), r["business_id"]); cfg = TRANSPORT_VEHICLES.get(r["business_id"], {}).get(r["vehicle_id"])
+        key = (int(r["user_id"]), r["business_id"]); cfg = TRANSPORT_VEHICLES.get(business_type(r["business_id"]), {}).get(r["vehicle_id"])
         if not cfg:
             continue
         qty = int(r["quantity"] or 0)
@@ -1815,11 +1826,11 @@ def _bulk_ranked_players(limit=None):
         fleet_value[key] = fleet_value.get(key, 0.0) + cfg["cost"] * qty
     for r in businesses:
         uid=int(r["user_id"]); bid=r["business_id"]; lvl=int(r["level"] or 0)
-        if uid in breakdown and bid in BUSINESSES:
+        if uid in breakdown and business_type(bid) in BUSINESSES:
             breakdown[uid]["businesses"] += business_capitalization(bid,lvl,r)
-            if bid in TRANSPORT_VEHICLES:
+            if business_type(bid) in TRANSPORT_VEHICLES:
                 breakdown[uid]["businesses"] += fleet_invested.get((uid,bid),0) + fleet_value.get((uid,bid),0)
-            hourly[uid] += BUSINESSES[bid]["base_income"] * lvl * business_upgrade_multiplier(r,bid)
+            hourly[uid] += BUSINESSES[business_type(bid)]["base_income"] * lvl * business_upgrade_multiplier(r,bid)
             hourly[uid] += fleet_income.get((uid,bid),0)
     for r in stocks:
         uid=int(r["user_id"]); sid=r["stock_id"]; qty=int(r["quantity"] or 0); value=float(r["current_price"])*qty
@@ -1912,38 +1923,46 @@ def snapshot(uid):
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
     businesses = []
-    business_rows = get_business_rows(uid)
-    for bid, business in BUSINESSES.items():
-        row = business_rows.get(bid)
-        level = int(row["level"] if row else 0)
-        owned = level > 0
-        multiplier = business_upgrade_multiplier(row, bid)
-        cap = business_capitalization(bid, level, row, uid)
-        transport = transport_payload(uid, bid) if bid in TRANSPORT_VEHICLES and owned else None
-        upgrades = []
-        for upgrade_id, base_cfg in (() if bid in TRANSPORT_VEHICLES else BUSINESS_UPGRADES.items()):
-            cfg = get_business_upgrade_cfg(bid, upgrade_id)
-            installed = bool(row and int(row[base_cfg["column"]] or 0) > 0)
-            upgrades.append({
-                "id": upgrade_id,
-                "name": cfg["name"],
-                "owned": installed,
-                "cost": business_upgrade_cost(bid, upgrade_id),
-                "income_bonus_percent": round(cfg["income_bonus"] * 100),
-                "income_delta": round(business["base_income"] * level * cfg["income_bonus"], 2) if not installed else 0,
-                "income_after_upgrade": round(business["base_income"] * level * (multiplier + (0 if installed else cfg["income_bonus"])), 2),
+    with closing(db()) as conn:
+        business_rows = get_business_rows(uid, conn)
+        # Keep legacy unowned catalog entries for older clients, followed by every
+        # owned instance. The new client uses business_catalog for new purchases.
+        entries = [(bid, None) for bid in BUSINESSES if bid not in business_rows]
+        entries += list(business_rows.items())
+        for bid, row in entries:
+            if business_type(bid) not in BUSINESSES:
+                continue
+            business = BUSINESSES[business_type(bid)]
+            level = int(row["level"] if row else 0)
+            owned = level > 0
+            multiplier = business_upgrade_multiplier(row, bid)
+            cap = business_capitalization(bid, level, row, uid, conn)
+            transport = transport_payload(uid, bid, conn) if business_type(bid) in TRANSPORT_VEHICLES and owned else None
+            upgrades = []
+            for upgrade_id, base_cfg in (() if business_type(bid) in TRANSPORT_VEHICLES else BUSINESS_UPGRADES.items()):
+                cfg = get_business_upgrade_cfg(bid, upgrade_id)
+                installed = bool(row and int(row[base_cfg["column"]] or 0) > 0)
+                upgrades.append({
+                    "id": upgrade_id,
+                    "name": cfg["name"],
+                    "owned": installed,
+                    "cost": business_upgrade_cost(bid, upgrade_id),
+                    "income_bonus_percent": round(cfg["income_bonus"] * 100),
+                    "income_delta": round(business["base_income"] * level * cfg["income_bonus"], 2) if not installed else 0,
+                    "income_after_upgrade": round(business["base_income"] * level * (multiplier + (0 if installed else cfg["income_bonus"])), 2),
+                })
+            businesses.append({
+                "id": bid, "type_id": business_type(bid), **business, "level": level, "owned": owned,
+                "purchase_cost": business["base_cost"],
+                "next_cost": business["base_cost"],
+                "current_income": round(business["base_income"] * level * multiplier + (transport["income"] if transport else 0), 2),
+                "income_after_purchase": business["base_income"],
+                "capitalization": cap,
+                "sell_price": round(cap * 0.30, 2),
+                "upgrades": upgrades,
+                "transport": transport,
             })
-        businesses.append({
-            "id": bid, **business, "level": level, "owned": owned,
-            "purchase_cost": business["base_cost"],
-            "next_cost": business["base_cost"],
-            "current_income": round(business["base_income"] * level * multiplier + (transport["income"] if transport else 0), 2),
-            "income_after_purchase": business["base_income"],
-            "capitalization": cap,
-            "sell_price": round(cap * 0.30, 2),
-            "upgrades": upgrades,
-            "transport": transport,
-        })
+        conn.commit()
     capital = player_capital(uid)
     now_ms = int(time.time() * 1000)
     return {
@@ -1956,6 +1975,9 @@ def snapshot(uid):
         "gross_hourly_income": round(total_rate, 2),
         "income_breakdown": {"business": round(business_rate, 2), "dividends": round(dividend_rate, 2), "bonds": round(bond_rate, 2), "rent": round(rent_rate, 2)},
         "income_blocked": tax_status["blocked"],
+        "business_catalog": [{"id": key, "type_id": key, **cfg,
+            "owned": False, "level": 0, "purchase_cost": cfg["base_cost"],
+            "income_after_purchase": cfg["base_income"]} for key, cfg in BUSINESSES.items()],
         "businesses": businesses,
         "stats": dict(stats),
         "taxes": tax_status,
@@ -1978,7 +2000,7 @@ def public_profile(uid):
     levels = get_levels(uid)
     with closing(db()) as conn:
         stats = conn.execute("SELECT * FROM stats WHERE user_id=?", (uid,)).fetchone()
-    businesses = [{"id": bid, "name": BUSINESSES[bid]["name"], "description": BUSINESSES[bid]["desc"], "level": level} for bid, level in levels.items() if level > 0 and bid in BUSINESSES]
+    businesses = [{"id": bid, "name": BUSINESSES[business_type(bid)]["name"], "description": BUSINESSES[business_type(bid)]["desc"], "level": level} for bid, level in levels.items() if level > 0 and business_type(bid) in BUSINESSES]
     return {
         "player": {"user_id": player["user_id"], "corp_name": player["corp_name"], "money": player["money"], "created_at": player["created_at"]},
         "capital": player_capital(uid)["total"],
@@ -2150,24 +2172,22 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
     if bid not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     sync_passive_income(uid)
-    cost = BUSINESSES[bid]["base_cost"]
+    cost = BUSINESSES[business_type(bid)]["base_cost"]
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
         existing = conn.execute("SELECT level FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
-        if existing and int(existing["level"] or 0) > 0:
-            conn.rollback()
-            raise HTTPException(400, "Бизнес уже куплен. Развивай его через прокачку.")
+        if existing:
+            bid = business_type(bid) + "~" + uuid.uuid4().hex
         player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
         if float(player["money"]) < cost:
             conn.rollback()
             raise HTTPException(400, f"Не хватает {round(cost-float(player['money']),2)} ₽")
         conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
         conn.execute(
-            "INSERT INTO businesses(user_id,business_id,level) VALUES(?,?,1) "
-            "ON CONFLICT(user_id,business_id) DO UPDATE SET level=1",
+            "INSERT INTO businesses(user_id,business_id,level) VALUES(?,?,1)",
             (uid, bid),
         )
-        if bid in TRANSPORT_VEHICLES:
+        if business_type(bid) in TRANSPORT_VEHICLES:
             conn.execute("INSERT OR IGNORE INTO transport_fleets(user_id,business_id) VALUES(?,?)", (uid, bid))
         conn.execute(
             "UPDATE stats SET total_spent=total_spent+?,companies_bought=companies_bought+1 WHERE user_id=?",
@@ -2180,11 +2200,11 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
 @api.post("/api/business/{bid}/upgrade/{upgrade_id}")
 def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    if bid not in BUSINESSES:
+    if business_type(bid) not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     if upgrade_id not in BUSINESS_UPGRADES:
         raise HTTPException(404, "Прокачка не найдена")
-    if bid in TRANSPORT_VEHICLES:
+    if business_type(bid) in TRANSPORT_VEHICLES:
         raise HTTPException(400, "Этот бизнес развивается через автопарк и расширение гаража")
     sync_passive_income(uid)
     base_cfg = BUSINESS_UPGRADES[upgrade_id]
@@ -2213,7 +2233,7 @@ def upgrade_business(bid: str, upgrade_id: str, x_telegram_init_data: str | None
 @api.post("/api/business/{bid}/sell")
 def sell_business(bid: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    if bid not in BUSINESSES:
+    if business_type(bid) not in BUSINESSES:
         raise HTTPException(404, "Бизнес не найден")
     sync_passive_income(uid)
     with closing(db()) as conn:
@@ -2234,7 +2254,7 @@ def sell_business(bid: str, x_telegram_init_data: str | None = Header(None), x_u
 @api.post("/api/fleet/{bid}/vehicle/{vehicle_id}/buy")
 def buy_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    cfg = TRANSPORT_VEHICLES.get(bid, {}).get(vehicle_id)
+    cfg = TRANSPORT_VEHICLES.get(business_type(bid), {}).get(vehicle_id)
     if not cfg:
         raise HTTPException(404, "Транспорт не найден")
     if body.quantity <= 0 or body.quantity > 100:
@@ -2265,7 +2285,7 @@ def buy_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram_
 @api.post("/api/fleet/{bid}/vehicle/{vehicle_id}/sell")
 def sell_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    cfg = TRANSPORT_VEHICLES.get(bid, {}).get(vehicle_id)
+    cfg = TRANSPORT_VEHICLES.get(business_type(bid), {}).get(vehicle_id)
     if not cfg:
         raise HTTPException(404, "Транспорт не найден")
     if body.quantity <= 0:
@@ -2290,7 +2310,7 @@ def sell_fleet_vehicle(bid: str, vehicle_id: str, body: QuantityBody, x_telegram
 @api.post("/api/fleet/{bid}/garage/upgrade")
 def upgrade_fleet_garage(bid: str, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id)
-    if bid not in TRANSPORT_VEHICLES:
+    if business_type(bid) not in TRANSPORT_VEHICLES:
         raise HTTPException(404, "Автопарк не найден")
     sync_passive_income(uid)
     now = int(time.time())
@@ -2306,7 +2326,7 @@ def upgrade_fleet_garage(bid: str, x_telegram_init_data: str | None = Header(Non
         current = int(fleet["garage_level"] or 0)
         if current >= len(GARAGE_CAPACITIES)-1:
             conn.rollback(); raise HTTPException(400, "Достигнут максимум: 100 мест")
-        target = current + 1; cost = float(GARAGE_COSTS[bid][target]); duration = int(GARAGE_DURATIONS[target])
+        target = current + 1; cost = float(GARAGE_COSTS[business_type(bid)][target]); duration = int(GARAGE_DURATIONS[target])
         money = float(conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()["money"])
         if money < cost:
             conn.rollback(); raise HTTPException(400, f"Не хватает {cost-money:.2f} ₽")
@@ -2640,7 +2660,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         stocks_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM stock_holdings").fetchone()["c"] or 0)
         bonds_count = int(conn.execute("SELECT COALESCE(SUM(quantity),0) c FROM bond_holdings").fetchone()["c"] or 0)
         leader = capital_rows[0] if capital_rows else None
-        popular_business = conn.execute("SELECT business_id,COUNT(*) c FROM businesses WHERE level>0 GROUP BY business_id ORDER BY c DESC LIMIT 1").fetchone()
+        popular_business = conn.execute("SELECT CASE WHEN instr(business_id,'~')>0 THEN substr(business_id,1,instr(business_id,'~')-1) ELSE business_id END AS business_id,COUNT(*) c FROM businesses WHERE level>0 GROUP BY 1 ORDER BY c DESC LIMIT 1").fetchone()
         popular_stock = conn.execute("SELECT stock_id,SUM(quantity) q FROM stock_holdings WHERE quantity>0 GROUP BY stock_id ORDER BY q DESC LIMIT 1").fetchone()
         log_sql = "SELECT * FROM admin_logs ORDER BY id DESC LIMIT 20" if OWNER_ID is not None and admin_id == OWNER_ID else "SELECT * FROM admin_logs WHERE action != 'grant_money' ORDER BY id DESC LIMIT 20"
         logs = [dict(r) for r in conn.execute(log_sql).fetchall()]
@@ -2661,7 +2681,7 @@ def admin_overview(x_telegram_init_data: str | None = Header(None), x_user_id: s
         "popular_stock": ({"id": popular_stock["stock_id"], "name": STOCKS.get(popular_stock["stock_id"], {}).get("name", popular_stock["stock_id"]), "quantity": int(popular_stock["q"] or 0)} if popular_stock else None),
         "last_backup": last_backup,
         "logs": logs,
-        "version": "v26.2",
+        "version": "v28.0",
     }
     if OWNER_ID is not None and admin_id == OWNER_ID:
         payload["private_capabilities"] = {"grant_money": True}

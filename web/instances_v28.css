@@ -1,0 +1,13 @@
+body.secondary-page28 .app>.hero,body.secondary-page28 .app>.balance{display:none!important}
+.business-tabs28{display:flex;gap:8px;margin:0 0 18px}
+.business-tabs28 button{flex:1;border:1px solid #343436;border-radius:12px;padding:12px 8px;background:#171719;color:#bdbdbf;font:inherit;font-size:13px;cursor:pointer}
+.business-tabs28 [aria-selected=true]{background:#323031;color:#f5eee7;border-color:#8e7c69}
+.instance-label28{display:block;font-size:11px;color:#aaa;font-weight:400;margin-top:5px}
+.trade-slider28{width:100%;margin:20px 0;accent-color:#bba58c;min-height:30px;touch-action:pan-y}
+.trade-summary28{display:grid;gap:8px;margin-bottom:16px;text-align:center;font-variant-numeric:tabular-nums}
+.trade-summary28 strong{font-size:24px}.trade-summary28 small{color:#aaa;font-size:12px;line-height:1.5}
+#content{overflow-anchor:none}.business-card25 button{transition:background-color .14s ease,opacity .14s ease,transform .14s ease}
+.business-card25 button:active:not(:disabled){transform:scale(.985)}
+.modal:not(.hidden) .modal-card{animation:modal-enter28 .14s ease-out}
+@keyframes modal-enter28{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.modal-card{animation:none!important}.business-card25 button{transition:none!important}}

@@ -81,7 +81,7 @@ for(const button of document.querySelectorAll('.tab')){
 
 let refreshing24=false;
 async function liveRefresh24(){
-  if(document.hidden||refreshing24||corporationTradeBusy)return;
+  if(document.hidden||refreshing24||corporationTradeBusy||(typeof actionBusy28!=='undefined'&&actionBusy28)||!document.querySelector('#modal').classList.contains('hidden'))return;
   refreshing24=true;
   try{
     state=await api('/api/state');renderHeader();
