@@ -121,6 +121,13 @@ REAL_ESTATE_GROWTH_INTERVAL = 12 * 60 * 60
 REAL_ESTATE_GROWTH_STEP = 0.01
 REAL_ESTATE_DAILY_GROWTH = (1 + REAL_ESTATE_GROWTH_STEP) ** 2 - 1
 
+# Business portfolio slots (v29). Players start with 10 simultaneous businesses.
+BASE_BUSINESS_SLOTS = 10
+BUSINESS_SLOT_COOLDOWN = 60 * 60
+BUSINESS_SLOT_BASE_COST = 100000.0
+BUSINESS_SLOT_COST_MULTIPLIER = 1.5
+MAX_BUSINESS_SLOTS = 100
+
 BUSINESSES = {
     "coffee": {"name": "Кофейня", "desc": "Городская точка с понятной экономикой и стабильным спросом.", "base_cost": 5000, "base_income": 300},
     "taxi": {"name": "Такси", "desc": "Пассажирские перевозки. Доход зависит от состава автопарка.", "base_cost": 35000, "base_income": 0, "transport": True},
@@ -903,6 +910,11 @@ def init_db():
             quantity INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY(user_id, business_id, vehicle_id)
         );
+        CREATE TABLE IF NOT EXISTS business_slot_limits (
+            user_id INTEGER PRIMARY KEY,
+            slots INTEGER NOT NULL DEFAULT 10,
+            last_expanded_at INTEGER NOT NULL DEFAULT 0
+        );
         CREATE TABLE IF NOT EXISTS taxes (
             user_id INTEGER PRIMARY KEY,
             unpaid REAL NOT NULL DEFAULT 0,
@@ -1006,6 +1018,14 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_season_results_season_place ON season_results(season_id, place);
         """)
         conn.execute("UPDATE players SET last_income_sync=? WHERE last_income_sync=0", (now,))
+        # v29 migration: grandfather existing portfolios above the new 10-slot base.
+        # No business is deleted and no retroactive fee is charged.
+        conn.execute(
+            "INSERT INTO business_slot_limits(user_id,slots,last_expanded_at) "
+            "SELECT user_id,COUNT(*),0 FROM businesses WHERE level>0 GROUP BY user_id HAVING COUNT(*)>? "
+            "ON CONFLICT(user_id) DO UPDATE SET slots=MAX(business_slot_limits.slots,excluded.slots)",
+            (BASE_BUSINESS_SLOTS,),
+        )
         # V25 migrations preserve the value of retired assets.
         conn.execute("UPDATE businesses SET business_id='taxi' WHERE business_id='delivery' AND NOT EXISTS (SELECT 1 FROM businesses b2 WHERE b2.user_id=businesses.user_id AND b2.business_id='taxi')")
         conn.execute("DELETE FROM businesses WHERE business_id='delivery'")
@@ -1126,7 +1146,7 @@ def reset_stock_market_conn(conn, now):
 
 
 def reset_all_progress_conn(conn, now):
-    for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
+    for table in ("transport_vehicles", "transport_fleets", "businesses", "business_slot_limits", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "real_estate_holdings", "stats", "taxes"):
         conn.execute(f"DELETE FROM {table}")
     conn.execute(
         "UPDATE players SET money=?,last_collect=0,last_income_sync=?",
@@ -1374,6 +1394,43 @@ def transport_payload(uid, bid, conn=None):
             "next_upgrade_duration": 0 if maxed else GARAGE_DURATIONS[next_level],
             "garage_invested": round(float(fleet["garage_invested"] or 0) if fleet else 0, 2),
             "vehicle_value": round(vehicle_value, 2), "income": round(income, 2), "vehicles": items,
+        }
+    finally:
+        if own:
+            conn.close()
+
+
+def business_slot_cost(slots):
+    slots = max(BASE_BUSINESS_SLOTS, int(slots))
+    exponent = slots - BASE_BUSINESS_SLOTS
+    return round(BUSINESS_SLOT_BASE_COST * (BUSINESS_SLOT_COST_MULTIPLIER ** exponent), 2)
+
+
+def business_slot_status(uid, conn=None, now=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        now = int(now or time.time())
+        row = conn.execute("SELECT slots,last_expanded_at FROM business_slot_limits WHERE user_id=?", (uid,)).fetchone()
+        slots = max(BASE_BUSINESS_SLOTS, int(row["slots"] if row else BASE_BUSINESS_SLOTS))
+        last_expanded_at = int(row["last_expanded_at"] if row else 0)
+        used = int(conn.execute("SELECT COUNT(*) AS c FROM businesses WHERE user_id=? AND level>0", (uid,)).fetchone()["c"] or 0)
+        can_expand_at = last_expanded_at + BUSINESS_SLOT_COOLDOWN if last_expanded_at else 0
+        seconds_left = max(0, can_expand_at - now)
+        return {
+            "base_slots": BASE_BUSINESS_SLOTS,
+            "slots": slots,
+            "used": used,
+            "available": max(0, slots - used),
+            "next_slot": slots + 1 if slots < MAX_BUSINESS_SLOTS else slots,
+            "next_cost": 0 if slots >= MAX_BUSINESS_SLOTS else business_slot_cost(slots),
+            "cooldown_seconds": BUSINESS_SLOT_COOLDOWN,
+            "last_expanded_at": last_expanded_at,
+            "can_expand_at": can_expand_at,
+            "seconds_left": seconds_left,
+            "can_expand_now": slots < MAX_BUSINESS_SLOTS and seconds_left == 0,
+            "max_slots": MAX_BUSINESS_SLOTS,
         }
     finally:
         if own:
@@ -1975,6 +2032,7 @@ def snapshot(uid):
         "gross_hourly_income": round(total_rate, 2),
         "income_breakdown": {"business": round(business_rate, 2), "dividends": round(dividend_rate, 2), "bonds": round(bond_rate, 2), "rent": round(rent_rate, 2)},
         "income_blocked": tax_status["blocked"],
+        "business_slots": business_slot_status(uid),
         "business_catalog": [{"id": key, "type_id": key, **cfg,
             "owned": False, "level": 0, "purchase_cost": cfg["base_cost"],
             "income_after_purchase": cfg["base_income"]} for key, cfg in BUSINESSES.items()],
@@ -2175,6 +2233,10 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
     cost = BUSINESSES[business_type(bid)]["base_cost"]
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        slot_status = business_slot_status(uid, conn)
+        if slot_status["used"] >= slot_status["slots"]:
+            conn.rollback()
+            raise HTTPException(400, f"Все {slot_status['slots']} слотов заняты. Расширь лимит бизнесов на вкладке Главная.")
         existing = conn.execute("SELECT level FROM businesses WHERE user_id=? AND business_id=?", (uid, bid)).fetchone()
         if existing:
             bid = business_type(bid) + "~" + uuid.uuid4().hex
@@ -2195,6 +2257,34 @@ def buy_business(bid: str, x_telegram_init_data: str | None = Header(None), x_us
         )
         conn.commit()
     return snapshot(uid)
+
+
+@api.post("/api/business-slots/expand")
+def expand_business_slots(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    sync_passive_income(uid)
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        status = business_slot_status(uid, conn, now)
+        if status["slots"] >= MAX_BUSINESS_SLOTS:
+            conn.rollback(); raise HTTPException(400, "Достигнут максимальный лимит бизнесов")
+        if status["seconds_left"] > 0:
+            conn.rollback(); raise HTTPException(429, f"Следующий слот можно открыть через {status['seconds_left']} сек.")
+        cost = float(status["next_cost"])
+        player = conn.execute("SELECT money FROM players WHERE user_id=?", (uid,)).fetchone()
+        if not player or float(player["money"]) < cost:
+            conn.rollback(); raise HTTPException(400, f"Недостаточно денег. Нужно {cost:.2f} ₽")
+        new_slots = status["slots"] + 1
+        conn.execute("UPDATE players SET money=money-? WHERE user_id=?", (cost, uid))
+        conn.execute(
+            "INSERT INTO business_slot_limits(user_id,slots,last_expanded_at) VALUES(?,?,?) "
+            "ON CONFLICT(user_id) DO UPDATE SET slots=excluded.slots,last_expanded_at=excluded.last_expanded_at",
+            (uid, new_slots, now),
+        )
+        conn.execute("UPDATE stats SET total_spent=total_spent+? WHERE user_id=?", (cost, uid))
+        conn.commit()
+    return {"cost": round(cost, 2), "slots": new_slots, "state": snapshot(uid)}
 
 
 @api.post("/api/business/{bid}/upgrade/{upgrade_id}")
@@ -2815,7 +2905,7 @@ def admin_delete_player(player_id: int, body: AdminPlayerDeleteBody, x_telegram_
     backup_path = create_database_backup(f"before_delete_{player_id}")
     with closing(db()) as conn:
         conn.execute("BEGIN IMMEDIATE")
-        for table in ("transport_vehicles", "transport_fleets", "businesses", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
+        for table in ("transport_vehicles", "transport_fleets", "businesses", "business_slot_limits", "daily_profit", "income_breakdown", "admin_income_events", "stock_holdings", "bond_holdings", "taxes", "real_estate_holdings", "stats", "season_results"):
             conn.execute(f"DELETE FROM {table} WHERE user_id=?", (player_id,))
         conn.execute("DELETE FROM players WHERE user_id=?", (player_id,))
         admin_log(admin_id, "delete_player", f"player={player_id}; backup={os.path.basename(backup_path)}", conn)
