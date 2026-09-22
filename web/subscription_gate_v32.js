@@ -1,4 +1,4 @@
-/* Corporation v32.1: required channel gate without startup flash + safe game bootstrap. */
+/* Corporation v32.2: coin splash; required channel gate without startup flash + safe game bootstrap. */
 (function () {
   'use strict';
 
@@ -12,6 +12,27 @@
   const checkBtn = document.getElementById('subscriptionCheck32');
   const statusEl = document.getElementById('subscriptionStatus32');
   const appEl = document.querySelector('main.app');
+  const splash = document.getElementById('corporationSplash322');
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  let splashStarted = performance.now();
+  let splashHideTimer;
+
+  function beginSplash() {
+    clearTimeout(splashHideTimer);
+    splashStarted = performance.now();
+    if (splash) {
+      splash.hidden = false;
+      splash.classList.remove('leaving');
+    }
+  }
+
+  async function finishSplash() {
+    await delay(Math.max(0, 1600 - (performance.now() - splashStarted)));
+    if (!splash) return;
+    splash.classList.add('leaving');
+    splashHideTimer = setTimeout(() => { splash.hidden = true; }, 300);
+  }
+
   let channelUrl = 'https://t.me/Corpgame054';
   let checking = false;
   let gameStarted = false;
@@ -59,8 +80,15 @@
       const script = document.createElement('script');
       script.src = src;
       script.async = false;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Не удалось загрузить ' + src));
+      const timeout = setTimeout(() => {
+        script.remove();
+        reject(new Error('Истекло время загрузки ' + src));
+      }, 20000);
+      script.onload = () => { clearTimeout(timeout); resolve(); };
+      script.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Не удалось загрузить ' + src));
+      };
       document.body.appendChild(script);
     });
   }
@@ -140,18 +168,23 @@
   async function checkSubscription() {
     if (checking || gameStarted) return;
 
+    beginSplash();
     if (!tg || !tg.initData) {
       showGate('Откройте Corporation через Telegram-бота, чтобы подтвердить аккаунт.', 'error');
+      await finishSplash();
       return;
     }
 
     setChecking(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
     try {
       const response = await fetch('/api/subscription/check', {
         method: 'GET',
         headers: { 'X-Telegram-Init-Data': tg.initData },
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: controller.signal
       });
 
       let data = {};
@@ -161,6 +194,7 @@
         throw new Error(data.detail || 'Не удалось проверить подписку.');
       }
 
+      clearTimeout(timeout);
       if (data.channel_url) channelUrl = data.channel_url;
 
       if (data.subscribed === true) {
@@ -170,8 +204,10 @@
 
       showGate('Подписка пока не найдена. Подпишитесь на канал и нажмите «Проверить подписку».', 'warning');
     } catch (error) {
-      showGate(error && error.message ? error.message : 'Ошибка проверки подписки.', 'error');
+      showGate(error && error.name === 'AbortError' ? 'Проверка затянулась. Проверьте интернет и нажмите «Проверить подписку».' : (error && error.message ? error.message : 'Ошибка проверки подписки.'), 'error');
     } finally {
+      clearTimeout(timeout);
+      await finishSplash();
       setChecking(false);
     }
   }

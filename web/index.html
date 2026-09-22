@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#09090a">
   <title>Corporation</title>
+  <style>
+    html,body{background:#09090a}
+    .corporation-splash322{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:radial-gradient(ellipse at center, #211b0d 0%, #09090a 62%);color:#ead8aa;font-family:Arial,sans-serif;opacity:1;transition:opacity .28s ease;overflow:hidden;touch-action:none}
+    .corporation-splash322[hidden]{display:none!important}
+    .corporation-splash322.leaving{opacity:0;pointer-events:none}
+    .corporation-coin-stage322{perspective:700px;width:112px;height:112px}
+    .corporation-coin322{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:corporation-spin322 1.6s linear infinite}
+    .corporation-coin-face322{box-sizing:border-box;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:5px solid #c69639;border-radius:50%;background:linear-gradient(135deg,#fff0b0 0%,#e6bb59 34%,#b77d24 62%,#ffe69b 100%);box-shadow:inset 0 0 0 3px #fbe29a,inset 0 0 0 5px #a67627,0 0 32px #dfaf3320;color:#54380e;backface-visibility:hidden;transform:translateZ(4px)}
+    .corporation-coin-face322.back{transform:rotateY(180deg) translateZ(4px)}
+    .corporation-coin-face322 b{font-size:52px;line-height:1;font-weight:900;text-shadow:0 1px #fff1ba}
+    .corporation-coin-face322 small{font-size:7px;font-weight:800;letter-spacing:1px;margin-top:6px}
+    .corporation-splash-title322{font-size:16px;font-weight:800;letter-spacing:4px;margin:0}
+    .corporation-splash-status322{font-size:12px;color:#a39a87;margin:0;letter-spacing:.3px}
+    @keyframes corporation-spin322{from{transform:rotateY(0deg) rotateZ(-8deg)}to{transform:rotateY(360deg) rotateZ(-8deg)}}
+    @media(prefers-reduced-motion:reduce){.corporation-coin322{animation:none}.corporation-splash322{transition:none}}
+  </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="/static/style.css?v=280">
   <link rel="stylesheet" href="/static/premium_v24.css?v=280">
@@ -15,9 +31,17 @@
   <link rel="stylesheet" href="/static/v29.css?v=290">
   <link rel="stylesheet" href="/static/gestures_v30.css?v=300">
   <link rel="stylesheet" href="/static/v31.css?v=310">
-  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=321">
+  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=322">
 </head>
 <body class="subscription-checking32">
+  <div class="corporation-splash322" id="corporationSplash322" role="status" aria-live="polite" aria-label="Загрузка Corporation">
+    <div class="corporation-coin-stage322" aria-hidden="true"><div class="corporation-coin322">
+      <div class="corporation-coin-face322"><b>C</b><small>CORPORATION</small></div>
+      <div class="corporation-coin-face322 back"><b>C</b><small>CORPORATION</small></div>
+    </div></div>
+    <p class="corporation-splash-title322">CORPORATION</p>
+    <p class="corporation-splash-status322">Загружаем вашу корпорацию…</p>
+  </div>
   <section class="subscription-gate32" id="subscriptionGate32" aria-live="polite" hidden>
     <div class="subscription-card32">
       <div class="subscription-mark32">C</div>
@@ -108,6 +132,6 @@
     </div>
   </div>
 
-  <script src="/static/subscription_gate_v32.js?v=321"></script>
+  <script src="/static/subscription_gate_v32.js?v=322"></script>
 </body>
 </html>
