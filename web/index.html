@@ -12,9 +12,9 @@
     .corporation-splash322.leaving{opacity:0;pointer-events:none}
     .corporation-coin-stage322{position:relative;perspective:800px;width:128px;height:128px;margin-bottom:10px}
     .corporation-coin-stage322::after{content:"";position:absolute;left:14px;right:14px;bottom:-24px;height:12px;border-radius:50%;background:radial-gradient(ellipse,#e5ac3d38,transparent 70%);animation:corporation-shadow323 1.6s ease-in-out infinite}
-    .corporation-coin322{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:corporation-spin322 1.6s linear infinite;will-change:transform}
-    .corporation-coin-edge323{position:absolute;left:50%;top:50%;width:6.5px;height:16px;backface-visibility:hidden;background:linear-gradient(90deg,#5b360b 0%,#c99332 16%,#ffe69a 32%,#c18a29 52%,#795019 80%,#e1b551 100%);box-shadow:inset 0 2px 1px #ffdc82,inset 0 -2px 1px #684011}
-    .corporation-coin-face322{box-sizing:border-box;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid #d2a04b;border-radius:50%;background:conic-gradient(from 25deg,#9f6a22,#ffe7a3 15%,#d2a44f 29%,#98611c 43%,#f7d67c 60%,#fff0bb 74%,#be8c36 88%,#9f6a22);box-shadow:inset 0 0 0 2px #fff0af,inset 0 0 0 5px #95601f,inset 0 0 0 7px #ebc56c,inset 0 0 12px 9px #70451155;color:#ae7929;backface-visibility:hidden;transform:translateZ(8px)}
+    .corporation-coin322{position:relative;width:100%;height:100%;-webkit-transform-style:preserve-3d;transform-style:preserve-3d;animation:corporation-spin322 1.6s linear infinite;will-change:transform}
+    .corporation-coin-edge323{position:absolute;left:50%;top:50%;width:6.5px;height:16px;-webkit-backface-visibility:hidden;backface-visibility:hidden;background:linear-gradient(90deg,#5b360b 0%,#c99332 16%,#ffe69a 32%,#c18a29 52%,#795019 80%,#e1b551 100%);box-shadow:inset 0 2px 1px #ffdc82,inset 0 -2px 1px #684011}
+    .corporation-coin-face322{box-sizing:border-box;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid #d2a04b;border-radius:50%;background:conic-gradient(from 25deg,#9f6a22,#ffe7a3 15%,#d2a44f 29%,#98611c 43%,#f7d67c 60%,#fff0bb 74%,#be8c36 88%,#9f6a22);box-shadow:inset 0 0 0 2px #fff0af,inset 0 0 0 5px #95601f,inset 0 0 0 7px #ebc56c,inset 0 0 12px 9px #70451155;color:#ae7929;-webkit-backface-visibility:hidden;backface-visibility:hidden;transform:translateZ(8px)}
     .corporation-coin-face322::before{content:"";position:absolute;inset:10px;border:2px dotted #80501e;border-radius:50%;box-shadow:0 1px #fff0b9}
     .corporation-coin-face322::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 25%,#fff7d585 45%,transparent 65%);background-size:240% 100%;animation:corporation-shine323 1.6s linear infinite;pointer-events:none}
     .corporation-coin-face322.back{transform:rotateY(180deg) translateZ(8px)}
@@ -25,7 +25,7 @@
     @keyframes corporation-spin322{from{transform:rotateX(-16deg) rotateZ(-12deg) rotateY(20deg)}to{transform:rotateX(-16deg) rotateZ(-12deg) rotateY(380deg)}}
     @keyframes corporation-shine323{from{background-position:120% 0}to{background-position:-120% 0}}
     @keyframes corporation-shadow323{0%,50%,100%{transform:scaleX(1);opacity:.8}25%,75%{transform:scaleX(.55);opacity:.45}}
-    @media(prefers-reduced-motion:reduce){.corporation-coin322{animation:none;transform:rotateX(-16deg) rotateZ(-12deg) rotateY(25deg)}.corporation-coin-face322::after,.corporation-coin-stage322::after{animation:none}.corporation-splash322{transition:none}}
+    @media(prefers-reduced-motion:reduce){.corporation-coin-face322::after,.corporation-coin-stage322::after{animation:none}.corporation-splash322{transition:none}}
   </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="/static/style.css?v=280">
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="/static/v29.css?v=290">
   <link rel="stylesheet" href="/static/gestures_v30.css?v=300">
   <link rel="stylesheet" href="/static/v31.css?v=310">
-  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=323">
+  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=324">
 </head>
 <body class="subscription-checking32">
   <div class="corporation-splash322" id="corporationSplash322" role="status" aria-live="polite" aria-label="Загрузка Corporation">
@@ -202,6 +202,6 @@
     </div>
   </div>
 
-  <script src="/static/subscription_gate_v32.js?v=323"></script>
+  <script src="/static/subscription_gate_v32.js?v=324"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Corporation v32.2: coin splash; required channel gate without startup flash + safe game bootstrap. */
+/* Corporation v32.4: mobile-safe frame-driven 3D coin; required channel gate without startup flash + safe game bootstrap. */
 (function () {
   'use strict';
 
@@ -16,6 +16,30 @@
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   let splashStarted = performance.now();
   let splashHideTimer;
+  const coin = document.querySelector('.corporation-coin322');
+  let coinFrame = null;
+
+  function stopCoin() {
+    if (coinFrame !== null) window.cancelAnimationFrame(coinFrame);
+    coinFrame = null;
+  }
+
+  function startCoin() {
+    stopCoin();
+    if (!coin) return;
+    // Keep the loader independent of game-wide CSS animation/performance rules.
+    coin.style.setProperty('animation', 'none', 'important');
+    coin.style.setProperty('transition', 'none', 'important');
+    const started = performance.now();
+    function tick(now) {
+      if (!splash || splash.hidden) { stopCoin(); return; }
+      const angle = 20 + ((now - started) % 1600) * 360 / 1600;
+      coin.style.setProperty('transform',
+        'rotateX(-16deg) rotateZ(-12deg) rotateY(' + angle + 'deg)', 'important');
+      coinFrame = window.requestAnimationFrame(tick);
+    }
+    tick(started);
+  }
 
   function beginSplash() {
     clearTimeout(splashHideTimer);
@@ -24,13 +48,17 @@
       splash.hidden = false;
       splash.classList.remove('leaving');
     }
+    startCoin();
   }
 
   async function finishSplash() {
     await delay(Math.max(0, 1600 - (performance.now() - splashStarted)));
     if (!splash) return;
     splash.classList.add('leaving');
-    splashHideTimer = setTimeout(() => { splash.hidden = true; }, 300);
+    splashHideTimer = setTimeout(() => {
+      splash.hidden = true;
+      stopCoin();
+    }, 300);
   }
 
   let channelUrl = 'https://t.me/Corpgame054';
