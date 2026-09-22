@@ -10,16 +10,22 @@
     .corporation-splash322{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:radial-gradient(ellipse at center, #211b0d 0%, #09090a 62%);color:#ead8aa;font-family:Arial,sans-serif;opacity:1;transition:opacity .28s ease;overflow:hidden;touch-action:none}
     .corporation-splash322[hidden]{display:none!important}
     .corporation-splash322.leaving{opacity:0;pointer-events:none}
-    .corporation-coin-stage322{perspective:700px;width:112px;height:112px}
-    .corporation-coin322{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:corporation-spin322 1.6s linear infinite}
-    .corporation-coin-face322{box-sizing:border-box;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:5px solid #c69639;border-radius:50%;background:linear-gradient(135deg,#fff0b0 0%,#e6bb59 34%,#b77d24 62%,#ffe69b 100%);box-shadow:inset 0 0 0 3px #fbe29a,inset 0 0 0 5px #a67627,0 0 32px #dfaf3320;color:#54380e;backface-visibility:hidden;transform:translateZ(4px)}
-    .corporation-coin-face322.back{transform:rotateY(180deg) translateZ(4px)}
-    .corporation-coin-face322 b{font-size:52px;line-height:1;font-weight:900;text-shadow:0 1px #fff1ba}
-    .corporation-coin-face322 small{font-size:7px;font-weight:800;letter-spacing:1px;margin-top:6px}
+    .corporation-coin-stage322{position:relative;perspective:800px;width:128px;height:128px;margin-bottom:10px}
+    .corporation-coin-stage322::after{content:"";position:absolute;left:14px;right:14px;bottom:-24px;height:12px;border-radius:50%;background:radial-gradient(ellipse,#e5ac3d38,transparent 70%);animation:corporation-shadow323 1.6s ease-in-out infinite}
+    .corporation-coin322{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:corporation-spin322 1.6s linear infinite;will-change:transform}
+    .corporation-coin-edge323{position:absolute;left:50%;top:50%;width:6.5px;height:16px;backface-visibility:hidden;background:linear-gradient(90deg,#5b360b 0%,#c99332 16%,#ffe69a 32%,#c18a29 52%,#795019 80%,#e1b551 100%);box-shadow:inset 0 2px 1px #ffdc82,inset 0 -2px 1px #684011}
+    .corporation-coin-face322{box-sizing:border-box;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid #d2a04b;border-radius:50%;background:conic-gradient(from 25deg,#9f6a22,#ffe7a3 15%,#d2a44f 29%,#98611c 43%,#f7d67c 60%,#fff0bb 74%,#be8c36 88%,#9f6a22);box-shadow:inset 0 0 0 2px #fff0af,inset 0 0 0 5px #95601f,inset 0 0 0 7px #ebc56c,inset 0 0 12px 9px #70451155;color:#ae7929;backface-visibility:hidden;transform:translateZ(8px)}
+    .corporation-coin-face322::before{content:"";position:absolute;inset:10px;border:2px dotted #80501e;border-radius:50%;box-shadow:0 1px #fff0b9}
+    .corporation-coin-face322::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 25%,#fff7d585 45%,transparent 65%);background-size:240% 100%;animation:corporation-shine323 1.6s linear infinite;pointer-events:none}
+    .corporation-coin-face322.back{transform:rotateY(180deg) translateZ(8px)}
+    .corporation-coin-face322 b{font-size:60px;line-height:1;font-weight:900;color:#bd8e3c;text-shadow:0 1px 0 #fff2b8,0 -1px 0 #60380c,1px 0 0 #f9de91,2px 2px 0 #78501d,3px 3px 2px #623d1555}
+    .corporation-coin-face322 small{font-size:7px;font-weight:800;letter-spacing:1px;margin-top:6px;color:#674315;text-shadow:0 1px #ffe7a3}
     .corporation-splash-title322{font-size:16px;font-weight:800;letter-spacing:4px;margin:0}
     .corporation-splash-status322{font-size:12px;color:#a39a87;margin:0;letter-spacing:.3px}
-    @keyframes corporation-spin322{from{transform:rotateY(0deg) rotateZ(-8deg)}to{transform:rotateY(360deg) rotateZ(-8deg)}}
-    @media(prefers-reduced-motion:reduce){.corporation-coin322{animation:none}.corporation-splash322{transition:none}}
+    @keyframes corporation-spin322{from{transform:rotateX(-16deg) rotateZ(-12deg) rotateY(20deg)}to{transform:rotateX(-16deg) rotateZ(-12deg) rotateY(380deg)}}
+    @keyframes corporation-shine323{from{background-position:120% 0}to{background-position:-120% 0}}
+    @keyframes corporation-shadow323{0%,50%,100%{transform:scaleX(1);opacity:.8}25%,75%{transform:scaleX(.55);opacity:.45}}
+    @media(prefers-reduced-motion:reduce){.corporation-coin322{animation:none;transform:rotateX(-16deg) rotateZ(-12deg) rotateY(25deg)}.corporation-coin-face322::after,.corporation-coin-stage322::after{animation:none}.corporation-splash322{transition:none}}
   </style>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="/static/style.css?v=280">
@@ -31,11 +37,75 @@
   <link rel="stylesheet" href="/static/v29.css?v=290">
   <link rel="stylesheet" href="/static/gestures_v30.css?v=300">
   <link rel="stylesheet" href="/static/v31.css?v=310">
-  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=322">
+  <link rel="stylesheet" href="/static/subscription_gate_v32.css?v=323">
 </head>
 <body class="subscription-checking32">
   <div class="corporation-splash322" id="corporationSplash322" role="status" aria-live="polite" aria-label="Загрузка Corporation">
     <div class="corporation-coin-stage322" aria-hidden="true"><div class="corporation-coin322">
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(0deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(5.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(11.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(16.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(22.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(28.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(33.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(39.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(45deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(50.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(56.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(61.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(67.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(73.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(78.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(84.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(90deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(95.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(101.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(106.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(112.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(118.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(123.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(129.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(135deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(140.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(146.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(151.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(157.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(163.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(168.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(174.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(180deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(185.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(191.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(196.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(202.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(208.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(213.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(219.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(225deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(230.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(236.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(241.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(247.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(253.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(258.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(264.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(270deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(275.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(281.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(286.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(292.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(298.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(303.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(309.375deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(315deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(320.625deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(326.25deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(331.875deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(337.5deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(343.125deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(348.75deg) translateY(-63.8px) rotateX(90deg)"></i>
+      <i class="corporation-coin-edge323" style="transform:translate(-50%,-50%) rotateZ(354.375deg) translateY(-63.8px) rotateX(90deg)"></i>
       <div class="corporation-coin-face322"><b>C</b><small>CORPORATION</small></div>
       <div class="corporation-coin-face322 back"><b>C</b><small>CORPORATION</small></div>
     </div></div>
@@ -132,6 +202,6 @@
     </div>
   </div>
 
-  <script src="/static/subscription_gate_v32.js?v=322"></script>
+  <script src="/static/subscription_gate_v32.js?v=323"></script>
 </body>
 </html>
