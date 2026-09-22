@@ -1,4 +1,15 @@
-/* Corporation v32: required channel subscription screen. */
+/* Corporation v32.1: required channel screen without subscribed-user flash. */
+html, body { background: #09090a; }
+body.subscription-checking32 {
+  overflow: hidden !important;
+  min-height: 100vh;
+  background: #09090a !important;
+}
+body.subscription-checking32 main.app,
+body.subscription-checking32 #modal,
+body.subscription-checking32 .subscription-gate32 {
+  display: none !important;
+}
 body.subscription-pending32 { overflow: hidden !important; min-height: 100vh; }
 body.subscription-pending32 main.app,
 body.subscription-pending32 #modal { display: none !important; }
