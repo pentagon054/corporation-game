@@ -1,0 +1,6 @@
+/* Scroll normally, but never browser-zoom the game surface. */
+html, body { touch-action: pan-x pan-y; overscroll-behavior-y: none; }
+.interactive-map-viewport, .interactive-map-viewport * { touch-action: none; }
+.interactive-map-viewport { overscroll-behavior: none; -webkit-touch-callout: none; }
+/* Avoid iOS focus zoom without blocking form input. */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }

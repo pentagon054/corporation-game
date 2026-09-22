@@ -11,7 +11,7 @@ class CorporationAtlas {
     listen(this.viewport,'pointerdown',e=>this.down(e));listen(this.viewport,'pointermove',e=>this.move(e));
     for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(this.viewport,type,e=>this.up(e));
     listen(this.viewport,'wheel',e=>{e.preventDefault();const p=this.local(e);this.zoom(this.scale*Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.006),p.x,p.y);},{passive:false});
-    listen(this.viewport,'dblclick',e=>{if(e.target.closest('button'))return;const p=this.local(e);this.zoom(this.scale*1.7,p.x,p.y);});
+    listen(this.viewport,'dblclick',e=>{e.preventDefault();if(e.target.closest('button'))return;const p=this.local(e);this.zoom(this.scale*1.7,p.x,p.y);});
     listen(this.viewport,'keydown',e=>{if(e.target!==this.viewport)return;const moves={ArrowLeft:[55,0],ArrowRight:[-55,0],ArrowUp:[0,55],ArrowDown:[0,-55]};if(moves[e.key]){e.preventDefault();this.tx+=moves[e.key][0];this.ty+=moves[e.key][1];this.closePicker();this.draw();}else if(['+','=','-','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home')this.reset();else this.zoom(this.scale*(e.key==='-'?1/1.5:1.5));}});
     listen(root,'click',e=>{const action=e.target.closest('[data-map-action]')?.dataset.mapAction;if(action==='reset')this.reset();else if(action)this.zoom(this.scale*(action==='in'?1.5:1/1.5));});
     this.resize(saved);this.resizeObserver=new ResizeObserver(()=>this.resize(this.snapshot()));this.resizeObserver.observe(this.viewport);
@@ -22,7 +22,7 @@ class CorporationAtlas {
       const button=document.createElement('button');button.type='button';button.className='interactive-map-marker';button.dataset.city=city.city_id;
       button.style.left=((Number(city.lng)+180)/360*100)+'%';button.style.top=((90-Number(city.lat))/180*100)+'%';button.setAttribute('aria-label','Открыть '+city.city);button.title=city.city;
       button.innerHTML='<span class="map-pin"><i></i></span><span class="map-pin-label"></span>';button.querySelector('.map-pin-label').textContent=city.city;
-      button.addEventListener('click',e=>{e.stopPropagation();if(this.moved)return;const near=this.nearby(city);near.length>1?this.showPicker(near,button):this.onSelect(city.city_id);});this.markers.append(button);
+      button.addEventListener('click',e=>{e.stopPropagation();if(this.moved&&e.detail!==0)return;const near=this.nearby(city);near.length>1?this.showPicker(near,button):this.onSelect(city.city_id);});this.markers.append(button);
     }
   }
   nearby(city){const o=this.project(city);return this.cities.filter(c=>{const p=this.project(c);return Math.hypot(p.x-o.x,p.y-o.y)<54;});}
@@ -33,9 +33,38 @@ class CorporationAtlas {
   clamp(){this.scale=Math.min(6,Math.max(1,this.scale));const w=this.width*this.scale,h=this.width/2*this.scale;this.tx=w<=this.width?(this.width-w)/2:Math.max(this.width-w,Math.min(0,this.tx));this.ty=h<=this.height?(this.height-h)/2:Math.max(this.height-h,Math.min(0,this.ty));}
   zoom(scale,x=this.width/2,y=this.height/2){const next=Math.max(1,Math.min(6,scale)),ratio=next/this.scale;this.tx=x-(x-this.tx)*ratio;this.ty=y-(y-this.ty)*ratio;this.scale=next;this.closePicker();this.draw();}
   reset(){this.scale=1;this.tx=0;this.ty=(this.height-this.width/2)/2;this.closePicker();this.draw();}
-  down(e){if(e.target.closest('button')||e.button>0)return;this.closePicker();this.viewport.focus({preventScroll:true});this.points.set(e.pointerId,this.local(e));this.viewport.setPointerCapture(e.pointerId);this.viewport.classList.add('dragging');this.moved=false;}
-  move(e){if(!this.points.has(e.pointerId))return;const before=[...this.points.values()],old=this.points.get(e.pointerId),next=this.local(e);if(Math.hypot(next.x-old.x,next.y-old.y)>2)this.moved=true;this.points.set(e.pointerId,next);const after=[...this.points.values()];if(before.length>=2){const midpoint=a=>({x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2}),distance=a=>Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),b=midpoint(before),a=midpoint(after),d=distance(before),s=Math.min(6,Math.max(1,this.scale*(d>1?distance(after)/d:1))),ratio=s/this.scale;this.tx=a.x-(b.x-this.tx)*ratio;this.ty=a.y-(b.y-this.ty)*ratio;this.scale=s;}else{this.tx+=next.x-old.x;this.ty+=next.y-old.y;}this.queueDraw();}
-  up(e){this.points.delete(e.pointerId);if(!this.points.size)this.viewport.classList.remove('dragging');setTimeout(()=>{this.moved=false},0);}
+  down(e){
+    if(e.button>0)return;
+    if(!this.points.size){this.moved=false;this.travel=0;}
+    this.closePicker();
+    const marker=e.target.closest('.interactive-map-marker');
+    if(!marker)this.viewport.focus({preventScroll:true});
+    this.points.set(e.pointerId,this.local(e));
+    // Capture on the marker itself so a stationary tap still opens that city.
+    (marker||this.viewport).setPointerCapture(e.pointerId);
+    if(this.points.size>1)this.moved=true;
+    this.viewport.classList.add('dragging');
+  }
+  move(e){
+    if(!this.points.has(e.pointerId))return;
+    const before=[...this.points.values()],old=this.points.get(e.pointerId),next=this.local(e);
+    this.travel+=Math.hypot(next.x-old.x,next.y-old.y);
+    if(this.travel>6)this.moved=true;
+    this.points.set(e.pointerId,next);
+    const after=[...this.points.values()];
+    if(before.length>=2){
+      const midpoint=a=>({x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2}),distance=a=>Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),b=midpoint(before),a=midpoint(after),d=distance(before),s=Math.min(6,Math.max(1,this.scale*(d>1?distance(after)/d:1))),ratio=s/this.scale;
+      this.tx=a.x-(b.x-this.tx)*ratio;this.ty=a.y-(b.y-this.ty)*ratio;this.scale=s;
+    }else{this.tx+=next.x-old.x;this.ty+=next.y-old.y;}
+    this.clamp();this.queueDraw();
+  }
+  up(e){
+    if(!this.points.has(e.pointerId))return;
+    if(e.type==='pointercancel'||e.type==='lostpointercapture')this.moved=true;
+    this.points.delete(e.pointerId);
+    if(!this.points.size)this.viewport.classList.remove('dragging');
+    // Retain suppression through the synthetic click; reset at the next gesture.
+  }
   queueDraw(){if(!this.frame)this.frame=requestAnimationFrame(()=>{this.frame=0;this.draw();});}
   closePicker(){this.picker.hidden=true;}
   draw(){this.clamp();this.scene.style.width=(this.width*this.scale)+'px';this.scene.style.height=(this.width/2*this.scale)+'px';this.scene.style.setProperty('--inverse-scale','1');this.scene.style.transform=`translate3d(${Math.round(this.tx)}px,${Math.round(this.ty)}px,0)`;this.scene.classList.toggle('detailed',this.scale>=2.25);this.root.querySelector('.interactive-map-scale').textContent=this.scale.toFixed(1)+'×';this.root.querySelector('[data-map-action="out"]').disabled=this.scale<=1;this.root.querySelector('[data-map-action="in"]').disabled=this.scale>=6;this.onChange?.(this.snapshot());}
