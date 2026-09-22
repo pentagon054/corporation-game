@@ -1,0 +1,4 @@
+/* The document owns vertical scrolling. Body must not trap wheel chaining. */
+html { overflow-x: hidden !important; overflow-y: auto !important; height: auto; min-height: 100%; }
+body { overflow: visible !important; height: auto; min-height: 100vh; overscroll-behavior-y: auto; }
+.business-purchased-link31 { display: block; width: 100%; margin: 18px 0 4px; padding: 14px 16px; border: 1px solid #bba58c; border-radius: 12px; background: #bba58c; color: #171719; font: inherit; font-weight: 700; }

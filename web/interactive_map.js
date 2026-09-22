@@ -10,7 +10,7 @@ class CorporationAtlas {
     const listen=(el,type,fn,opts={})=>el.addEventListener(type,fn,{...opts,signal:this.abort.signal});
     listen(this.viewport,'pointerdown',e=>this.down(e));listen(this.viewport,'pointermove',e=>this.move(e));
     for(const type of ['pointerup','pointercancel','lostpointercapture'])listen(this.viewport,type,e=>this.up(e));
-    listen(this.viewport,'wheel',e=>{e.preventDefault();const p=this.local(e);this.zoom(this.scale*Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.006),p.x,p.y);},{passive:false});
+    listen(this.viewport,'wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();const p=this.local(e);this.zoom(this.scale*Math.exp(-Math.max(-100,Math.min(100,e.deltaY))*.006),p.x,p.y);},{passive:false});
     listen(this.viewport,'dblclick',e=>{e.preventDefault();if(e.target.closest('button'))return;const p=this.local(e);this.zoom(this.scale*1.7,p.x,p.y);});
     listen(this.viewport,'keydown',e=>{if(e.target!==this.viewport)return;const moves={ArrowLeft:[55,0],ArrowRight:[-55,0],ArrowUp:[0,55],ArrowDown:[0,-55]};if(moves[e.key]){e.preventDefault();this.tx+=moves[e.key][0];this.ty+=moves[e.key][1];this.closePicker();this.draw();}else if(['+','=','-','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home')this.reset();else this.zoom(this.scale*(e.key==='-'?1/1.5:1.5));}});
     listen(root,'click',e=>{const action=e.target.closest('[data-map-action]')?.dataset.mapAction;if(action==='reset')this.reset();else if(action)this.zoom(this.scale*(action==='in'?1.5:1/1.5));});
