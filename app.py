@@ -2162,7 +2162,7 @@ def money_ru(value):
 # Temporary, read-only production load-test endpoint.
 # Protected by LOAD_TEST_TOKEN. Remove after testing.
 
-@api.get("/api/internal/load-test/read")
+@api.get("/__loadtest/read")
 def corporation_load_test_read(
     seed: int = 0,
     x_load_test_token: str | None = Header(None),
