@@ -131,8 +131,7 @@
         status.textContent=`Баланс обновлён: +${money(result.amount)} · новый баланс ${money(result.state?.player?.money)}`;
       }else if(act==="delete"){
         const ok=await corpConfirm(`Удалить игрока ${id} полностью? Перед удалением сервер создаст backup базы.`); if(!ok)return;
-        const phrase=await corpPrompt('Для подтверждения введи: DELETE PLAYER'); if(phrase!=="DELETE PLAYER")return;
-        await req(`/api/admin/player/${id}`,{method:"DELETE",body:JSON.stringify({confirmation:phrase})});
+        await req(`/api/admin/player/${id}`,{method:"DELETE",body:JSON.stringify({confirmed:true})});
       }else{
         const enabled=b.dataset.enabled==="true";
         const word=act==="freeze"?(enabled?"заморозить":"разморозить"):(enabled?"заблокировать":"разблокировать");

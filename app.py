@@ -2187,7 +2187,7 @@ def seasons_page():
 
 @api.get("/admin")
 def admin_page():
-    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=263")
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=332")
 
 
 def auth(x_telegram_init_data, x_user_id):
@@ -2712,7 +2712,8 @@ class AdminFreezeBody(BaseModel):
 
 
 class AdminConfirmBody(BaseModel):
-    confirmation: str
+    confirmation: str = ""
+    confirmed: bool = False
 
 
 class AdminSeasonNameBody(BaseModel):
@@ -2724,7 +2725,8 @@ class AdminPlayerFlagBody(BaseModel):
 
 
 class AdminPlayerDeleteBody(BaseModel):
-    confirmation: str
+    confirmation: str = ""
+    confirmed: bool = False
 
 
 class AdminGrantBody(BaseModel):
@@ -2732,6 +2734,12 @@ class AdminGrantBody(BaseModel):
     category: str = "other"
     note: str = ""
     count_as_income: bool = True
+
+
+def _admin_confirmation_matches(body, phrase: str) -> bool:
+    if bool(getattr(body, "confirmed", False)):
+        return True
+    return str(getattr(body, "confirmation", "") or "").strip().upper() == phrase
 
 
 @api.get("/api/admin/overview")
@@ -2897,8 +2905,8 @@ def admin_delete_player(player_id: int, body: AdminPlayerDeleteBody, x_telegram_
     admin_id = require_admin(x_telegram_init_data, x_user_id)
     if player_id in ADMIN_IDS:
         raise HTTPException(400, "Администратора нельзя удалить через панель")
-    if body.confirmation.strip().upper() != "DELETE PLAYER":
-        raise HTTPException(400, "Для удаления введи DELETE PLAYER")
+    if not _admin_confirmation_matches(body, "DELETE PLAYER"):
+        raise HTTPException(400, "Подтверждение удаления не получено")
     player = get_player(player_id)
     if not player:
         raise HTTPException(404, "Игрок не найден")
@@ -2983,8 +2991,8 @@ def admin_freeze(body: AdminFreezeBody, x_telegram_init_data: str | None = Heade
 @api.post("/api/admin/end-season")
 def admin_end_season(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     admin_id = require_admin(x_telegram_init_data, x_user_id)
-    if body.confirmation.strip().upper() != "END SEASON":
-        raise HTTPException(400, "Для подтверждения введи END SEASON")
+    if not _admin_confirmation_matches(body, "END SEASON"):
+        raise HTTPException(400, "Подтверждение завершения сезона не получено")
     leaders = all_ranked_players()
     now = int(time.time())
     with closing(db()) as conn:
@@ -3003,8 +3011,8 @@ def admin_end_season(body: AdminConfirmBody, x_telegram_init_data: str | None = 
 @api.post("/api/admin/reset-progress")
 def admin_reset_progress(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     admin_id = require_admin(x_telegram_init_data, x_user_id)
-    if body.confirmation.strip().upper() != "RESET SEASON":
-        raise HTTPException(400, "Для подтверждения введи RESET SEASON")
+    if not _admin_confirmation_matches(body, "RESET SEASON"):
+        raise HTTPException(400, "Подтверждение сброса не получено")
     backup_path = create_database_backup("before_reset")
     now = int(time.time())
     with closing(db()) as conn:
@@ -3019,8 +3027,8 @@ def admin_reset_progress(body: AdminConfirmBody, x_telegram_init_data: str | Non
 @api.post("/api/admin/new-season")
 def admin_new_season(body: AdminConfirmBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     admin_id = require_admin(x_telegram_init_data, x_user_id)
-    if body.confirmation.strip().upper() != "NEW SEASON":
-        raise HTTPException(400, "Для подтверждения введи NEW SEASON")
+    if not _admin_confirmation_matches(body, "NEW SEASON"):
+        raise HTTPException(400, "Подтверждение запуска нового сезона не получено")
     backup_path = create_database_backup("before_new_season")
     now = int(time.time())
     with closing(db()) as conn:
