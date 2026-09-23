@@ -1,0 +1,4 @@
+Corporation v33.1
+Build: REFERRALS_VISIBLE_FULL
+WebApp cache version: 331
+Expected visible UI: header gift button + Main referral card + Rating referral card
