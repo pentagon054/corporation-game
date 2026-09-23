@@ -12,7 +12,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBAPP_URL = os.getenv("WEBAPP_URL")
-WEBAPP_VERSION = "250"
+WEBAPP_VERSION = "330"
 ADMIN_IDS = {
     int(x.strip())
     for x in (os.getenv("ADMIN_IDS") or "").split(",")
@@ -63,10 +63,21 @@ async def main():
 
     @dp.message(CommandStart())
     async def start(message: Message):
+        # Referral payload is immutable on the backend; here we only pass a valid numeric inviter ID to the Mini App.
+        ref_id = None
+        parts = (message.text or "").strip().split(maxsplit=1)
+        if len(parts) == 2 and parts[1].startswith("ref_") and parts[1][4:].isdigit():
+            candidate = int(parts[1][4:])
+            if candidate > 0:
+                ref_id = candidate
+        game_url = f"{WEBAPP_URL.rstrip('/')}/?v={WEBAPP_VERSION}"
+        if ref_id is not None:
+            game_url += f"&ref={ref_id}"
+
         kb = InlineKeyboardBuilder()
         kb.button(
             text="🎮 Играть",
-            web_app=WebAppInfo(url=f"{WEBAPP_URL.rstrip('/')}/?v={WEBAPP_VERSION}"),
+            web_app=WebAppInfo(url=game_url),
         )
         kb.button(
             text="🏆 Сезоны",

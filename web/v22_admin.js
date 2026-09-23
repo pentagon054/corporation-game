@@ -112,7 +112,7 @@
       return result;
     }catch(err){
       const status=document.querySelector('#v22-status');if(status)status.textContent=err.message;
-      alert(err.message);
+      corpAlert(err.message);
     }
   };
 
@@ -130,23 +130,23 @@
         status.className='v22-status ok';
         status.textContent=`Баланс обновлён: +${money(result.amount)} · новый баланс ${money(result.state?.player?.money)}`;
       }else if(act==="delete"){
-        const ok=confirm(`Удалить игрока ${id} полностью? Перед удалением сервер создаст backup базы.`); if(!ok)return;
-        const phrase=prompt('Для подтверждения введи: DELETE PLAYER'); if(phrase!=="DELETE PLAYER")return;
+        const ok=await corpConfirm(`Удалить игрока ${id} полностью? Перед удалением сервер создаст backup базы.`); if(!ok)return;
+        const phrase=await corpPrompt('Для подтверждения введи: DELETE PLAYER'); if(phrase!=="DELETE PLAYER")return;
         await req(`/api/admin/player/${id}`,{method:"DELETE",body:JSON.stringify({confirmation:phrase})});
       }else{
         const enabled=b.dataset.enabled==="true";
         const word=act==="freeze"?(enabled?"заморозить":"разморозить"):(enabled?"заблокировать":"разблокировать");
-        if(!confirm(`${word[0].toUpperCase()+word.slice(1)} игрока ${id}?`))return;
+        if(!await corpConfirm(`${word[0].toUpperCase()+word.slice(1)} игрока ${id}?`))return;
         await req(`/api/admin/player/${id}/${act}`,{method:"POST",body:JSON.stringify({enabled})});
       }
       await load();
     }catch(err){
       document.querySelector('#v22-status').textContent=err.message;
-      alert(err.message);
+      corpAlert(err.message);
     }finally{b.disabled=false;}
   });
 
-  document.querySelector("#v22-find").onclick=()=>load().catch(e=>alert(e.message));
-  document.querySelector("#v22-q").addEventListener("keydown",e=>{if(e.key==="Enter")load().catch(x=>alert(x.message));});
+  document.querySelector("#v22-find").onclick=()=>load().catch(e=>corpAlert(e.message));
+  document.querySelector("#v22-q").addEventListener("keydown",e=>{if(e.key==="Enter")load().catch(x=>corpAlert(x.message));});
   load().catch(err=>{document.querySelector("#v22-list").innerHTML=`<div class="v22-empty">${esc(err.message)}</div>`;});
 })();

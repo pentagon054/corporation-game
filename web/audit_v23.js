@@ -21,11 +21,11 @@ async function corporationTrade(kind,id,side,all=false){
     if(!Number.isFinite(price)||price<=0)throw new Error('Не удалось получить цену. Обнови данные.');
     const max=Math.min(Number.MAX_SAFE_INTEGER,side==='buy'?Math.floor(Number(state.player.money)/price):owned);
     if(max<=0){modal('Сделка',side==='buy'?'Недостаточно свободных денег.':'У тебя нет этих бумаг.');return;}
-    const raw=all?String(max):prompt(`${side==='buy'?'Покупка':'Продажа'} ${item.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите целое количество:`, '1');
+    const raw=all?String(max):await corpPrompt(`${side==='buy'?'Покупка':'Продажа'} ${item.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите целое количество:`, '1');
     if(raw===null)return;
     const qty=parseTradeQuantity(raw,max);
     if(!Number.isSafeInteger(qty)){modal('Ошибка',`Введите целое число от 1 до ${max}. Дроби и текст недопустимы.`);return;}
-    if(!confirm(`${side==='buy'?'Купить':'Продать'} ${item.name}?\nКоличество: ${qty} шт.\nЦена: ${fmt(price)}\nСумма: ${fmt(qty*price)}`))return;
+    if(!await corpConfirm(`${side==='buy'?'Купить':'Продать'} ${item.name}?\nКоличество: ${qty} шт.\nЦена: ${fmt(price)}\nСумма: ${fmt(qty*price)}`))return;
     const result=await api(`/api/${kind}/${id}/${side}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quantity:qty,expected_price:price})});
     state=result.state;renderHeader();
     // A successful trade must not be reported as failed if the following read fails.
@@ -54,7 +54,7 @@ buyProperty=async function(id){
     if(!prop||prop.owned)return;
     const price=Number(prop.purchase_price),money=Number(state.player.money);
     if(money<price){modal('Недостаточно денег',`Нужно ${fmt(price)}; не хватает ${fmt(price-money)}.`);return;}
-    if(!confirm(`Купить ${prop.name} за ${fmt(price)}?`))return;
+    if(!await corpConfirm(`Купить ${prop.name} за ${fmt(price)}?`))return;
     const r=await api(`/api/real-estate/${id}/buy`,{method:'POST'});
     state=r.state;realEstateCache=r.properties;renderHeader();
     if(page==='realestate')openCity(prop.city_id);

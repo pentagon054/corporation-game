@@ -67,6 +67,7 @@
 
   const gameScripts = [
     '/static/gestures_v30.js?v=300',
+    '/static/corporation_dialogs_v33.js?v=330',
     '/static/app.js?v=280',
     '/static/v22_1.js?v=280',
     '/static/v20.js?v=280',
@@ -78,7 +79,8 @@
     '/static/premium_v25.js?v=280',
     '/static/instances_v28.js?v=280',
     '/static/v29.js?v=290',
-    '/static/v31.js?v=310'
+    '/static/v31.js?v=310',
+    '/static/referrals_v33.js?v=330'
   ];
 
   function setStatus(text, kind) {

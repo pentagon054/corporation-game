@@ -140,7 +140,7 @@ function renderStockCard(s){
 function renderHoldings(){if(!brokerageCache?.holdings?.length)return `<article class="card empty">У тебя пока нет акций.</article>`;return `<section class="holdings-section"><h2>💼 Портфель</h2><div class="grid">${brokerageCache.holdings.map(h=>`<article class="card"><div class="business-head"><div><div class="stock-symbol">${h.symbol}</div><h3>${h.name}</h3></div><b>${h.quantity} шт.</b></div><div class="holding-row"><span>Стоимость</span><b>${fmt(h.current_value)}</b></div><div class="holding-row"><span>Дивиденды</span><b>${fmt(h.dividend_hour)}/ч</b></div><div class="holding-profit ${h.profit>=0?"positive":"negative"}">${h.profit>=0?"▲ Прибыль":"▼ Убыток"} ${fmt(Math.abs(h.profit))} (${fmtPercent(h.profit_percent)})</div></article>`).join("")}</div></section>`}
 async function openStock(id){try{const s=await api(`/api/stocks/${id}`),h=getHolding(id),change=stockChange(s);document.querySelector("#modalTitle").textContent=`${s.symbol} — ${s.name}`;document.querySelector("#modalText").innerHTML=`<div class="stock-detail-price">${fmt(s.current_price)}</div><div class="${change>=0?"positive":"negative"}">${change>=0?"▲":"▼"} ${Math.abs(change).toFixed(2)}%</div><div class="dividend-badge">💸 ${s.dividend_rate_percent}% дивидендов в час</div>${renderStockMiniChart(s.history||[])}<p>У тебя: ${h?.quantity||0} шт.</p>`;document.querySelector("#modal").classList.remove("hidden")}catch(e){modal("Ошибка",e.message)}}
 async function refreshInvestments(){state=await api("/api/state");renderHeader();await renderInvestments()}
-async function openTrade(id,side){const s=stocksCache.find(x=>x.id===id);if(!s)return;const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price),max=side==="buy"?Math.floor(Number(state.player.money)/price):owned;if(max<=0){modal("Сделка","Недостаточно средств или акций.");return}const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");if(raw===null)return;const qty=parseTradeQuantity(raw,max);if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}try{const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});state=r.state;renderHeader();await renderInvestments();modal(side==="buy"?"Акции куплены":"Акции проданы",side==="sell"&&r.realized_profit>0?`Прибыль сделки: ${fmt(r.realized_profit)}\nНалог с прибыли: ${fmt(r.profit_tax)}`:`Сумма сделки: ${fmt(side==="buy"?r.total_cost:r.total_income)}`)}catch(e){modal("Сделка не выполнена",e.message)}}
+async function openTrade(id,side){const s=stocksCache.find(x=>x.id===id);if(!s)return;const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price),max=side==="buy"?Math.floor(Number(state.player.money)/price):owned;if(max<=0){modal("Сделка","Недостаточно средств или акций.");return}const raw=await corpPrompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");if(raw===null)return;const qty=parseTradeQuantity(raw,max);if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}try{const r=await api(`/api/stocks/${id}/${side}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quantity:qty})});state=r.state;renderHeader();await renderInvestments();modal(side==="buy"?"Акции куплены":"Акции проданы",side==="sell"&&r.realized_profit>0?`Прибыль сделки: ${fmt(r.realized_profit)}\nНалог с прибыли: ${fmt(r.profit_tax)}`:`Сумма сделки: ${fmt(side==="buy"?r.total_cost:r.total_income)}`)}catch(e){modal("Сделка не выполнена",e.message)}}
 
 function renderBondCard(b){
   const owned=Number(b.quantity||0);
@@ -157,7 +157,7 @@ async function openBondTrade(id,side){
   const price=Number(b.price||0), owned=Number(b.quantity||0);
   const max=side==="buy"?Math.floor(Number(state.player.money||0)/price):owned;
   if(max<=0){modal("Облигации",side==="buy"?"Недостаточно денег для покупки.":"У тебя нет этих облигаций.");return}
-  const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${b.symbol}
+  const raw=await corpPrompt(`${side==="buy"?"Покупка":"Продажа"} ${b.symbol}
 Цена: ${fmt(price)}
 Доходность: ${b.yield_rate_percent}%/ч
 Максимум: ${max} шт.
@@ -258,7 +258,7 @@ function renderPropertyCard(p){
   </article>`;
 }
 
-async function buyProperty(id){if(!confirm("Купить эту недвижимость?"))return;try{const r=await api(`/api/real-estate/${id}/buy`,{method:"POST"});state=r.state;realEstateCache=r.properties;renderHeader();const p=realEstateCache.find(x=>x.id===id);openCity(p.city_id);modal("Недвижимость куплена",`Теперь она приносит ${fmt(p.rent_hour)}/ч автоматически.`)}catch(e){modal("Покупка не выполнена",e.message)}}
+async function buyProperty(id){if(!await corpConfirm("Купить эту недвижимость?"))return;try{const r=await api(`/api/real-estate/${id}/buy`,{method:"POST"});state=r.state;realEstateCache=r.properties;renderHeader();const p=realEstateCache.find(x=>x.id===id);openCity(p.city_id);modal("Недвижимость куплена",`Теперь она приносит ${fmt(p.rent_hour)}/ч автоматически.`)}catch(e){modal("Покупка не выполнена",e.message)}}
 async function upgradeProperty(pid,uid){try{const r=await api(`/api/real-estate/${pid}/upgrade/${uid}`,{method:"POST"});state=r.state;realEstateCache=r.properties;renderHeader();const p=realEstateCache.find(x=>x.id===pid);openCity(p.city_id);modal("Улучшение установлено",`Новая аренда: ${fmt(p.rent_hour)}/ч.`)}catch(e){modal("Улучшение не выполнено",e.message)}}
 
 function render(){renderHeader();if(page==="businesses")return renderBusinesses();if(page==="investments")return renderInvestments();if(page==="realestate")return renderRealEstate();if(page==="taxes")return renderTaxes();if(page==="statistics")return renderStatistics();if(page==="rating")return renderRating()}
@@ -266,8 +266,8 @@ function updateActiveTab(){document.querySelectorAll(".tab").forEach(t=>t.classL
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{corporationActiveStockId=null;clearInterval(v21NewsTimer);if(b.dataset.page==="investments")investmentView="home";page=b.dataset.page;updateActiveTab();render()});
 window.buyBusiness=async id=>{try{state=await api(`/api/business/${id}/buy`,{method:"POST"});render()}catch(e){modal("Не удалось",e.message)}};
 window.upgradeBusiness=async(id,upgradeId)=>{try{state=await api(`/api/business/${id}/upgrade/${upgradeId}`,{method:"POST"});render();modal("Бизнес прокачан","Доход бизнеса увеличен.")}catch(e){modal("Прокачка не выполнена",e.message)}};
-window.sellBusiness=async id=>{const b=(state.businesses||[]).find(x=>x.id===id);if(!b||!confirm(`Продать ${b.name} за ${fmt(b.sell_price)}?`))return;try{const r=await api(`/api/business/${id}/sell`,{method:"POST"});state=r.state;render();modal("Бизнес продан",`Получено ${fmt(r.sell_price)}.`)}catch(e){modal("Ошибка",e.message)}};
-document.querySelector("#renameBtn").onclick=async()=>{if(!state)return;const name=prompt("Новое название корпорации:",state.player.corp_name);if(!name)return;try{state=await api("/api/rename",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});render()}catch(e){modal("Ошибка",e.message)}};
+window.sellBusiness=async id=>{const b=(state.businesses||[]).find(x=>x.id===id);if(!b||!await corpConfirm(`Продать ${b.name} за ${fmt(b.sell_price)}?`))return;try{const r=await api(`/api/business/${id}/sell`,{method:"POST"});state=r.state;render();modal("Бизнес продан",`Получено ${fmt(r.sell_price)}.`)}catch(e){modal("Ошибка",e.message)}};
+document.querySelector("#renameBtn").onclick=async()=>{if(!state)return;const name=await corpPrompt("Новое название корпорации:",state.player.corp_name);if(!name)return;try{state=await api("/api/rename",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});render()}catch(e){modal("Ошибка",e.message)}};
 Object.assign(window,{openPlayerProfile,backToRating,openStock,openTrade,openBondTrade,refreshInvestments,openInvestmentHome,openInvestmentStocks,openInvestmentBonds,payTaxes,renderRealEstate,openCity,buyProperty,upgradeProperty});
 async function refresh(){try{state=await api("/api/state");updateActiveTab();render()}catch(e){console.error(e);modal("Ошибка запуска",e.message)}}
 refresh();
@@ -410,7 +410,7 @@ openTrade=async function(id,side){
   const h=getHolding(id),owned=Number(h?.quantity||0),price=Number(s.current_price||0);
   const max=side==="buy"?Math.floor(Number(state.player.money||0)/price):owned;
   if(max<=0){modal("Сделка",side==="buy"?"Недостаточно средств для покупки.":"У тебя нет этих акций.");return}
-  const raw=prompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");
+  const raw=await corpPrompt(`${side==="buy"?"Покупка":"Продажа"} ${s.name}\nЦена: ${fmt(price)}\nМаксимум: ${max} шт.\nВведите количество:`,"1");
   if(raw===null)return;
   const qty=parseTradeQuantity(raw,max);
   if(!Number.isInteger(qty)||qty<=0||qty>max){modal("Ошибка",`Введите целое число от 1 до ${max}.`);return}

@@ -2157,6 +2157,7 @@ def money_ru(value):
     return f"{value:,.2f}".replace(",", " ").replace(".", ",") + " ₽"
 
 
+
 @api.get("/")
 def index():
     path = os.path.join(WEB_DIR, "index.html")
@@ -3048,6 +3049,7 @@ def admin_backup(x_telegram_init_data: str | None = Header(None), x_user_id: str
 process_market_news()
 start_market_news_worker()
 
+
 # === CORPORATION_REQUIRED_CHANNEL_V32_BEGIN ===
 # Required Telegram channel membership for Corporation.
 # Uses the existing verified Telegram identity from user_from_request and then
@@ -3077,16 +3079,10 @@ def _v32_channel_url():
 
 def _v32_get_chat_member(user_id: int):
     if not _V32_REQUIRED_CHANNEL:
-        raise _V32HTTPException(
-            status_code=503,
-            detail="REQUIRED_CHANNEL is not configured on the server.",
-        )
+        raise _V32HTTPException(status_code=503, detail="REQUIRED_CHANNEL is not configured on the server.")
     token = str(globals().get("BOT_TOKEN") or _v32_os.getenv("BOT_TOKEN") or "").strip()
     if not token or "PASTE_YOUR_BOT_TOKEN" in token:
-        raise _V32HTTPException(
-            status_code=503,
-            detail="BOT_TOKEN is not configured on the server.",
-        )
+        raise _V32HTTPException(status_code=503, detail="BOT_TOKEN is not configured on the server.")
     query = _v32_urlencode({"chat_id": _V32_REQUIRED_CHANNEL, "user_id": int(user_id)})
     url = f"https://api.telegram.org/bot{token}/getChatMember?{query}"
     request = _V32UrlRequest(url, headers={"User-Agent": "Corporation-v32"})
@@ -3094,15 +3090,9 @@ def _v32_get_chat_member(user_id: int):
         with _v32_urlopen(request, timeout=5) as response:
             payload = _v32_json.loads(response.read().decode("utf-8"))
     except Exception:
-        raise _V32HTTPException(
-            status_code=503,
-            detail="Не удалось проверить подписку через Telegram. Попробуйте ещё раз.",
-        )
+        raise _V32HTTPException(status_code=503, detail="Не удалось проверить подписку через Telegram. Попробуйте ещё раз.")
     if not payload.get("ok") or not isinstance(payload.get("result"), dict):
-        raise _V32HTTPException(
-            status_code=503,
-            detail="Telegram не подтвердил проверку подписки. Проверьте, что бот — администратор канала.",
-        )
+        raise _V32HTTPException(status_code=503, detail="Telegram не подтвердил проверку подписки. Проверьте, что бот — администратор канала.")
     return payload["result"]
 
 
@@ -3112,13 +3102,9 @@ def _v32_is_subscribed(user_id: int, force: bool = False) -> bool:
     cached_until = _V32_POSITIVE_CACHE.get(user_id, 0)
     if not force and cached_until > now:
         return True
-
     member = _v32_get_chat_member(user_id)
     status = str(member.get("status") or "")
-    subscribed = status in {"creator", "administrator", "member"} or (
-        status == "restricted" and bool(member.get("is_member"))
-    )
-
+    subscribed = status in {"creator", "administrator", "member"} or (status == "restricted" and bool(member.get("is_member")))
     if subscribed:
         _V32_POSITIVE_CACHE[user_id] = now + _V32_CACHE_SECONDS
     else:
@@ -3126,36 +3112,20 @@ def _v32_is_subscribed(user_id: int, force: bool = False) -> bool:
     return subscribed
 
 
-# Keep the project's existing Telegram initData validation as the source of
-# identity. We only add the channel-membership requirement on top of it.
 _v32_base_user_from_request = user_from_request
 
 
 def user_from_request(x_telegram_init_data, x_user_id):
-    # Never trust X-User-Id for the subscription gate in production.
-    # It is allowed only for an explicitly enabled local-development bypass.
     is_dev_request = not x_telegram_init_data and bool(x_user_id)
-    dev_bypass = (
-        is_dev_request
-        and _v32_os.getenv("ALLOW_DEV_AUTH") == "1"
-        and _v32_os.getenv("ALLOW_SUBSCRIPTION_DEV_BYPASS") == "1"
-    )
+    dev_bypass = is_dev_request and _v32_os.getenv("ALLOW_DEV_AUTH") == "1" and _v32_os.getenv("ALLOW_SUBSCRIPTION_DEV_BYPASS") == "1"
     if not x_telegram_init_data and not dev_bypass:
-        raise _V32HTTPException(
-            status_code=401,
-            detail="Откройте Corporation через Telegram-бота.",
-        )
-
+        raise _V32HTTPException(status_code=401, detail="Откройте Corporation через Telegram-бота.")
     identity = _v32_base_user_from_request(x_telegram_init_data, x_user_id)
     user_id = int(identity[0])
     if dev_bypass:
         return identity
-
     if not _v32_is_subscribed(user_id):
-        raise _V32HTTPException(
-            status_code=403,
-            detail="Для входа в Corporation подпишитесь на официальный Telegram-канал.",
-        )
+        raise _V32HTTPException(status_code=403, detail="Для входа в Corporation подпишитесь на официальный Telegram-канал.")
     return identity
 
 
@@ -3165,25 +3135,227 @@ def subscription_check_v32(
     x_user_id: str | None = _V32Header(None),
 ):
     is_dev_request = not x_telegram_init_data and bool(x_user_id)
-    dev_bypass = (
-        is_dev_request
-        and _v32_os.getenv("ALLOW_DEV_AUTH") == "1"
-        and _v32_os.getenv("ALLOW_SUBSCRIPTION_DEV_BYPASS") == "1"
-    )
+    dev_bypass = is_dev_request and _v32_os.getenv("ALLOW_DEV_AUTH") == "1" and _v32_os.getenv("ALLOW_SUBSCRIPTION_DEV_BYPASS") == "1"
     if not x_telegram_init_data and not dev_bypass:
-        raise _V32HTTPException(
-            status_code=401,
-            detail="Откройте Corporation через Telegram-бота.",
-        )
-
+        raise _V32HTTPException(status_code=401, detail="Откройте Corporation через Telegram-бота.")
     identity = _v32_base_user_from_request(x_telegram_init_data, x_user_id)
     user_id = int(identity[0])
     subscribed = True if dev_bypass else _v32_is_subscribed(user_id, force=True)
-    return {
-        "ok": True,
-        "subscribed": subscribed,
-        "channel": _V32_REQUIRED_CHANNEL,
-        "channel_url": _v32_channel_url(),
-        "cache_seconds": _V32_CACHE_SECONDS,
-    }
+    return {"ok": True, "subscribed": subscribed, "channel": _V32_REQUIRED_CHANNEL, "channel_url": _v32_channel_url(), "cache_seconds": _V32_CACHE_SECONDS}
 # === CORPORATION_REQUIRED_CHANNEL_V32_END ===
+
+
+# === CORPORATION_REFERRALS_V33_BEGIN ========================================
+# Prerelease referrals: 200k capitalization + 5 distinct active days.
+REFERRAL_CAPITAL_TARGET = 200000.0
+REFERRAL_ACTIVE_DAYS_TARGET = 5
+REFERRAL_INVITEE_REWARD = 10000.0
+REFERRAL_INVITER_REWARD = 20000.0
+REFERRAL_BOT_USERNAME = (os.getenv("REFERRAL_BOT_USERNAME") or "CorporationGame_bot").strip().lstrip("@")
+
+class ReferralBindBody(BaseModel):
+    inviter_id: int = Field(..., gt=0)
+
+
+def _v33_current_season(conn):
+    row = conn.execute("SELECT current_season FROM game_state WHERE id=1").fetchone()
+    return int(row["current_season"] if row else 1)
+
+
+def _v33_init_referrals():
+    with closing(db()) as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS referrals (
+            season_id INTEGER NOT NULL,
+            invitee_id INTEGER NOT NULL,
+            inviter_id INTEGER NOT NULL,
+            bound_at INTEGER NOT NULL,
+            rewarded_at INTEGER NOT NULL DEFAULT 0,
+            invitee_reward REAL NOT NULL DEFAULT 0,
+            inviter_reward REAL NOT NULL DEFAULT 0,
+            PRIMARY KEY(season_id, invitee_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_referrals_inviter_season ON referrals(season_id, inviter_id);
+        CREATE TABLE IF NOT EXISTS referral_active_days (
+            season_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            day TEXT NOT NULL,
+            first_seen_at INTEGER NOT NULL,
+            PRIMARY KEY(season_id, user_id, day)
+        );
+        CREATE INDEX IF NOT EXISTS idx_referral_days_user_season ON referral_active_days(season_id, user_id);
+        CREATE TABLE IF NOT EXISTS referral_reward_events (
+            season_id INTEGER NOT NULL,
+            invitee_id INTEGER NOT NULL,
+            inviter_id INTEGER NOT NULL,
+            invitee_reward REAL NOT NULL,
+            inviter_reward REAL NOT NULL,
+            capitalization REAL NOT NULL,
+            active_days INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY(season_id, invitee_id)
+        );
+        """)
+        conn.commit()
+
+
+def _v33_record_active_day(uid, conn=None):
+    own = conn is None
+    if own:
+        conn = db()
+    try:
+        season = _v33_current_season(conn)
+        now = int(time.time())
+        day = time.strftime("%Y-%m-%d", time.gmtime(now))
+        conn.execute(
+            "INSERT OR IGNORE INTO referral_active_days(season_id,user_id,day,first_seen_at) VALUES(?,?,?,?)",
+            (season, int(uid), day, now),
+        )
+        if own:
+            conn.commit()
+        return season
+    finally:
+        if own:
+            conn.close()
+
+
+def _v33_bind_referral(invitee_id: int, inviter_id: int):
+    invitee_id, inviter_id = int(invitee_id), int(inviter_id)
+    if invitee_id == inviter_id:
+        raise HTTPException(400, "Нельзя пригласить самого себя")
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        season = _v33_current_season(conn)
+        inviter = conn.execute("SELECT user_id,is_blocked FROM players WHERE user_id=?", (inviter_id,)).fetchone()
+        if not inviter:
+            conn.rollback(); raise HTTPException(404, "Пригласивший игрок не найден")
+        if int(inviter["is_blocked"] or 0):
+            conn.rollback(); raise HTTPException(400, "Реферальная ссылка этого игрока недоступна")
+        existing = conn.execute("SELECT inviter_id,rewarded_at FROM referrals WHERE season_id=? AND invitee_id=?", (season, invitee_id)).fetchone()
+        if existing:
+            if int(existing["inviter_id"]) != inviter_id:
+                conn.rollback(); raise HTTPException(409, "В этом сезоне за тобой уже закреплён другой пригласивший")
+            conn.commit(); return {"ok": True, "already_bound": True, "season": season, "inviter_id": inviter_id}
+        reverse = conn.execute("SELECT 1 FROM referrals WHERE season_id=? AND invitee_id=? AND inviter_id=?", (season, inviter_id, invitee_id)).fetchone()
+        if reverse:
+            conn.rollback(); raise HTTPException(400, "Взаимные реферальные приглашения не допускаются")
+        conn.execute("INSERT INTO referrals(season_id,invitee_id,inviter_id,bound_at) VALUES(?,?,?,?)", (season, invitee_id, inviter_id, now))
+        conn.commit()
+        return {"ok": True, "already_bound": False, "season": season, "inviter_id": inviter_id}
+
+
+def _v33_check_referral_reward(invitee_id: int):
+    invitee_id = int(invitee_id)
+    now = int(time.time())
+    with closing(db()) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        season = _v33_current_season(conn)
+        ref = conn.execute("SELECT * FROM referrals WHERE season_id=? AND invitee_id=?", (season, invitee_id)).fetchone()
+        if not ref or int(ref["rewarded_at"] or 0) > 0:
+            conn.commit(); return False
+        inviter_id = int(ref["inviter_id"])
+        restrictions = conn.execute("SELECT user_id,is_blocked FROM players WHERE user_id IN (?,?)", (invitee_id, inviter_id)).fetchall()
+        if len(restrictions) < 2 or any(int(r["is_blocked"] or 0) for r in restrictions):
+            conn.commit(); return False
+        active_days = int(conn.execute("SELECT COUNT(*) c FROM referral_active_days WHERE season_id=? AND user_id=?", (season, invitee_id)).fetchone()["c"])
+        if active_days < REFERRAL_ACTIVE_DAYS_TARGET:
+            conn.commit(); return False
+        capital = float(player_capital(invitee_id, conn)["total"])
+        if capital < REFERRAL_CAPITAL_TARGET:
+            conn.commit(); return False
+        # The write lock + rewarded_at check makes the dual payout idempotent.
+        cur = conn.execute(
+            "UPDATE referrals SET rewarded_at=?,invitee_reward=?,inviter_reward=? WHERE season_id=? AND invitee_id=? AND rewarded_at=0",
+            (now, REFERRAL_INVITEE_REWARD, REFERRAL_INVITER_REWARD, season, invitee_id),
+        )
+        if cur.rowcount != 1:
+            conn.commit(); return False
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (REFERRAL_INVITEE_REWARD, invitee_id))
+        conn.execute("UPDATE players SET money=money+? WHERE user_id=?", (REFERRAL_INVITER_REWARD, inviter_id))
+        conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (REFERRAL_INVITEE_REWARD, invitee_id))
+        conn.execute("UPDATE stats SET total_earned=total_earned+? WHERE user_id=?", (REFERRAL_INVITER_REWARD, inviter_id))
+        add_income_breakdown_conn(conn, invitee_id, "referral_bonus", REFERRAL_INVITEE_REWARD)
+        add_income_breakdown_conn(conn, inviter_id, "referral_bonus", REFERRAL_INVITER_REWARD)
+        conn.execute(
+            "INSERT OR IGNORE INTO referral_reward_events(season_id,invitee_id,inviter_id,invitee_reward,inviter_reward,capitalization,active_days,created_at) VALUES(?,?,?,?,?,?,?,?)",
+            (season, invitee_id, inviter_id, REFERRAL_INVITEE_REWARD, REFERRAL_INVITER_REWARD, capital, active_days, now),
+        )
+        conn.commit()
+        return True
+
+
+def _v33_referral_payload(uid: int):
+    _v33_check_referral_reward(uid)
+    with closing(db()) as conn:
+        season = _v33_current_season(conn)
+        own_ref = conn.execute("SELECT inviter_id,bound_at,rewarded_at FROM referrals WHERE season_id=? AND invitee_id=?", (season, uid)).fetchone()
+        friend_rows = conn.execute(
+            "SELECT r.*,p.corp_name,p.username,p.is_blocked FROM referrals r JOIN players p ON p.user_id=r.invitee_id WHERE r.season_id=? AND r.inviter_id=? ORDER BY r.bound_at DESC",
+            (season, uid),
+        ).fetchall()
+        friends = []
+        for row in friend_rows:
+            fid = int(row["invitee_id"])
+            days = int(conn.execute("SELECT COUNT(*) c FROM referral_active_days WHERE season_id=? AND user_id=?", (season, fid)).fetchone()["c"])
+            capital = float(player_capital(fid, conn)["total"])
+            rewarded = int(row["rewarded_at"] or 0) > 0
+            cap_pct = min(100.0, max(0.0, capital / REFERRAL_CAPITAL_TARGET * 100.0))
+            day_pct = min(100.0, max(0.0, days / REFERRAL_ACTIVE_DAYS_TARGET * 100.0))
+            friends.append({
+                "user_id": fid,
+                "name": str(row["corp_name"] or row["username"] or f"Игрок {fid}"),
+                "capital": round(capital, 2),
+                "capital_target": REFERRAL_CAPITAL_TARGET,
+                "capital_progress": round(cap_pct, 1),
+                "remaining_capital": round(max(0.0, REFERRAL_CAPITAL_TARGET - capital), 2),
+                "active_days": days,
+                "active_days_target": REFERRAL_ACTIVE_DAYS_TARGET,
+                "active_days_progress": round(day_pct, 1),
+                "rewarded": rewarded,
+                "rewarded_at": int(row["rewarded_at"] or 0),
+                "blocked": bool(int(row["is_blocked"] or 0)),
+                "qualified": capital >= REFERRAL_CAPITAL_TARGET and days >= REFERRAL_ACTIVE_DAYS_TARGET,
+            })
+        rewarded_count = sum(1 for f in friends if f["rewarded"])
+        return {
+            "season": season,
+            "referral_link": f"https://t.me/{REFERRAL_BOT_USERNAME}?start=ref_{int(uid)}",
+            "rules": {
+                "capital_target": REFERRAL_CAPITAL_TARGET,
+                "active_days_target": REFERRAL_ACTIVE_DAYS_TARGET,
+                "invitee_reward": REFERRAL_INVITEE_REWARD,
+                "inviter_reward": REFERRAL_INVITER_REWARD,
+            },
+            "bound_to": int(own_ref["inviter_id"]) if own_ref else None,
+            "friends": friends,
+            "friends_count": len(friends),
+            "rewarded_count": rewarded_count,
+            "total_inviter_rewards": round(rewarded_count * REFERRAL_INVITER_REWARD, 2),
+        }
+
+
+_v33_init_referrals()
+_v33_base_auth = auth
+
+
+def auth(x_telegram_init_data, x_user_id):
+    uid = _v33_base_auth(x_telegram_init_data, x_user_id)
+    _v33_record_active_day(uid)
+    _v33_check_referral_reward(uid)
+    return uid
+
+
+@api.post("/api/referrals/bind")
+def bind_referral_v33(body: ReferralBindBody, x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    result = _v33_bind_referral(uid, body.inviter_id)
+    result["referrals"] = _v33_referral_payload(uid)
+    return result
+
+
+@api.get("/api/referrals")
+def referrals_v33(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    uid = auth(x_telegram_init_data, x_user_id)
+    return _v33_referral_payload(uid)
+# === CORPORATION_REFERRALS_V33_END ==========================================

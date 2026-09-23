@@ -28,7 +28,7 @@
     const s=slotStatus29();
     if(Number(s.seconds_left)>0||Number(s.slots)>=Number(s.max_slots||100))return;
     if(Number(state.player.money)<Number(s.next_cost)){modal('Расширение лимита',`Для нового слота нужно ${fmt(s.next_cost)}.`);return;}
-    if(!confirm(`Расширить лимит бизнесов с ${s.slots} до ${Number(s.slots)+1} за ${fmt(s.next_cost)}?\n\nСледующий слот можно будет открыть через 1 час.`))return;
+    if(!await corpConfirm(`Расширить лимит бизнесов с ${s.slots} до ${Number(s.slots)+1} за ${fmt(s.next_cost)}?\n\nСледующий слот можно будет открыть через 1 час.`))return;
     await stableAction28(async()=>{
       try{
         const r=await api('/api/business-slots/expand',{method:'POST'});
