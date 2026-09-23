@@ -1,4 +1,4 @@
-/* Corporation v33: referral program UI. */
+/* Corporation v33.3: referral program UI + global desktop/mobile entry. */
 (function(){
   'use strict';
   function money33(v){return Number(v||0).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽'}
@@ -20,6 +20,41 @@
   window.copyReferral33=()=>window.__refData33&&copy33(window.__refData33.referral_link);
   window.shareReferral33=()=>{if(!window.__refShare33)return;try{if(tg?.openTelegramLink)tg.openTelegramLink(window.__refShare33);else location.href=window.__refShare33}catch(_){location.href=window.__refShare33}};
   window.backFromReferrals33=()=>{const prev=window.__refReturnPage33||'rating'; if(prev==='rating') return renderRating(); if(prev==='statistics'){page='statistics'; return renderStatistics();} if(prev==='taxes'){page='taxes'; return renderTaxes();} if(prev==='realestate'){page='realestate'; return renderRealEstate();} if(prev==='investments'){page='investments'; return renderInvestments();} page='businesses'; return renderBusinesses();};
+  function ensureGlobalReferralEntry33(){
+    const app=document.querySelector('main.app');
+    const balance=document.querySelector('.balance');
+    if(!app||!balance)return;
+
+    let banner=document.querySelector('#refGlobalEntry33');
+    if(!banner){
+      banner=document.createElement('button');
+      banner.id='refGlobalEntry33';
+      banner.type='button';
+      banner.className='ref-global-entry33';
+      banner.setAttribute('aria-label','Открыть реферальную программу');
+      banner.innerHTML=`<span class="ref-global-icon33" aria-hidden="true">🎁</span><span class="ref-global-copy33"><b>Реферальная программа</b><small>Пригласи активного друга и получи <strong>+20 000 ₽</strong></small></span><span class="ref-global-cta33">Открыть <i>→</i></span>`;
+      banner.addEventListener('click',()=>window.openReferrals33?.());
+      balance.insertAdjacentElement('afterend',banner);
+    }
+
+    let desktop=document.querySelector('#refDesktopEntry33');
+    if(!desktop){
+      desktop=document.createElement('button');
+      desktop.id='refDesktopEntry33';
+      desktop.type='button';
+      desktop.className='ref-desktop-entry33';
+      desktop.setAttribute('aria-label','Открыть реферальную программу');
+      desktop.innerHTML=`<span>🎁</span><b>Рефералы</b><strong>+20 000 ₽</strong>`;
+      desktop.addEventListener('click',()=>window.openReferrals33?.());
+      document.body.appendChild(desktop);
+    }
+  }
+  window.ensureGlobalReferralEntry33=ensureGlobalReferralEntry33;
+  ensureGlobalReferralEntry33();
+  document.addEventListener('DOMContentLoaded',ensureGlobalReferralEntry33,{once:true});
+  setTimeout(ensureGlobalReferralEntry33,250);
+  setTimeout(ensureGlobalReferralEntry33,1200);
+
   const baseRating33=window.renderRating;
   window.renderRating=renderRating=async function(){
     await baseRating33();if(page!=='rating')return;

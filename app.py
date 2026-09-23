@@ -2187,7 +2187,7 @@ def seasons_page():
 
 @api.get("/admin")
 def admin_page():
-    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=332")
+    return _html_with_optional_script("admin.html", "/static/v22_admin.js?v=333")
 
 
 def auth(x_telegram_init_data, x_user_id):
