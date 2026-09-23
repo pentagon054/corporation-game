@@ -1,4 +1,4 @@
-/* Corporation v33.3: referral program UI + global desktop/mobile entry. */
+/* Corporation v33.4: referral program UI + permanent desktop/mobile entry. */
 (function(){
   'use strict';
   function money33(v){return Number(v||0).toLocaleString('ru-RU',{maximumFractionDigits:0})+' ₽'}
@@ -32,9 +32,12 @@
       banner.type='button';
       banner.className='ref-global-entry33';
       banner.setAttribute('aria-label','Открыть реферальную программу');
-      banner.innerHTML=`<span class="ref-global-icon33" aria-hidden="true">🎁</span><span class="ref-global-copy33"><b>Реферальная программа</b><small>Пригласи активного друга и получи <strong>+20 000 ₽</strong></small></span><span class="ref-global-cta33">Открыть <i>→</i></span>`;
-      banner.addEventListener('click',()=>window.openReferrals33?.());
+      banner.innerHTML=`<span class="ref-global-icon33" aria-hidden="true">🎁</span><span class="ref-global-copy33"><span class="ref-global-badge33">БОНУС ЗА ДРУГА</span><b>Реферальная программа</b><small>Пригласи активного друга — получи <strong>+20 000 ₽</strong></small></span><span class="ref-global-cta33">Открыть <i>→</i></span>`;
       balance.insertAdjacentElement('afterend',banner);
+    }
+    if(banner.dataset.refBound334!=='1'){
+      banner.dataset.refBound334='1';
+      banner.addEventListener('click',()=>window.openReferrals33?.());
     }
 
     let desktop=document.querySelector('#refDesktopEntry33');
@@ -44,9 +47,12 @@
       desktop.type='button';
       desktop.className='ref-desktop-entry33';
       desktop.setAttribute('aria-label','Открыть реферальную программу');
-      desktop.innerHTML=`<span>🎁</span><b>Рефералы</b><strong>+20 000 ₽</strong>`;
+      desktop.innerHTML=`<span class="ref-desktop-gift33">🎁</span><small>БОНУС</small><b>Рефералы</b><strong>+20 000 ₽</strong><em>Открыть →</em>`;
+      app.appendChild(desktop);
+    }
+    if(desktop.dataset.refBound334!=='1'){
+      desktop.dataset.refBound334='1';
       desktop.addEventListener('click',()=>window.openReferrals33?.());
-      document.body.appendChild(desktop);
     }
   }
   window.ensureGlobalReferralEntry33=ensureGlobalReferralEntry33;

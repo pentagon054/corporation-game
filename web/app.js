@@ -20,7 +20,7 @@ async function api(url, options={}) {
   if(!res.ok){let d;try{d=await res.json()}catch{d={detail:"Ошибка сервера"}}throw new Error(d.detail||"Ошибка")}
   return res.json();
 }
-function modal(title,text){document.querySelector("#modalTitle").textContent=title;document.querySelector("#modalText").textContent=String(text);document.querySelector("#modal").classList.remove("hidden")}
+function modal(title,text){if(window.corpAlert)return window.corpAlert(String(text),String(title||"Сообщение"));document.querySelector("#modalTitle").textContent=title;document.querySelector("#modalText").textContent=String(text);document.querySelector("#modal").classList.remove("hidden")}
 document.querySelector("#modalClose").onclick=()=>document.querySelector("#modal").classList.add("hidden");
 function businessCount(){return (state?.businesses||[]).filter(x=>Number(x.level)>0).length}
 function renderHeader(){if(!state)return;document.querySelector("#corpName").textContent=state.player.corp_name;document.querySelector("#money").textContent=fmt(state.player.money);document.querySelector("#income").textContent=fmt(state.hourly_income)+"/ч";document.querySelector("#businessCount").textContent=businessCount();document.querySelector("#propertyCount").textContent=state.real_estate_count||0}

@@ -72,3 +72,11 @@ REFERRAL_BOT_USERNAME=CorporationGame_bot
 - на любой ширине виден золотой баннер после блока баланса;
 - на широком ПК дополнительно показывается боковая кнопка «Рефералы +20 000 ₽»;
 - cache-bust обновлён до 333.
+
+
+## v33.4 desktop referrals + dialogs
+- Реферальная кнопка встроена прямо в index.html и всегда видна на ПК/мобильных.
+- На ПК добавлена заметная золотая плавающая кнопка +20 000 ₽.
+- Вся цепочка JS получила cache generation 334, включая v29.js и subscription gate.
+- Удалены оставшиеся native alert/confirm/prompt/showConfirm/showAlert/showPopup вызовы.
+- Старый modal() игры маршрутизируется в единый Corporation dialog.

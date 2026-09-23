@@ -66,21 +66,21 @@
   let gameStarted = false;
 
   const gameScripts = [
-    '/static/gestures_v30.js?v=300',
-    '/static/corporation_dialogs_v33.js?v=333',
-    '/static/app.js?v=280',
-    '/static/v22_1.js?v=280',
-    '/static/v20.js?v=280',
-    '/static/v22.js?v=280',
-    '/static/v22_performance.js?v=280',
-    '/static/audit_v23.js?v=280',
-    '/static/interactive_map.js?v=310',
-    '/static/premium_v24.js?v=310',
-    '/static/premium_v25.js?v=280',
-    '/static/instances_v28.js?v=280',
-    '/static/v29.js?v=290',
-    '/static/v31.js?v=310',
-    '/static/referrals_v33.js?v=333'
+    '/static/gestures_v30.js?v=334',
+    '/static/corporation_dialogs_v33.js?v=334',
+    '/static/app.js?v=334',
+    '/static/v22_1.js?v=334',
+    '/static/v20.js?v=334',
+    '/static/v22.js?v=334',
+    '/static/v22_performance.js?v=334',
+    '/static/audit_v23.js?v=334',
+    '/static/interactive_map.js?v=334',
+    '/static/premium_v24.js?v=334',
+    '/static/premium_v25.js?v=334',
+    '/static/instances_v28.js?v=334',
+    '/static/v29.js?v=334',
+    '/static/v31.js?v=334',
+    '/static/referrals_v33.js?v=334'
   ];
 
   function setStatus(text, kind) {
