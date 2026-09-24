@@ -211,7 +211,7 @@ STOCKS.update({
 })
 
 # === CORPORATION V21: MARKET NEWS ===========================================
-MARKET_NEWS_INTERVAL = 60 * 60
+MARKET_NEWS_INTERVAL = 50 * 60
 MARKET_NEWS_REACTION_DELAY = 2 * 60
 MARKET_NEWS_MIN_IMPACT = 0.11
 MARKET_NEWS_MAX_IMPACT = 0.35
@@ -808,7 +808,6 @@ def db():
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     # Better concurrent read/write behavior for Telegram Mini App traffic.
-    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA busy_timeout=30000")
     conn.execute("PRAGMA temp_store=MEMORY")
@@ -828,6 +827,9 @@ def ensure_column(conn, table, column, definition):
 def init_db():
     now = int(time.time())
     with closing(db()) as conn:
+        # Journal mode is database-wide. Setting it on every request takes an
+        # unnecessary lock and can cause SQLITE_BUSY under concurrent traffic.
+        conn.execute("PRAGMA journal_mode=WAL")
         market_v24.initialize(conn, now)
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS players (
@@ -2480,6 +2482,14 @@ def market_news(x_telegram_init_data: str | None = Header(None), x_user_id: str 
 @api.get("/api/stocks")
 def stocks(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
     uid = auth(x_telegram_init_data, x_user_id); sync_passive_income(uid); return get_stocks()
+
+
+@api.get("/api/investments-overview")
+def investments_overview(x_telegram_init_data: str | None = Header(None), x_user_id: str | None = Header(None)):
+    """One authenticated round trip for the stocks, portfolio and bonds screen."""
+    uid = auth(x_telegram_init_data, x_user_id)
+    sync_passive_income(uid)
+    return {"stocks": get_stocks(), "brokerage": get_brokerage_account(uid), "bonds": get_bonds(uid)}
 
 
 @api.get("/api/stocks/{stock_id}")

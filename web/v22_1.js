@@ -97,10 +97,8 @@
       modal("Не удалось обновить", error.message || "Проверь соединение и попробуй снова.");
     }finally{
       if(button){
-        setTimeout(()=>{
-          button.classList.remove("loading");
-          button.disabled=false;
-        },280);
+        button.classList.remove("loading");
+        button.disabled=false;
       }
     }
   }

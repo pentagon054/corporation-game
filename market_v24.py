@@ -28,7 +28,7 @@ def pattern_points(price, floor, ceiling, kind, rng=random):
     return points
 
 
-def advance(conn, now, configs, publish, interval=3600, rng=random):
+def advance(conn, now, configs, publish, interval=50*60, rng=random):
     # Bound recovery after long downtime. No invented historical news or windfall backlog.
     cutoff=now-12*3600
     conn.execute('UPDATE stocks SET last_update=? WHERE last_update<?',(cutoff,cutoff))
@@ -38,6 +38,11 @@ def advance(conn, now, configs, publish, interval=3600, rng=random):
     stocks={r['id']:dict(r) for r in conn.execute('SELECT * FROM stocks') if r['id'] in configs}
     patterns={r['stock_id']:(r['started_at'],json.loads(r['points'])) for r in conn.execute('SELECT * FROM market_patterns')}
     next_news=conn.execute('SELECT next_news_at FROM market_news_state WHERE id=1').fetchone()[0]
+    # Shorten any schedule persisted by older releases (previously up to 105 min).
+    # Avoid publishing backdated news after an outage or during a frozen season.
+    last_news=conn.execute('SELECT MAX(published_at) FROM market_news').fetchone()[0]
+    if last_news is not None and next_news>last_news+90*60:
+        next_news=max(now, last_news+90*60)
     next_pattern=conn.execute('SELECT next_pattern_at FROM market_clock WHERE id=1').fetchone()[0]
     pending=[dict(r) for r in conn.execute('SELECT * FROM market_news WHERE applied_at=0 ORDER BY impact_at,id')]
     while stocks:
@@ -77,7 +82,7 @@ def advance(conn, now, configs, publish, interval=3600, rng=random):
         if at==next_news:
             publish(conn,at)
             pending.append(dict(conn.execute('SELECT * FROM market_news ORDER BY id DESC LIMIT 1').fetchone()))
-            next_news=at+interval+rng.randint(0,45*60)
+            next_news=at+interval+rng.randint(0,40*60)
         for n in list(pending):
             if max(cutoff,n['impact_at'])>at:continue
             sid=n['stock_id'];s=stocks.get(sid)

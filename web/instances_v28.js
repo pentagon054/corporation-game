@@ -118,9 +118,12 @@ openTrade=async function(id,side,all=false){
     catch(e){modal('Сделка не выполнена',e.message);return;}
     state=r.state;renderHeader();
     try{
-      await Promise.all([loadStocks(),loadBrokerage()]);
       if(page==='investments'){
-        if(corporationActiveStockId===String(id))await openStock(id,true);
+        if(corporationActiveStockId===String(id)){
+          const overview=await api('/api/investments-overview');
+          stocksCache=overview.stocks;brokerageCache=overview.brokerage;bondsCache=overview.bonds;
+          await openStock(id,true);
+        }
         else await renderInvestments();
       }
     }catch{} // A refresh failure must not suggest repeating a completed purchase.

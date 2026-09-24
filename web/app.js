@@ -77,7 +77,8 @@ async function renderInvestments(){
   const c=document.querySelector("#content");
   if(!actionBusy28)c.innerHTML=`<div class="empty">Загружаем инвестиции...</div>`;
   try{
-    const [stocks,broker,bonds]=await Promise.all([loadStocks(),loadBrokerage(),loadBonds()]);
+    const overview=await api('/api/investments-overview');
+    const stocks=overview.stocks,broker=overview.brokerage,bonds=overview.bonds;
     if(page!=="investments" || investmentView!==viewAtStart || corporationActiveStockId)return;
     stocksCache=stocks; brokerageCache=broker; bondsCache=bonds;
     const profit=Number(broker.total_profit||0);
