@@ -91,3 +91,6 @@
   .ref-global-cta33{grid-column:1/-1;width:100%;justify-content:center;padding:10px;margin-top:2px}
 }
 @media(prefers-reduced-motion:reduce){.ref-global-entry33::before,.ref-desktop-entry33{animation:none}.ref-global-entry33,.ref-global-cta33 i,.ref-desktop-entry33{transition:none}}
+
+/* v33.5: both entries belong exclusively to Home. */
+body.secondary-page28 #refGlobalEntry33,body.secondary-page28 #refDesktopEntry33{display:none!important}
