@@ -80,7 +80,8 @@
     '/static/instances_v28.js?v=340',
     '/static/v29.js?v=340',
     '/static/v31.js?v=340',
-    '/static/referrals_v33.js?v=340'
+    '/static/referrals_v33.js?v=340',
+    '/static/business_confirm_v34_2.js?v=342'
   ];
 
   function setStatus(text, kind) {
