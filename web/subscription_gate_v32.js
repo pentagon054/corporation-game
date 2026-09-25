@@ -67,7 +67,7 @@
 
   const gameScripts = [
     '/static/gestures_v30.js?v=340',
-    '/static/corporation_dialogs_v33.js?v=340',
+    '/static/corporation_dialogs_v33.js?v=343',
     '/static/app.js?v=340',
     '/static/v22_1.js?v=340',
     '/static/v20.js?v=340',
